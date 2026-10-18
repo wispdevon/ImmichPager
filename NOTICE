@@ -1,0 +1,17 @@
+ImmichPager
+Copyright 2026 ImmichPager contributors
+
+Independent community software, not affiliated with Immich or NASA.
+
+The album grid presentation and date/year grouping were adapted with reference to
+Immich v3.3.1 components AlbumCard.svelte, AlbumCardGroup.svelte, and
+AlbumsList.svelte, copyright Immich contributors, licensed under AGPL-3.0.
+Source: https://github.com/immich-app/immich/tree/v3.3.1/web/src/lib/components/album-page
+Pager changes include configurable headers/themes, client page authorization,
+public native-share navigation, and simplified responsive layout (October 2026).
+
+@immich/ui is distributed under the MIT license; its license remains in the
+installed package. Other dependencies retain their respective license notices.
+
+Fixture photos are NASA Apollo imagery. Sources and usage information are listed
+in fixtures/photos/README.md. Screenshots depict fixture data, not a live library.
