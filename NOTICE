@@ -15,3 +15,10 @@ installed package. Other dependencies retain their respective license notices.
 
 Fixture photos are NASA Apollo imagery. Sources and usage information are listed
 in fixtures/photos/README.md. Screenshots depict fixture data, not a live library.
+
+The inline page editor and add-albums tile also follow Immich AlbumTitle.svelte,
+AlbumDescription.svelte and the album route's empty state, under AGPL-3.0.
+Google Sans is bundled from Immich's font assets (losslessly converted to WOFF2),
+copyright 2025 The Google Sans
+Project Authors, under the SIL Open Font License 1.1. The complete font license
+is included at static/assets/fonts/OFL.txt.

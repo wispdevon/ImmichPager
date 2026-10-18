@@ -1,10 +1,24 @@
 @import '@immich/ui/theme/default.css';
 @source '../node_modules/@immich/ui/dist';
+@font-face {
+  font-family: 'GoogleSans';
+  src: url('./lib/assets/GoogleSans.woff2') format('woff2');
+  font-weight: 410 900;
+  font-style: normal;
+  font-display: swap;
+  ascent-override: 106.25%;
+  size-adjust: 106.25%;
+}
 :root {
-  font-family: system-ui, sans-serif;
+  font-family: 'GoogleSans', sans-serif;
+  letter-spacing: 0.1px;
+  --pager-primary: #accbfa;
+  --pager-surface: #101114;
+  --pager-secondary: #212121;
+  --pager-fg: #e5e7eb;
   color-scheme: dark;
   background: #000;
-  color: #fff;
+  color: var(--pager-fg);
 }
 body {
   margin: 0;
@@ -31,32 +45,34 @@ a {
   text-underline-offset: 4px;
 }
 :focus-visible {
-  outline: 2px solid #a3bfff;
+  outline: 2px solid #accbfa;
   outline-offset: 4px;
 }
 button:disabled {
   opacity: 0.5;
   cursor: wait;
 }
-input,
-select,
-textarea {
-  color: inherit;
-  background: transparent;
-  border: 1px solid #555;
-  border-radius: 8px;
-  padding: 10px 12px;
-  width: 100%;
-}
-button {
-  color: inherit;
-  background: transparent;
-  border: 1px solid #555;
-  border-radius: 8px;
-  padding: 10px 16px;
+@layer base {
+  input,
+  select,
+  textarea {
+    color: inherit;
+    background: transparent;
+    border: 1px solid #555;
+    border-radius: 8px;
+    padding: 10px 12px;
+    width: 100%;
+  }
+  button:not([data-button-root]) {
+    color: inherit;
+    background: transparent;
+    border: 1px solid #555;
+    border-radius: 8px;
+    padding: 10px 16px;
+  }
 }
 .primary {
-  background: #dbe4ff;
+  background: #accbfa;
   color: #142344;
   border-color: transparent;
   font-weight: 600;

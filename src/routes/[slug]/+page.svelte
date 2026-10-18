@@ -63,7 +63,7 @@
   }
   .lock-mark {
     font-size: 48px;
-    color: #a3bfff;
+    color: #accbfa;
     margin-bottom: 24px;
   }
   .lock-screen h1 {
@@ -76,7 +76,7 @@
     gap: 12px;
   }
   .preview-notice {
-    background: #dbe4ff;
+    background: #accbfa;
     color: #142344;
     padding: 12px 24px;
     text-align: center;

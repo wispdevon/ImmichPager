@@ -56,18 +56,86 @@ test('editor creates, previews and publishes a protected branded page', async ({
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/dev-login/alice');
   await page.goto('/page/manage/new');
+  await expect(page.getByPlaceholder('Add a title')).toBeVisible();
+  await expect(page.getByPlaceholder('Add a description')).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  expect(
+    await page.evaluate(() => document.fonts.check('16px GoogleSans')),
+  ).toBe(true);
+  await page.screenshot({
+    path: 'test-results/editor-empty.png',
+    fullPage: true,
+  });
   await page
     .getByLabel('Title', { exact: true })
     .fill('Acme monthly photography');
+  await page
+    .getByRole('button', { name: 'Page settings', exact: true })
+    .click();
+  await expect(page.getByLabel('Page slug')).toHaveValue(
+    'acme-monthly-photography',
+  );
   await page.getByLabel('Page slug').fill('protected-client');
+  await page.getByRole('button', { name: 'Close page settings' }).click();
+  await page
+    .getByRole('button', { name: 'Select albums', exact: true })
+    .click();
+  await expect(page.getByRole('checkbox')).toHaveCount(9);
+  await expect
+    .poll(() =>
+      page
+        .locator('.pick-cover img')
+        .evaluateAll((images) =>
+          images.every((image) => (image as HTMLImageElement).naturalWidth > 0),
+        ),
+    )
+    .toBe(true);
+  await page.screenshot({
+    path: 'test-results/album-picker.png',
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await expect(
+    page.getByRole('button', { name: 'Done', exact: true }),
+  ).toBeInViewport();
+  const pickerBounds = await page.getByRole('dialog').boundingBox();
+  expect(pickerBounds!.width).toBeLessThanOrEqual(390);
+  await page.screenshot({
+    path: 'test-results/album-picker-mobile.png',
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.getByRole('searchbox', { name: 'Search albums' }).fill('Liberty');
+  await expect(page.getByRole('checkbox')).toHaveCount(1);
+  await page.getByRole('checkbox').focus();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Select albums', exact: true }),
+  ).toBeFocused();
+  await page
+    .getByRole('button', { name: 'Select albums', exact: true })
+    .click();
   await page
     .getByRole('checkbox', { name: 'Include Liberty Family Camp ’26' })
     .check();
+  await page.getByRole('button', { name: 'Selected', exact: true }).click();
+  await expect(page.getByRole('checkbox')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
   await page
     .getByLabel('Description', { exact: true })
     .fill('Our work over the months.');
+  await page
+    .getByRole('button', { name: 'Page settings', exact: true })
+    .click();
   await page.getByLabel('Password protection').selectOption('set');
   await page.getByPlaceholder('At least 4 characters').fill('2468');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
   await page.getByRole('button', { name: 'Preview', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'Acme monthly photography' }),
@@ -75,6 +143,9 @@ test('editor creates, previews and publishes a protected branded page', async ({
   await page.getByRole('button', { name: 'Back to editor' }).click();
   await page.getByRole('button', { name: 'Publish page', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Page published');
+  await page
+    .getByRole('button', { name: 'Page settings', exact: true })
+    .click();
   await expect(
     page.getByRole('button', { name: 'Copy client link' }),
   ).toBeVisible();
@@ -86,6 +157,7 @@ test('editor creates, previews and publishes a protected branded page', async ({
     page.getByRole('button', { name: 'Remove banner', exact: true }),
   ).toBeVisible();
   await page.getByLabel('Appearance').selectOption('light');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Changes saved');
   await page.screenshot({ path: 'test-results/editor.png', fullPage: true });

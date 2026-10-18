@@ -89,7 +89,7 @@
     color: #a5d6b3;
   }
   .page-row:hover h2 {
-    color: #a3bfff;
+    color: #accbfa;
   }
   .empty {
     padding: 80px 20px;

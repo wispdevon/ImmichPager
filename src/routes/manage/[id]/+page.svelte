@@ -1,7 +1,8 @@
 <script lang="ts">
   import { goto, replaceState } from '$app/navigation';
   import { untrack } from 'svelte';
-  import { PasswordInput } from '@immich/ui';
+  import { Button, PasswordInput, Textarea } from '@immich/ui';
+  import AlbumPicker from '$lib/components/AlbumPicker.svelte';
   import Gallery from '$lib/components/Gallery.svelte';
   import type { EditorPage, GalleryPage, PageInput } from '$lib/contracts';
   import type { PageData } from './$types';
@@ -15,7 +16,7 @@
     theme: initial?.theme ?? 'dark',
     background: initial?.background ?? null,
     foreground: initial?.foreground ?? null,
-    accent: initial?.accent ?? '#a3bfff',
+    accent: initial?.accent ?? '#accbfa',
     alignment: initial?.alignment ?? 'left',
     bannerPosition: initial?.bannerPosition ?? 50,
     albumIds: [...(initial?.albumIds ?? [])],
@@ -26,15 +27,11 @@
   let busy = $state(false),
     message = $state(''),
     success = $state(''),
-    search = $state(''),
     preview = $state(false);
   let slugEdited = $state(!!initial),
     brandingVersion = $state(0);
-  const visible = $derived(
-    data.albums.filter((a) =>
-      a.albumName.toLowerCase().includes(search.toLowerCase()),
-    ),
-  );
+  let albumPickerOpen = $state(false);
+  let settingsDialog = $state<HTMLDialogElement>(null!);
   const selected = $derived(
     fields.albumIds
       .map((id) => data.albums.find((a) => a.id === id))
@@ -209,68 +206,151 @@
   </div>
   <Gallery page={previewPage} preview />
 {:else}
-  <main class="editor shell">
-    <a class="back" href="/page/manage">← Client pages</a>
-    <div class="bar">
-      <div>
-        <h1>{saved ? saved.title : 'Create a client page'}</h1>
-        <p class="muted">
-          {saved?.status === 'published'
-            ? 'Published'
-            : saved?.status === 'error'
-              ? 'Synchronization needed'
-              : 'Draft'} · {fields.albumIds.length} albums
-        </p>
-      </div>
+  <main class="editor">
+    <h1 class="sr-only">{fields.title || 'New client page'}</h1>
+    <header class="editor-toolbar">
+      <a class="back" href="/page/manage" aria-label="Back to client pages">←</a
+      >
+      <span class="draft-status"
+        >{saved?.status === 'published'
+          ? 'Published'
+          : saved?.status === 'error'
+            ? 'Synchronization needed'
+            : 'Draft'}</span
+      >
       <div class="actions">
-        <button onclick={() => (preview = true)}>Preview</button><button
-          disabled={busy || saved?.status === 'error'}
-          onclick={() => perform('save')}>Save changes</button
-        ><button
-          class="primary"
+        <Button
+          variant="ghost"
+          color="secondary"
+          onclick={() => settingsDialog.showModal()}>Page settings</Button
+        >
+        <Button
+          variant="ghost"
+          color="secondary"
+          onclick={() => (preview = true)}>Preview</Button
+        >
+        <Button
+          variant="ghost"
+          onclick={() => perform('save')}
+          disabled={busy || saved?.status === 'error'}>Save changes</Button
+        >
+        <Button
+          shape="round"
           disabled={busy || saved?.status === 'error'}
           onclick={() => perform('publish')}
           >{busy
             ? 'Working…'
             : saved?.status === 'published'
               ? 'Publish changes'
-              : 'Publish page'}</button
+              : 'Publish page'}</Button
         >
       </div>
-    </div>
-    {#if message}<div class="notice error" role="alert">
-        {message}
-      </div>{/if}{#if success}<div class="notice" role="status">
-        {success}
-      </div>{/if}
+    </header>
+    {#if message}<div class="notice error" role="alert">{message}</div>{/if}
+    {#if success}<div class="notice" role="status">{success}</div>{/if}
     {#if saved?.status === 'error'}<div class="notice">
         <p>
           This page is hidden until its album links are synchronized. Enter its
-          current password below if protected, then retry.
+          current password in Page settings if protected, then retry.
         </p>
-        <button class="primary" disabled={busy} onclick={() => perform('retry')}
-          >Retry synchronization</button
+        <Button disabled={busy} onclick={() => perform('retry')}
+          >Retry synchronization</Button
         >
       </div>{/if}
-    <div class="editor-layout">
-      <div class="settings">
-        <section>
-          <h2>Page details</h2>
-          <label
-            >Title<input
-              maxlength="160"
-              bind:value={fields.title}
-              oninput={() => {
-                if (!slugEdited)
-                  fields.slug = fields.title
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/^-|-$/g, '')
-                    .slice(0, 80);
-              }}
-              placeholder="Acme · Photography"
-            /></label
+    <section class="page-heading">
+      <Textarea
+        variant="ghost"
+        class="page-title"
+        aria-label="Title"
+        placeholder="Add a title"
+        maxlength={160}
+        bind:value={fields.title}
+        oninput={(event) => {
+          const title = event.currentTarget.value.replaceAll('\n', ' ');
+          event.currentTarget.value = title;
+          if (!slugEdited)
+            fields.slug = title
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-|-$/g, '')
+              .slice(0, 80);
+        }}
+      />
+      <Textarea
+        variant="ghost"
+        class="page-description"
+        aria-label="Description"
+        placeholder="Add a description"
+        maxlength={2000}
+        bind:value={fields.description}
+      />
+    </section>
+    {#if selected.length}
+      <section class="selected-albums">
+        <div class="bar">
+          <h2>
+            {selected.length}
+            {selected.length === 1 ? 'album' : 'albums'}
+          </h2>
+          <Button variant="ghost" onclick={() => (albumPickerOpen = true)}
+            >＋ Add albums</Button
           >
+        </div>
+        <div class="selected-grid">
+          {#each selected as album (album.id)}
+            <article class="selected-album">
+              <div class="selected-cover">
+                {#if album.albumThumbnailAssetId}<img
+                    src={`/page/api/albums/${album.id}/cover`}
+                    alt=""
+                    width="320"
+                    height="320"
+                    loading="lazy"
+                  />{:else}<span aria-hidden="true">▧</span>{/if}<button
+                  class="remove-album"
+                  aria-label={`Remove ${album.albumName}`}
+                  onclick={() => select(album.id)}>×</button
+                >
+              </div>
+              <h3>{album.albumName}</h3>
+              <p class="muted">{album.assetCount} items</p>
+            </article>
+          {/each}
+        </div>
+      </section>
+    {:else}
+      <section class="empty-albums">
+        <div>
+          <p>ADD ALBUMS</p>
+          <button class="add-albums" onclick={() => (albumPickerOpen = true)}
+            ><span aria-hidden="true">＋</span><span>Select albums</span
+            ></button
+          >
+        </div>
+      </section>
+    {/if}
+    <AlbumPicker
+      albums={data.albums}
+      bind:albumIds={fields.albumIds}
+      bind:open={albumPickerOpen}
+    />
+    <dialog
+      bind:this={settingsDialog}
+      class="settings-dialog"
+      aria-labelledby="settings-dialog-title"
+    >
+      <header class="dialog-heading">
+        <h2 id="settings-dialog-title">Page settings</h2>
+        <Button
+          variant="ghost"
+          color="secondary"
+          onclick={() => settingsDialog.close()}
+          aria-label="Close page settings">×</Button
+        >
+      </header>
+      <div class="settings-content">
+        <section>
+          <h2>Page link</h2>
           <label
             >Page URL<span class="url-input"
               ><span>/page/</span><input
@@ -282,14 +362,6 @@
                 placeholder="acme"
               /></span
             ></label
-          >
-          <label
-            >Description<textarea
-              rows="3"
-              maxlength="2000"
-              bind:value={fields.description}
-              placeholder="A collection of our work together."
-            ></textarea></label
           >
         </section>
         <section>
@@ -413,112 +485,47 @@
               >
             </div>{/if}
         </section>
-      </div>
-      <section class="album-picker">
-        <div class="bar">
-          <div>
-            <h2>Albums</h2>
-            <p class="muted">Choose the work this client should see.</p>
-          </div>
-          <label class="order-label"
-            >Order<select bind:value={fields.order}
+
+        <section>
+          <label
+            >Album order<select bind:value={fields.order}
               ><option value="newest">Newest first</option><option
                 value="manual">Manual within year</option
               ></select
             ></label
           >
-        </div>
-        <label
-          ><span class="sr-only">Search your albums</span><input
-            type="search"
-            placeholder="Search your albums"
-            bind:value={search}
-          /></label
+          {#if fields.order === 'manual' && selected.length}<div
+              class="ordering"
+            >
+              <h3>Selected album order</h3>
+              <p class="hint muted">
+                Albums stay grouped by year. Move them to set their order within
+                each year.
+              </p>
+              {#each selected as album, index (album.id)}<div class="order-row">
+                  <span>{album.albumName}</span><button
+                    aria-label={`Move ${album.albumName} up`}
+                    disabled={index === 0}
+                    onclick={() => move(index, -1)}>↑</button
+                  ><button
+                    aria-label={`Move ${album.albumName} down`}
+                    disabled={index === selected.length - 1}
+                    onclick={() => move(index, 1)}>↓</button
+                  >
+                </div>{/each}
+            </div>{/if}
+        </section>
+      </div>
+      <footer class="dialog-footer">
+        <Button shape="round" onclick={() => settingsDialog.close()}
+          >Done</Button
         >
-        <div class="picker-grid">
-          {#each visible as album (album.id)}<label
-              class="pick"
-              class:selected={fields.albumIds.includes(album.id)}
-              ><div class="pick-cover">
-                {#if album.albumThumbnailAssetId}<img
-                    src={`/page/api/albums/${album.id}/cover`}
-                    alt=""
-                    width="240"
-                    height="240"
-                    loading="lazy"
-                  />{:else}<span aria-hidden="true">▧</span>{/if}<input
-                  type="checkbox"
-                  checked={fields.albumIds.includes(album.id)}
-                  onchange={() => select(album.id)}
-                  aria-label={`Include ${album.albumName}`}
-                />
-              </div>
-              <strong>{album.albumName}</strong><small class="muted"
-                >{album.assetCount} items</small
-              ></label
-            >{:else}<p class="muted">
-              {search
-                ? 'No matching albums.'
-                : 'No owned albums yet. Create an album in Immich first.'}
-            </p>{/each}
-        </div>
-        {#if fields.order === 'manual' && selected.length}<div class="ordering">
-            <h3>Selected album order</h3>
-            <p class="hint muted">
-              Albums stay grouped by year. Move them to set their order within
-              each year.
-            </p>
-            {#each selected as album, index (album.id)}<div class="order-row">
-                <span>{album.albumName}</span><button
-                  aria-label={`Move ${album.albumName} up`}
-                  disabled={index === 0}
-                  onclick={() => move(index, -1)}>↑</button
-                ><button
-                  aria-label={`Move ${album.albumName} down`}
-                  disabled={index === selected.length - 1}
-                  onclick={() => move(index, 1)}>↓</button
-                >
-              </div>{/each}
-          </div>{/if}
-      </section>
-    </div>
+      </footer>
+    </dialog>
   </main>
 {/if}
 
 <style>
-  .editor {
-    max-width: 1440px;
-  }
-  .back {
-    display: inline-block;
-    font-size: 13px;
-    opacity: 0.65;
-    margin-bottom: 24px;
-    text-decoration: none;
-  }
-  .bar h1 {
-    margin: 0;
-  }
-  .bar p {
-    margin-top: 8px;
-    font-size: 13px;
-  }
-  .editor-layout {
-    display: grid;
-    grid-template-columns: 350px minmax(0, 1fr);
-    gap: 56px;
-  }
-  section {
-    border-top: 1px solid #303030;
-    padding-block: 24px;
-  }
-  section h2 {
-    margin: 0;
-    font-size: 18px;
-  }
-  label {
-    font-size: 13px;
-  }
   .two {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -543,6 +550,8 @@
   .url-input > span {
     padding-left: 12px;
     opacity: 0.5;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .url-input input {
     border: 0;
@@ -571,59 +580,6 @@
   }
   .delete {
     color: #ffb4ab;
-  }
-  .album-picker .bar {
-    margin-bottom: 8px;
-  }
-  .order-label {
-    margin: 0;
-  }
-  .picker-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 24px 16px;
-    margin-top: 24px;
-  }
-  .pick {
-    margin: 0;
-    cursor: pointer;
-    align-content: start;
-    gap: 6px;
-    min-width: 0;
-  }
-  .pick-cover {
-    aspect-ratio: 1;
-    border-radius: 12px;
-    overflow: hidden;
-    position: relative;
-    background: #171717;
-    border: 2px solid transparent;
-    display: grid;
-    place-items: center;
-  }
-  .pick-cover img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .pick-cover input {
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    width: 20px;
-    height: 20px;
-    accent-color: #a3bfff;
-  }
-  .selected .pick-cover {
-    border-color: #a3bfff;
-  }
-  .pick strong {
-    font-size: 14px;
-    font-weight: 550;
-    overflow-wrap: anywhere;
-  }
-  .pick small {
-    font-size: 12px;
   }
   .ordering {
     border-top: 1px solid #333;
@@ -655,15 +611,227 @@
     top: 0;
     z-index: 2;
   }
-  @media (max-width: 900px) {
-    .editor-layout {
-      grid-template-columns: 1fr;
-      gap: 16px;
+
+  .editor {
+    padding: 0 40px 56px;
+    max-width: 1800px;
+    margin: auto;
+    min-height: 100dvh;
+  }
+  .editor-toolbar {
+    min-height: 76px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border-bottom: 1px solid #292a2d;
+  }
+  .editor-toolbar .actions {
+    margin-left: auto;
+    gap: 8px;
+  }
+  .back {
+    font-size: 28px;
+    text-decoration: none;
+  }
+  .draft-status {
+    color: #9aa0a6;
+    font-size: 14px;
+  }
+  .page-heading {
+    padding-top: 84px;
+    max-width: 1300px;
+  }
+  .page-heading :global(.page-title) {
+    border: 0;
+    border-radius: 0;
+    padding: 0 0 8px;
+    background: transparent;
+    font-size: 60px;
+    line-height: 1.2;
+    font-weight: 410;
+    color: var(--pager-primary);
+  }
+  .page-heading :global(.page-title::placeholder) {
+    color: #53647c;
+    opacity: 1;
+  }
+  .page-heading :global(.page-description) {
+    border: 0;
+    border-radius: 0;
+    padding: 12px 0 8px;
+    background: transparent;
+    font-size: 16px;
+    line-height: 1.5;
+    font-weight: 410;
+  }
+  .page-heading :global(.page-description::placeholder) {
+    color: #777;
+    opacity: 1;
+  }
+  .page-heading :global(textarea:focus-visible) {
+    outline: none;
+    box-shadow: 0 2px var(--pager-primary);
+  }
+  .empty-albums {
+    margin-top: 200px;
+    display: flex;
+    justify-content: center;
+  }
+  .empty-albums > div {
+    width: 300px;
+  }
+  .empty-albums p {
+    font-size: 12px;
+    margin: 0 0 20px;
+  }
+  .add-albums {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+    border: 0;
+    border-radius: 16px;
+    padding: 32px;
+    background: var(--pager-surface);
+    font-size: 18px;
+    text-align: left;
+  }
+  .add-albums > span:first-child {
+    color: var(--pager-primary);
+    font-size: 24px;
+  }
+  .add-albums:hover {
+    background: #25272c;
+    color: var(--pager-primary);
+  }
+  .selected-albums {
+    margin-top: 64px;
+  }
+  .selected-albums h2 {
+    font-size: 18px;
+  }
+  .selected-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 36px;
+  }
+  .selected-cover {
+    aspect-ratio: 1;
+    position: relative;
+    background: var(--pager-surface);
+    border-radius: 16px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+  }
+  .selected-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .remove-album {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    border: 0;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: #000a;
+    font-size: 24px;
+  }
+  .selected-album h3 {
+    font-size: 18px;
+    margin-top: 16px;
+    overflow-wrap: anywhere;
+  }
+  .selected-album p {
+    font-size: 14px;
+    margin-top: 4px;
+  }
+  dialog {
+    background: #000;
+    color: var(--pager-fg);
+    border: 1px solid #34363b;
+    border-radius: 20px;
+    padding: 24px;
+    margin: auto;
+    width: min(1100px, calc(100% - 40px));
+    max-height: calc(100dvh - 48px);
+  }
+  dialog::backdrop {
+    background: #000b;
+  }
+  .settings-dialog {
+    width: min(640px, calc(100% - 40px));
+  }
+  .dialog-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 20px;
+  }
+  .dialog-heading h2 {
+    font-size: 22px;
+    margin: 0;
+  }
+  .dialog-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 24px;
+    padding-top: 24px;
+  }
+  .settings-content section {
+    border-top: 1px solid #303030;
+    padding-block: 24px;
+  }
+  .settings-content h2 {
+    font-size: 18px;
+  }
+  .settings-content label {
+    font-size: 14px;
+  }
+  @media (max-width: 700px) {
+    .editor {
+      padding: 0 20px 32px;
     }
-    .settings {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 24px;
+    .editor-toolbar {
+      flex-wrap: wrap;
+      padding-block: 12px;
+      gap: 12px;
+    }
+    .editor-toolbar .actions {
+      width: 100%;
+      gap: 4px;
+      justify-content: space-between;
+    }
+    .editor-toolbar :global(button) {
+      font-size: 12px;
+      padding-inline: 8px;
+    }
+    .page-heading {
+      padding-top: 40px;
+    }
+    .page-heading :global(.page-title) {
+      font-size: 36px;
+    }
+    .empty-albums {
+      margin-top: 120px;
+    }
+    dialog {
+      padding: 16px;
+      width: calc(100% - 24px);
+      max-height: calc(100dvh - 24px);
+    }
+    .selected-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px 16px;
+    }
+    .selected-album h3 {
+      font-size: 16px;
     }
     .preview-toolbar {
       flex-wrap: wrap;

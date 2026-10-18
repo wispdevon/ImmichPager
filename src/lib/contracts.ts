@@ -24,7 +24,7 @@ export const pageInputSchema = z
     theme: z.enum(['dark', 'light', 'system']).default('dark'),
     background: color.nullable().default(null),
     foreground: color.nullable().default(null),
-    accent: color.default('#a3bfff'),
+    accent: color.default('#accbfa'),
     alignment: z.enum(['left', 'center']).default('left'),
     bannerPosition: z.number().int().min(0).max(100).default(50),
     albumIds: z

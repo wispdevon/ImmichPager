@@ -39,7 +39,11 @@ Screenshots use attributed [NASA Apollo photographs](fixtures/photos/README.md) 
 <details>
 <summary>See the photographer's editor</summary>
 
-![Page editor with album selection, branding controls, and password settings](docs/screenshots/editor.png)
+![Immich-style editor with inline title, description, and Add albums](docs/screenshots/editor.png)
+
+Start with **Add a title**, **Add a description**, and **Select albums**. Use **Page settings** for the persistent URL, branding, theme, ordering, and password.
+
+![Searchable album picker with owned and selected filters](docs/screenshots/album-picker.png)
 
 </details>
 
