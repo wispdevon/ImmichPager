@@ -36,10 +36,27 @@
   }
   function install() {
     for (const sharing of document.querySelectorAll('a[href="/sharing"]')) {
-      if (sharing.parentElement.querySelector('[data-pager-link]')) continue;
-      const link = sharing.cloneNode(true);
+      const sidebar = sharing.closest('#sidebar');
+      if (!sidebar || sidebar.querySelector('[data-pager-row]')) continue;
+      // NavbarItem wraps its link in a horizontal flex row. Clone the whole
+      // item so Pages gets its own full-width row rather than sharing that flex.
+      let reference = sharing;
+      while (
+        reference.parentElement &&
+        reference.parentElement !== sidebar &&
+        reference.parentElement.querySelectorAll('a[href]').length === 1
+      )
+        reference = reference.parentElement;
+      const row = reference.cloneNode(true);
+      row.dataset.pagerRow = 'true';
+      row.removeAttribute('id');
+      for (const child of row.querySelectorAll('[id]'))
+        child.removeAttribute('id');
+      const link = row.matches('a') ? row : row.querySelector('a[href]');
       link.href = '/page/manage';
       link.dataset.pagerLink = 'true';
+      link.removeAttribute('aria-current');
+      link.classList.remove('bg-primary/10', 'text-primary');
       // Preserve Immich's sidebar spacing and icon presentation.
       const labels = [...link.querySelectorAll('span')].filter(
         (node) => !node.querySelector('svg') && node.textContent.trim(),
@@ -60,7 +77,7 @@
         history.pushState({ pager: true }, '', '#client-pages');
         show();
       });
-      sharing.after(link);
+      reference.after(row);
     }
   }
   document.addEventListener(

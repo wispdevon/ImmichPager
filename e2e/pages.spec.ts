@@ -136,6 +136,16 @@ test('ownership, same-origin writes, reserved slugs and sidebar integration', as
   await expect(
     page.getByRole('link', { name: 'Pages', exact: true }),
   ).toBeVisible();
+  const sharingBox = await page
+    .getByRole('link', { name: 'Sharing', exact: true })
+    .boundingBox();
+  const pagerBox = await page
+    .getByRole('link', { name: 'Pages', exact: true })
+    .boundingBox();
+  expect(pagerBox!.y).toBeGreaterThanOrEqual(
+    sharingBox!.y + sharingBox!.height,
+  );
+  expect(pagerBox!.width).toBeGreaterThanOrEqual(170);
   await page.getByRole('link', { name: 'Pages', exact: true }).click();
   await expect(
     page

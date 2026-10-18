@@ -1,6 +1,7 @@
 import http from 'node:http';
 import https from 'node:https';
-import { readFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 
 const hopHeaders = new Set([
   'connection',
@@ -42,7 +43,8 @@ export function createGateway({
     )
   )
     throw Error('Use HTTP(S) server root URLs without credentials');
-  const script = readFile(new URL('./sidebar.js', import.meta.url));
+  const script = readFileSync(new URL('./sidebar.js', import.meta.url));
+  const scriptPath = `/page/assets/sidebar.js?v=${createHash('sha256').update(script).digest('hex').slice(0, 12)}`;
   function proxy(req, res, url, inject) {
     const headers = clean(req.headers);
     headers.host = publicUrl.host;
@@ -87,7 +89,7 @@ export function createGateway({
           let body = Buffer.concat(chunks).toString('utf8');
           body = body.replace(
             '</head>',
-            '<script defer src="/page/assets/sidebar.js"></script></head>',
+            `<script defer src="${scriptPath}"></script></head>`,
           );
           delete result['content-length'];
           delete result.etag;
@@ -109,7 +111,7 @@ export function createGateway({
     });
     req.pipe(request);
   }
-  const server = http.createServer(async (req, res) => {
+  const server = http.createServer((req, res) => {
     if (!req.url.startsWith('/') || req.url.startsWith('//')) {
       res.writeHead(400);
       res.end('Invalid request target');
@@ -135,7 +137,7 @@ export function createGateway({
         'cache-control': 'public, max-age=300',
         'x-content-type-options': 'nosniff',
       });
-      res.end(await script);
+      res.end(script);
       return;
     }
     if (isPagerPath(path)) {
