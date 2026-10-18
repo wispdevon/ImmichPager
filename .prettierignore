@@ -1,0 +1,9 @@
+pnpm-lock.yaml
+LICENSE
+build
+.svelte-kit
+.demo
+data
+node_modules
+test-results
+playwright-report

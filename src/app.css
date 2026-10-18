@@ -1,0 +1,125 @@
+@import '@immich/ui/theme/default.css';
+@source '../node_modules/@immich/ui/dist';
+:root {
+  font-family: system-ui, sans-serif;
+  color-scheme: dark;
+  background: #000;
+  color: #fff;
+}
+body {
+  margin: 0;
+}
+* {
+  box-sizing: border-box;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+summary {
+  cursor: pointer;
+}
+a {
+  color: inherit;
+  text-underline-offset: 4px;
+}
+:focus-visible {
+  outline: 2px solid #a3bfff;
+  outline-offset: 4px;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+input,
+select,
+textarea {
+  color: inherit;
+  background: transparent;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 10px 12px;
+  width: 100%;
+}
+button {
+  color: inherit;
+  background: transparent;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 10px 16px;
+}
+.primary {
+  background: #dbe4ff;
+  color: #142344;
+  border-color: transparent;
+  font-weight: 600;
+}
+.muted {
+  opacity: 0.66;
+}
+.notice {
+  padding: 16px;
+  border: 1px solid #777;
+  border-radius: 8px;
+  margin-block: 16px;
+}
+.error {
+  color: #ffb4ab;
+}
+.shell {
+  max-width: 1200px;
+  padding: 32px;
+  margin: auto;
+}
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-block-end: 28px;
+}
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+h1 {
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.8px;
+}
+h2 {
+  font-size: 22px;
+  font-weight: 600;
+}
+label {
+  display: grid;
+  gap: 8px;
+  margin-block: 16px;
+}
+small {
+  font-size: 13px;
+}
+@media (max-width: 600px) {
+  .shell {
+    padding: 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}

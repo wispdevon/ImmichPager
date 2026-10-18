@@ -1,0 +1,13 @@
+node_modules/
+.svelte-kit/
+build/
+.env
+.env.*
+!.env.example
+data/
+.demo/
+test-results/
+playwright-report/
+coverage/
+*.sqlite*
+*.log
