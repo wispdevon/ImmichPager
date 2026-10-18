@@ -9,13 +9,15 @@ export const handle: Handle = async ({ event, resolve }) => {
   event.locals.user = null;
   if (!['GET', 'HEAD', 'OPTIONS'].includes(event.request.method)) {
     const expected = env.ORIGIN || event.url.origin;
-    if (event.request.headers.get('origin') !== expected) error(403, 'A same-origin request is required');
+    if (event.request.headers.get('origin') !== expected)
+      error(403, 'A same-origin request is required');
     const length = Number(event.request.headers.get('content-length') || 0);
     if (length > 6 * 1024 * 1024) error(413, 'Request is too large');
   }
   if (managed) {
-    try { event.locals.user = await upstream(event.request).user(); }
-    catch (cause) {
+    try {
+      event.locals.user = await upstream(event.request).user();
+    } catch (cause) {
       if (cause instanceof AppError) error(cause.status, cause.message);
       error(502, 'Could not verify your Immich session');
     }
@@ -24,8 +26,12 @@ export const handle: Handle = async ({ event, resolve }) => {
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'same-origin');
   response.headers.set('X-Frame-Options', 'SAMEORIGIN');
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  response.headers.set(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=()',
+  );
   response.headers.set('X-Robots-Tag', 'noindex, nofollow');
-  if (!path.startsWith('/page/assets/')) response.headers.set('Cache-Control', 'private, no-store');
+  if (!path.startsWith('/page/assets/'))
+    response.headers.set('Cache-Control', 'private, no-store');
   return response;
 };

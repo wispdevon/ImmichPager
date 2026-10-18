@@ -7,9 +7,14 @@ import { credentialHeaders } from './security';
 
 let store: Store | undefined;
 export function database() {
-  return store ??= new Store(join(env.DATA_DIR || 'data', 'pager.sqlite'));
+  return (store ??= new Store(join(env.DATA_DIR || 'data', 'pager.sqlite')));
 }
 export function upstream(request?: Request) {
-  return new Immich(env.IMMICH_URL || 'http://127.0.0.1:2283', request ? credentialHeaders(request) : {});
+  return new Immich(
+    env.IMMICH_URL || 'http://127.0.0.1:2283',
+    request ? credentialHeaders(request) : {},
+  );
 }
-export function service(request: Request) { return new PageService(database(), upstream(request)); }
+export function service(request: Request) {
+  return new PageService(database(), upstream(request));
+}
