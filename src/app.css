@@ -52,26 +52,10 @@ button:disabled {
   opacity: 0.5;
   cursor: wait;
 }
-@layer base {
-  input,
-  select,
-  textarea {
-    color: inherit;
-    background: transparent;
-    border: 1px solid #555;
-    border-radius: 8px;
-    padding: 10px 12px;
-    width: 100%;
-  }
-  button:not([data-button-root]) {
-    color: inherit;
-    background: transparent;
-    border: 1px solid #555;
-    border-radius: 8px;
-    padding: 10px 16px;
-  }
-}
 .primary {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 8px;
   background: #accbfa;
   color: #142344;
   border-color: transparent;

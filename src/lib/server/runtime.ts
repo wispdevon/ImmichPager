@@ -3,7 +3,6 @@ import { env } from '$env/dynamic/private';
 import { join } from 'node:path';
 import { Store } from './store';
 import { Immich } from './immich';
-import { PageService } from './pages';
 import { credentialHeaders } from './security';
 
 let store: Store | undefined;
@@ -16,10 +15,6 @@ export function upstream(request?: Request) {
     request ? credentialHeaders(request) : {},
   );
 }
-export function service(request: Request) {
-  return new PageService(database(), upstream(request));
-}
-
 export function drafts(request: Request) {
   return new DraftService(database(), upstream(request));
 }

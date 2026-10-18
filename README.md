@@ -29,7 +29,9 @@ Screenshots use attributed [NASA Apollo photographs](fixtures/photos/README.md) 
 
 - **Persistent client links:** one `/page/custom-slug` URL across months of work.
 - **Immich-style albums:** square covers, dates, item counts, collapsible years, and manual or chronological ordering.
-- **Per-page branding:** title, description, logo, banner, crop position, alignment, and theme colors.
+- **Per-page branding:** choose a logo/banner from Immich Photos, drop an image, or upload; adjust crop, alignment, and colors.
+- **Private autosaved drafts:** edit freely without changing the live page; publish updates explicitly.
+- **Easy sharing:** Copy link on each published page, with an Immich-style Options panel for configuration.
 - **Password protection:** optional page password/PIN applied to dedicated Immich album shares too. The native viewer may prompt again.
 - **Inside Immich:** a Pages sidebar entry and existing session authentication; each photographer manages their own pages.
 - **Dedicated share links:** existing shares remain untouched. Interrupted operations are tracked and can be retried.
@@ -41,7 +43,11 @@ Screenshots use attributed [NASA Apollo photographs](fixtures/photos/README.md) 
 
 ![Immich-style editor with inline title, description, and Add albums](docs/screenshots/editor.png)
 
-Start with **Add a title**, **Add a description**, and **Select albums**. Use **Page settings** for the persistent URL, branding, theme, ordering, and password.
+Start with **Add a title**, **Add a description**, and **Select albums**. Branding areas accept dropped files or **Choose from Immich**. Changes autosave privately. Use **Options** for appearance, ordering, the persistent URL, and password protection; choose **Publish page** or **Update live page** when ready.
+
+![Choose branding from Immich Photos](docs/screenshots/photo-picker.png)
+
+![Immich-style Options panel](docs/screenshots/options.png)
 
 ![Searchable album picker with owned and selected filters](docs/screenshots/album-picker.png)
 
@@ -63,7 +69,7 @@ Set `IMMICH_URL` to the **internal** Immich root, such as `http://immich-server:
 docker compose up -d --build
 ```
 
-Point the existing HTTPS proxy at Pager's default `127.0.0.1:3102` listener. Sign in to Immich and choose **Pages → Create page**. Add albums, adjust the header, preview, and publish.
+Point the existing HTTPS proxy at Pager's default `127.0.0.1:3102` listener. Sign in to Immich and choose **Pages → Create page**. Add albums, choose branding, preview, and publish. Later edits autosave as a working draft until you update the live page.
 
 All Pager routes and assets use `/page/`; native Immich `/api/`, `/s/`, and `/share/` routes continue to the upstream. You can chain Pager in front of Immichinko or keep an Immicull custom server. See [deployment and configuration](docs/deployment.md) for exact setup, image tags, proxy trust, backups, and rollback.
 
@@ -74,6 +80,8 @@ Initial source review targets **Immich v3.3.1**, with an ARM64 runtime deploymen
 Use the source-build quick start for now. Hosted CI and prebuilt images are pending because GitHub Actions is currently disabled for the maintainer account; the workflows are committed and ready to run when that restriction is removed.
 
 The sidebar bridge is a maintained DOM integration rather than an official Immich plugin API. Use one Pager container per database. When upstream revocation fails, the overview is hidden; existing native links remain subject to Immich until the owner finishes synchronization. See [validation notes](docs/validation.md).
+
+**Upgrading an existing installation:** this update migrates Pager to schema version 2. Back up the complete stopped Pager volume first. Rolling back to an older image requires restoring that backup too. See [upgrade and rollback](docs/deployment.md#schema-upgrades).
 
 ## Development
 

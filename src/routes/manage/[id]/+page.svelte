@@ -1,19 +1,19 @@
 <script lang="ts">
-  import { goto, replaceState } from '$app/navigation';
-  import { untrack } from 'svelte';
-  import { Button, PasswordInput, Textarea } from '@immich/ui';
-  import AlbumPicker from '$lib/components/AlbumPicker.svelte';
+  import { goto, replaceState, beforeNavigate } from '$app/navigation';
+  import { untrack, onMount } from 'svelte';
+  import { Button, Textarea } from '@immich/ui';
   import Gallery from '$lib/components/Gallery.svelte';
+  import AlbumPicker from '$lib/components/AlbumPicker.svelte';
+  import BrandingSlot from '$lib/components/BrandingSlot.svelte';
+  import PhotoPicker from '$lib/components/PhotoPicker.svelte';
+  import PageOptions from '$lib/components/PageOptions.svelte';
+  import CopyLink from '$lib/components/CopyLink.svelte';
   import { readApiResponse } from '$lib/api-response';
-  import type {
-    DraftEditorPage as EditorPage,
-    GalleryPage,
-    PageInput,
-  } from '$lib/contracts';
+  import type { DraftEditorPage, GalleryPage, PageInput } from '$lib/contracts';
   import type { PageData } from './$types';
   let { data }: { data: PageData } = $props();
   const initial = untrack(() => data.page);
-  let saved = $state<EditorPage | null>(initial);
+  let saved = $state<DraftEditorPage | null>(initial);
   let fields = $state<PageInput>({
     title: initial?.title ?? '',
     slug: initial?.slug ?? '',
@@ -30,29 +30,46 @@
     password: '',
   });
   let busy = $state(false),
+    saving = $state(false),
     message = $state(''),
     success = $state(''),
-    preview = $state(false);
-  let slugEdited = $state(!!initial),
-    brandingVersion = $state(0);
-  let albumPickerOpen = $state(false);
-  let settingsOpen = $state(false);
-  let settingsDialog = $state<HTMLDialogElement>(null!);
+    preview = $state(false),
+    optionsOpen = $state(false),
+    albumsOpen = $state(false),
+    photoKind = $state<'logo' | 'banner' | null>(null),
+    brandingVersion = $state(0),
+    slugLocked = $state(!!initial?.slug),
+    conflict = $state(false),
+    failedSnapshot = $state<string | null>(null);
+  function snapshot() {
+    const { password: _password, passwordMode: _mode, ...values } = fields;
+    void _password;
+    void _mode;
+    return JSON.stringify(values);
+  }
+  let acknowledged = $state(untrack(() => snapshot()));
+  const dirty = $derived(snapshot() !== acknowledged);
   const selected = $derived(
     fields.albumIds
       .map((id) => data.albums.find((a) => a.id === id))
       .filter((a) => !!a),
   );
+  const logo = $derived(
+    saved?.logo
+      ? `/page/media/${saved.id}/branding/logo?preview=1&v=${brandingVersion}`
+      : null,
+  );
+  const banner = $derived(
+    saved?.banner
+      ? `/page/media/${saved.id}/branding/banner?preview=1&v=${brandingVersion}`
+      : null,
+  );
   const previewPage = $derived<GalleryPage>({
     ...fields,
     id: saved?.id ?? 'preview',
     title: fields.title || 'Your client page',
-    logo: saved?.logo
-      ? `/page/media/${saved.id}/branding/logo?preview=1&v=${brandingVersion}`
-      : null,
-    banner: saved?.banner
-      ? `/page/media/${saved.id}/branding/banner?preview=1&v=${brandingVersion}`
-      : null,
+    logo,
+    banner,
     albums: selected.map((a) => ({
       id: a.id,
       name: a.albumName,
@@ -64,13 +81,23 @@
       available: true,
     })),
   });
-  async function request(url: string, method: string, body?: unknown) {
+  let queue: Promise<unknown> = Promise.resolve();
+  function enqueue<T>(work: () => Promise<T>): Promise<T> {
+    const next = queue.catch(() => {}).then(work);
+    queue = next;
+    return next;
+  }
+  async function api<T = DraftEditorPage>(
+    url: string,
+    method: string,
+    body?: unknown,
+  ) {
     const response = await fetch(url, {
       method,
       headers:
         body instanceof FormData
           ? undefined
-          : { 'content-type': 'application/json' },
+          : { 'content-type': 'application/json', accept: 'application/json' },
       body:
         body instanceof FormData
           ? body
@@ -78,202 +105,290 @@
             ? undefined
             : JSON.stringify(body),
     });
-    return readApiResponse<EditorPage>(response);
+    try {
+      return await readApiResponse<T>(response);
+    } catch (cause) {
+      if (
+        response.status === 409 &&
+        cause instanceof Error &&
+        cause.message.includes('another tab')
+      )
+        conflict = true;
+      throw cause;
+    }
+  }
+  async function flush(force = false) {
+    return enqueue(async () => {
+      const json = snapshot();
+      if (json === acknowledged && (saved || !force)) return saved;
+      if (conflict)
+        throw Error(
+          'This draft changed in another tab. Copy your edits before reloading.',
+        );
+      const wasNew = !saved;
+      saving = true;
+      message = '';
+      try {
+        saved = await api<DraftEditorPage>(
+          saved ? `/page/api/pages/${saved.id}` : '/page/api/pages',
+          saved ? 'PUT' : 'POST',
+          { ...JSON.parse(json), expectedDraftRevision: saved?.draftRevision },
+        );
+        acknowledged = json;
+        failedSnapshot = null;
+        if (saved.slug) slugLocked = true;
+        if (wasNew) replaceState(`/page/manage/${saved.id}`, {});
+        return saved;
+      } catch (cause) {
+        failedSnapshot = json;
+        message =
+          cause instanceof Error ? cause.message : 'Could not save draft';
+        throw cause;
+      } finally {
+        saving = false;
+      }
+    });
+  }
+  $effect(() => {
+    const json = snapshot();
+    if (json === acknowledged || json === failedSnapshot || busy || conflict)
+      return;
+    const timer = setTimeout(() => void flush().catch(() => {}), 650);
+    return () => clearTimeout(timer);
+  });
+  beforeNavigate(({ cancel }) => {
+    if (
+      (dirty || saving) &&
+      !busy &&
+      !confirm('Some edits have not been saved. Leave this page?')
+    )
+      cancel();
+  });
+  onMount(() => {
+    if (new URL(location.href).searchParams.get('options') === '1')
+      optionsOpen = true;
+    const warn = (event: BeforeUnloadEvent) => {
+      if (dirty || saving) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  });
+  async function back() {
+    try {
+      await flush();
+      await goto('/page/manage');
+    } catch {
+      /* Keep unsaved edits visible. */
+    }
   }
   function select(id: string) {
     fields.albumIds = fields.albumIds.includes(id)
       ? fields.albumIds.filter((x) => x !== id)
       : [...fields.albumIds, id];
   }
-  function move(index: number, direction: number) {
-    const next = index + direction;
-    if (next < 0 || next >= fields.albumIds.length) return;
-    const ids = [...fields.albumIds];
-    [ids[index], ids[next]] = [ids[next], ids[index]];
-    fields.albumIds = ids;
-    fields.order = 'manual';
-  }
-  async function save() {
-    const wasNew = !saved;
-    saved = await request(
-      saved ? `/page/api/pages/${saved.id}` : '/page/api/pages',
-      saved ? 'PUT' : 'POST',
-      { ...fields, expectedDraftRevision: saved?.draftRevision },
-    );
-    if (wasNew) replaceState(`/page/manage/${saved!.id}`, {});
-    return saved!;
-  }
-  async function perform(
-    action: 'save' | 'publish' | 'retry' | 'unpublish' | 'delete',
-  ) {
+  async function perform(action: 'publish' | 'retry' | 'unpublish' | 'delete') {
     if (
       action === 'delete' &&
       !confirm('Delete this page and revoke its dedicated album links?')
+    )
+      return;
+    if (
+      action === 'unpublish' &&
+      !confirm('Unpublish this page and revoke its album links?')
     )
       return;
     busy = true;
     message = '';
     success = '';
     try {
-      if (action === 'save' || action === 'publish') await save();
-      if (action === 'delete' && saved) {
-        await request(`/page/api/pages/${saved.id}`, 'DELETE');
+      if (action === 'publish') await flush(true);
+      else await queue.catch(() => {});
+      if (!saved) return;
+      const result = await enqueue(() =>
+        api<DraftEditorPage | { deleted: true }>(
+          `/page/api/pages/${saved!.id}${action === 'delete' ? '' : `/${action}`}`,
+          action === 'delete' ? 'DELETE' : 'POST',
+          {
+            password: fields.password,
+            passwordMode: fields.passwordMode,
+            expectedDraftRevision: saved!.draftRevision,
+          },
+        ),
+      );
+      if ('deleted' in result) {
         await goto('/page/manage');
         return;
       }
-      if (action !== 'save' && saved)
-        saved = await request(`/page/api/pages/${saved.id}/${action}`, 'POST', {
-          password: fields.password,
-          passwordMode: fields.passwordMode,
-          expectedDraftRevision: saved.draftRevision,
-        });
-      success =
-        action === 'save'
-          ? 'Changes saved.'
-          : action === 'publish'
-            ? 'Page published. Your client link is ready.'
-            : action === 'unpublish'
-              ? 'Page unpublished and album links revoked.'
-              : 'Synchronization complete.';
-      fields.password = '';
-    } catch (cause) {
-      message = cause instanceof Error ? cause.message : 'The operation failed';
-      if (saved) {
-        try {
-          saved = await request(`/page/api/pages/${saved.id}`, 'GET');
-        } catch {
-          /* Preserve the last known state. */
-        }
+      saved = result;
+      if (action === 'publish' || action === 'retry') {
+        fields.password = '';
+        fields.passwordMode = 'keep';
       }
-    } finally {
-      busy = false;
-    }
-  }
-  async function upload(event: Event, kind: 'logo' | 'banner') {
-    const input = event.currentTarget as HTMLInputElement,
-      file = input.files?.[0];
-    if (!file || !saved) return;
-    if (file.size > 5 * 1024 * 1024) {
-      message = 'Choose a branding image that is 5 MB or smaller.';
-      input.value = '';
-      return;
-    }
-    busy = true;
-    message = '';
-    try {
-      const form = new FormData();
-      form.set('image', file);
-      form.set('expectedDraftRevision', String(saved.draftRevision));
-      saved = await request(
-        `/page/api/pages/${saved.id}/branding/${kind}`,
-        'POST',
-        form,
-      );
-      brandingVersion++;
-    } catch (cause) {
-      message = cause instanceof Error ? cause.message : 'Upload failed';
-    } finally {
-      busy = false;
-      input.value = '';
-    }
-  }
-  async function removeImage(kind: 'logo' | 'banner') {
-    if (!saved) return;
-    busy = true;
-    message = '';
-    try {
-      saved = await request(
-        `/page/api/pages/${saved.id}/branding/${kind}`,
-        'DELETE',
-        { expectedDraftRevision: saved.draftRevision },
-      );
-      brandingVersion++;
+      success =
+        action === 'publish'
+          ? 'Page published. Your client link is ready.'
+          : action === 'unpublish'
+            ? 'Page unpublished and album links revoked.'
+            : 'Synchronization complete.';
     } catch (cause) {
       message =
-        cause instanceof Error ? cause.message : 'Could not remove image';
+        cause instanceof Error
+          ? cause.message
+          : 'Could not complete this operation';
+      if (saved) {
+        try {
+          saved = await api(`/page/api/pages/${saved.id}`, 'GET');
+        } catch {
+          /* Preserve the last known draft. */
+        }
+      }
+      if (message.toLowerCase().includes('password')) optionsOpen = true;
     } finally {
       busy = false;
     }
   }
-  async function copyLink() {
+  async function branding(
+    kind: 'logo' | 'banner',
+    source: File | string | null,
+  ) {
+    if (source instanceof File && source.size > 5 * 1024 * 1024) {
+      message = 'Choose a branding image that is 5 MB or smaller.';
+      throw Error(message);
+    }
+    busy = true;
+    message = '';
+    success = '';
     try {
-      await navigator.clipboard.writeText(
-        `${location.origin}/page/${saved!.slug}`,
-      );
-      success = 'Link copied.';
-    } catch {
-      message = `Your page link: ${location.origin}/page/${saved!.slug}`;
+      await flush(true);
+      await enqueue(async () => {
+        let body: unknown = { expectedDraftRevision: saved!.draftRevision };
+        if (source instanceof File) {
+          const form = new FormData();
+          form.set('image', source);
+          form.set('expectedDraftRevision', String(saved!.draftRevision));
+          body = form;
+        } else if (source)
+          body = {
+            assetId: source,
+            expectedDraftRevision: saved!.draftRevision,
+          };
+        saved = await api(
+          `/page/api/pages/${saved!.id}/branding/${kind}`,
+          source === null ? 'DELETE' : 'POST',
+          body,
+        );
+        brandingVersion++;
+      });
+    } catch (cause) {
+      message =
+        cause instanceof Error ? cause.message : 'Could not update branding';
+      throw cause;
+    } finally {
+      busy = false;
     }
   }
 </script>
 
 <svelte:head
-  ><title>{saved?.title || 'New page'} · ImmichPager</title></svelte:head
+  ><title>{fields.title || 'New page'} · ImmichPager</title></svelte:head
 >
-{#if preview}
-  <div class="preview-toolbar">
-    <button onclick={() => (preview = false)}>← Back to editor</button><span
-      >Live preview · unsaved changes included</span
-    >
+{#if preview}<div class="preview-toolbar">
+    <Button variant="ghost" onclick={() => (preview = false)}
+      >← Back to editor</Button
+    ><span>Private preview · includes your draft changes</span>
   </div>
   <Gallery page={previewPage} preview />
 {:else}
   <main class="editor">
     <h1 class="sr-only">{fields.title || 'New client page'}</h1>
     <header class="editor-toolbar">
-      <a class="back" href="/page/manage" aria-label="Back to client pages">←</a
+      <Button
+        variant="ghost"
+        color="secondary"
+        aria-label="Back to client pages"
+        onclick={back}>←</Button
       >
-      <span class="draft-status"
-        >{saved?.status === 'published'
-          ? 'Published'
-          : saved?.status === 'error'
-            ? 'Synchronization needed'
-            : 'Draft'}</span
-      >
+      <div class="draft-status">
+        <span
+          >{saved?.status === 'error'
+            ? 'Needs attention'
+            : saved?.publishedSlug
+              ? 'Live'
+              : 'Draft'}{#if saved?.publishedSlug && (dirty || saved.hasUnpublishedChanges)}
+            · Draft changes{/if}</span
+        ><small aria-live="polite" data-testid="save-state"
+          >{saving
+            ? 'Saving…'
+            : failedSnapshot
+              ? 'Couldn’t save'
+              : dirty
+                ? 'Unsaved changes'
+                : 'All changes saved'}</small
+        >
+      </div>
       <div class="actions">
-        <Button
+        {#if failedSnapshot && !conflict}<Button
+            variant="ghost"
+            onclick={() => {
+              failedSnapshot = null;
+              void flush().catch(() => {});
+            }}>Retry save</Button
+          >{/if}<CopyLink slug={saved?.publishedSlug ?? null} /><Button
           variant="ghost"
           color="secondary"
-          onclick={() => {
-            settingsDialog.showModal();
-            settingsOpen = true;
-          }}>Page settings</Button
-        >
-        <Button
+          onclick={() => (optionsOpen = true)}>Options</Button
+        ><Button
           variant="ghost"
           color="secondary"
           onclick={() => (preview = true)}>Preview</Button
-        >
-        <Button
-          variant="ghost"
-          onclick={() => perform('save')}
-          disabled={busy || saved?.status === 'error'}>Save changes</Button
-        >
-        <Button
+        ><Button
           shape="round"
-          disabled={busy || saved?.status === 'error'}
+          disabled={busy || conflict || saved?.status === 'error'}
           onclick={() => perform('publish')}
           >{busy
             ? 'Working…'
-            : saved?.status === 'published'
-              ? 'Publish changes'
+            : saved?.publishedSlug
+              ? 'Update live page'
               : 'Publish page'}</Button
         >
       </div>
     </header>
-    {#if message && !settingsOpen}<div class="notice error" role="alert">
+    {#if message && !optionsOpen && !photoKind}<div
+        class="notice error"
+        role="alert"
+      >
         {message}
       </div>{/if}
     {#if success}<div class="notice" role="status">{success}</div>{/if}
     {#if saved?.status === 'error'}<div class="notice">
         <p>
-          This page is hidden until its album links are synchronized. Enter its
-          current password in Page settings if protected, then retry.
+          This page is hidden while its album links need synchronization. Open
+          Options to enter its password if protected.
         </p>
         <Button disabled={busy} onclick={() => perform('retry')}
           >Retry synchronization</Button
         >
       </div>{/if}
+    <div class="branding-grid">
+      <BrandingSlot
+        kind="logo"
+        image={logo}
+        {busy}
+        onchoose={() => (photoKind = 'logo')}
+        onfile={(file) => void branding('logo', file).catch(() => {})}
+        onremove={() => void branding('logo', null).catch(() => {})}
+      /><BrandingSlot
+        kind="banner"
+        image={banner}
+        {busy}
+        onchoose={() => (photoKind = 'banner')}
+        onfile={(file) => void branding('banner', file).catch(() => {})}
+        onremove={() => void branding('banner', null).catch(() => {})}
+      />
+    </div>
     <section class="page-heading">
       <Textarea
         variant="ghost"
@@ -281,41 +396,42 @@
         aria-label="Title"
         placeholder="Add a title"
         maxlength={160}
+        disabled={busy}
         bind:value={fields.title}
         oninput={(event) => {
           const title = event.currentTarget.value.replaceAll('\n', ' ');
           event.currentTarget.value = title;
-          if (!slugEdited)
+          if (!slugLocked)
             fields.slug = title
               .toLowerCase()
               .replace(/[^a-z0-9]+/g, '-')
               .replace(/^-|-$/g, '')
               .slice(0, 80);
         }}
-      />
-      <Textarea
+      /><Textarea
         variant="ghost"
         class="page-description"
         aria-label="Description"
         placeholder="Add a description"
         maxlength={2000}
+        disabled={busy}
         bind:value={fields.description}
       />
     </section>
-    {#if selected.length}
-      <section class="selected-albums">
+    {#if selected.length}<section class="selected-albums">
         <div class="bar">
           <h2>
             {selected.length}
             {selected.length === 1 ? 'album' : 'albums'}
           </h2>
-          <Button variant="ghost" onclick={() => (albumPickerOpen = true)}
-            >＋ Add albums</Button
+          <Button
+            variant="ghost"
+            disabled={busy}
+            onclick={() => (albumsOpen = true)}>＋ Add albums</Button
           >
         </div>
         <div class="selected-grid">
-          {#each selected as album (album.id)}
-            <article class="selected-album">
+          {#each selected as album (album.id)}<article class="selected-album">
               <div class="selected-cover">
                 {#if album.albumThumbnailAssetId}<img
                     src={`/page/api/albums/${album.id}/cover`}
@@ -325,312 +441,61 @@
                     loading="lazy"
                   />{:else}<span aria-hidden="true">▧</span>{/if}<button
                   class="remove-album"
+                  disabled={busy}
                   aria-label={`Remove ${album.albumName}`}
                   onclick={() => select(album.id)}>×</button
                 >
               </div>
               <h3>{album.albumName}</h3>
               <p class="muted">{album.assetCount} items</p>
-            </article>
-          {/each}
+            </article>{/each}
         </div>
       </section>
-    {:else}
-      <section class="empty-albums">
+    {:else}<section class="empty-albums">
         <div>
           <p>ADD ALBUMS</p>
-          <button class="add-albums" onclick={() => (albumPickerOpen = true)}
+          <button
+            class="add-albums"
+            disabled={busy}
+            onclick={() => (albumsOpen = true)}
             ><span aria-hidden="true">＋</span><span>Select albums</span
             ></button
           >
         </div>
-      </section>
-    {/if}
+      </section>{/if}
     <AlbumPicker
       albums={data.albums}
       bind:albumIds={fields.albumIds}
-      bind:open={albumPickerOpen}
+      bind:open={albumsOpen}
     />
-    <dialog
-      bind:this={settingsDialog}
-      class="settings-dialog"
-      aria-labelledby="settings-dialog-title"
-      onclose={() => (settingsOpen = false)}
-    >
-      <header class="dialog-heading">
-        <h2 id="settings-dialog-title">Page settings</h2>
-        <Button
-          variant="ghost"
-          color="secondary"
-          onclick={() => settingsDialog.close()}
-          aria-label="Close page settings">×</Button
-        >
-      </header>
-      {#if message}<div class="notice error" role="alert">{message}</div>{/if}
-      <div class="settings-content">
-        <section>
-          <h2>Page link</h2>
-          <label
-            >Page URL<span class="url-input"
-              ><span>/page/</span><input
-                aria-label="Page slug"
-                bind:value={fields.slug}
-                oninput={() => (slugEdited = true)}
-                pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                maxlength="80"
-                placeholder="acme"
-              /></span
-            ></label
-          >
-        </section>
-        <section>
-          <h2>Header & theme</h2>
-          <div class="two">
-            <label
-              >Appearance<select bind:value={fields.theme}
-                ><option value="dark">Dark</option><option value="light"
-                  >Light</option
-                ><option value="system">System</option></select
-              ></label
-            ><label
-              >Header alignment<select bind:value={fields.alignment}
-                ><option value="left">Left</option><option value="center"
-                  >Centered</option
-                ></select
-              ></label
-            >
-          </div>
-          <div class="colors">
-            <label
-              >Accent<input type="color" bind:value={fields.accent} /></label
-            ><label
-              >Background<input
-                type="color"
-                value={fields.background ||
-                  (fields.theme === 'light' ? '#ffffff' : '#000000')}
-                oninput={(e) => (fields.background = e.currentTarget.value)}
-              /></label
-            ><label
-              >Text<input
-                type="color"
-                value={fields.foreground ||
-                  (fields.theme === 'light' ? '#191919' : '#f5f5f5')}
-                oninput={(e) => (fields.foreground = e.currentTarget.value)}
-              /></label
-            >
-          </div>
-          <button
-            class="text-button"
-            onclick={() => {
-              fields.background = null;
-              fields.foreground = null;
-            }}>Reset theme colors</button
-          >
-          <div class="two">
-            {#each ['logo', 'banner'] as imageKind}{@const kind = imageKind as
-                | 'logo'
-                | 'banner'}
-              <div class="upload">
-                <label
-                  >{kind === 'logo' ? 'Logo' : 'Banner'}<input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    disabled={!saved || busy}
-                    onchange={(e) => upload(e, kind)}
-                  /></label
-                >{#if saved?.[kind]}<button
-                    type="button"
-                    class="text-button"
-                    onclick={() => removeImage(kind)}>Remove {kind}</button
-                  >{/if}
-              </div>{/each}
-          </div>
-          <small class="muted"
-            >{saved
-              ? 'JPEG, PNG, or WebP · up to 5 MB'
-              : 'Save your page to upload branding images.'}</small
-          >
-          {#if saved?.banner}<label
-              >Banner crop position<input
-                type="range"
-                min="0"
-                max="100"
-                bind:value={fields.bannerPosition}
-              /></label
-            >{/if}
-        </section>
-        <section>
-          <h2>Sharing</h2>
-          <label
-            >Password protection<select bind:value={fields.passwordMode}
-              ><option value="keep"
-                >{saved?.hasPassword
-                  ? 'Keep current password'
-                  : 'No password'}</option
-              ><option value="set">Set a password</option
-              >{#if saved?.hasPassword}<option value="remove"
-                  >Remove password</option
-                >{/if}</select
-            ></label
-          >
-          {#if fields.passwordMode === 'set' || (saved?.hasPassword && fields.passwordMode === 'keep')}<label
-              >{fields.passwordMode === 'set'
-                ? 'New password or PIN'
-                : 'Current password (for synchronization)'}<PasswordInput
-                bind:value={fields.password}
-                autocomplete="new-password"
-                placeholder="At least 4 characters"
-              /></label
-            >{/if}
-          <p class="hint muted">
-            The same password protects this page and its dedicated Immich album
-            links. Immich may ask for it again when an album opens.
-          </p>
-          {#if saved?.status === 'published'}<div class="actions">
-              <button onclick={copyLink}>Copy client link</button><a
-                href={`/page/${saved.slug}`}
-                target="_blank"
-                rel="noreferrer">Open page ↗</a
-              >
-            </div>{/if}
-          {#if saved}<div class="danger-zone">
-              {#if saved.status === 'published'}<button
-                  disabled={busy}
-                  onclick={() => perform('unpublish')}>Unpublish</button
-                >{/if}<button
-                class="delete"
-                disabled={busy}
-                onclick={() => perform('delete')}>Delete page</button
-              >
-            </div>{/if}
-        </section>
-
-        <section>
-          <label
-            >Album order<select bind:value={fields.order}
-              ><option value="newest">Newest first</option><option
-                value="manual">Manual within year</option
-              ></select
-            ></label
-          >
-          {#if fields.order === 'manual' && selected.length}<div
-              class="ordering"
-            >
-              <h3>Selected album order</h3>
-              <p class="hint muted">
-                Albums stay grouped by year. Move them to set their order within
-                each year.
-              </p>
-              {#each selected as album, index (album.id)}<div class="order-row">
-                  <span>{album.albumName}</span><button
-                    aria-label={`Move ${album.albumName} up`}
-                    disabled={index === 0}
-                    onclick={() => move(index, -1)}>↑</button
-                  ><button
-                    aria-label={`Move ${album.albumName} down`}
-                    disabled={index === selected.length - 1}
-                    onclick={() => move(index, 1)}>↓</button
-                  >
-                </div>{/each}
-            </div>{/if}
-        </section>
-      </div>
-      <footer class="dialog-footer">
-        <Button shape="round" onclick={() => settingsDialog.close()}
-          >Done</Button
-        >
-      </footer>
-    </dialog>
+    {#if optionsOpen}<PageOptions
+        bind:fields
+        {saved}
+        albums={data.albums}
+        {message}
+        {busy}
+        {saving}
+        onClose={() => (optionsOpen = false)}
+        onSlugEdit={() => (slugLocked = true)}
+        onpublish={() => {
+          optionsOpen = false;
+          void perform('publish');
+        }}
+        onaction={(action) => {
+          optionsOpen = false;
+          void perform(action);
+        }}
+      />{/if}
+    {#if photoKind}<PhotoPicker
+        kind={photoKind}
+        albums={data.albums}
+        onClose={() => (photoKind = null)}
+        onchoose={(id) => branding(photoKind!, id)}
+      />{/if}
   </main>
 {/if}
 
 <style>
-  .two {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
-  .colors {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 14px;
-  }
-  input[type='color'] {
-    height: 40px;
-    padding: 4px;
-    cursor: pointer;
-  }
-  .url-input {
-    display: flex;
-    align-items: center;
-    border: 1px solid #555;
-    border-radius: 8px;
-  }
-  .url-input > span {
-    padding-left: 12px;
-    opacity: 0.5;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-  .url-input input {
-    border: 0;
-    padding-left: 3px;
-    min-width: 0;
-  }
-  .text-button {
-    padding: 2px 0;
-    border: 0;
-    font-size: 12px;
-    text-decoration: underline;
-    opacity: 0.65;
-  }
-  .upload input {
-    font-size: 11px;
-    padding: 10px 6px;
-  }
-  .hint {
-    font-size: 12px;
-    line-height: 1.7;
-  }
-  .danger-zone {
-    margin-top: 24px;
-    display: flex;
-    gap: 12px;
-  }
-  .delete {
-    color: #ffb4ab;
-  }
-  .ordering {
-    border-top: 1px solid #333;
-    margin-top: 32px;
-    padding-top: 20px;
-  }
-  .order-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    margin-top: 12px;
-    font-size: 13px;
-  }
-  .order-row span {
-    flex: 1;
-  }
-  .order-row button {
-    padding: 6px 12px;
-  }
-  .preview-toolbar {
-    padding: 14px 24px;
-    display: flex;
-    justify-content: space-between;
-    gap: 16px;
-    align-items: center;
-    background: #161616;
-    font-size: 12px;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-  }
-
   .editor {
     padding: 0 40px 56px;
     max-width: 1800px;
@@ -638,26 +503,35 @@
     min-height: 100dvh;
   }
   .editor-toolbar {
-    min-height: 76px;
+    min-height: 80px;
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 14px;
     border-bottom: 1px solid #292a2d;
   }
   .editor-toolbar .actions {
     margin-left: auto;
-    gap: 8px;
-  }
-  .back {
-    font-size: 28px;
-    text-decoration: none;
+    gap: 6px;
   }
   .draft-status {
     color: #9aa0a6;
-    font-size: 14px;
+    font-size: 13px;
+    display: grid;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .draft-status small {
+    font-size: 11px;
+    color: #78818d;
+  }
+  .branding-grid {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 28px;
+    margin-top: 40px;
   }
   .page-heading {
-    padding-top: 84px;
+    padding-top: 40px;
     max-width: 1300px;
   }
   .page-heading :global(.page-title) {
@@ -668,7 +542,7 @@
     font-size: 60px;
     line-height: 1.2;
     font-weight: 410;
-    color: var(--pager-primary);
+    color: #accbfa;
   }
   .page-heading :global(.page-title::placeholder) {
     color: #53647c;
@@ -689,10 +563,10 @@
   }
   .page-heading :global(textarea:focus-visible) {
     outline: none;
-    box-shadow: 0 2px var(--pager-primary);
+    box-shadow: 0 2px #accbfa;
   }
   .empty-albums {
-    margin-top: 200px;
+    margin-top: 80px;
     display: flex;
     justify-content: center;
   }
@@ -711,20 +585,20 @@
     border: 0;
     border-radius: 16px;
     padding: 32px;
-    background: var(--pager-surface);
+    background: #101114;
     font-size: 18px;
     text-align: left;
   }
   .add-albums > span:first-child {
-    color: var(--pager-primary);
+    color: #accbfa;
     font-size: 24px;
   }
   .add-albums:hover {
     background: #25272c;
-    color: var(--pager-primary);
+    color: #accbfa;
   }
   .selected-albums {
-    margin-top: 64px;
+    margin-top: 48px;
   }
   .selected-albums h2 {
     font-size: 18px;
@@ -737,7 +611,7 @@
   .selected-cover {
     aspect-ratio: 1;
     position: relative;
-    background: var(--pager-surface);
+    background: #101114;
     border-radius: 16px;
     overflow: hidden;
     display: grid;
@@ -769,81 +643,49 @@
     font-size: 14px;
     margin-top: 4px;
   }
-  dialog {
-    background: #000;
-    color: var(--pager-fg);
-    border: 1px solid #34363b;
-    border-radius: 20px;
-    padding: 24px;
-    margin: auto;
-    width: min(1100px, calc(100% - 40px));
-    max-height: calc(100dvh - 48px);
-  }
-  dialog::backdrop {
-    background: #000b;
-  }
-  .settings-dialog {
-    width: min(640px, calc(100% - 40px));
-  }
-  .dialog-heading {
+  .preview-toolbar {
+    padding: 12px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding-bottom: 20px;
+    background: #101114;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    font-size: 13px;
   }
-  .dialog-heading h2 {
-    font-size: 22px;
-    margin: 0;
-  }
-  .dialog-footer {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 24px;
-    padding-top: 24px;
-  }
-  .settings-content section {
-    border-top: 1px solid #303030;
-    padding-block: 24px;
-  }
-  .settings-content h2 {
-    font-size: 18px;
-  }
-  .settings-content label {
-    font-size: 14px;
-  }
-  @media (max-width: 700px) {
-    .editor {
-      padding: 0 20px 32px;
-    }
+  @media (max-width: 900px) {
     .editor-toolbar {
       flex-wrap: wrap;
       padding-block: 12px;
-      gap: 12px;
     }
     .editor-toolbar .actions {
       width: 100%;
-      gap: 4px;
-      justify-content: space-between;
+      flex-wrap: wrap;
     }
-    .editor-toolbar :global(button) {
-      font-size: 12px;
-      padding-inline: 8px;
+    .branding-grid {
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 16px;
+    }
+  }
+  @media (max-width: 600px) {
+    .editor {
+      padding: 0 20px 32px;
+    }
+    .branding-grid {
+      grid-template-columns: 1fr;
+      margin-top: 24px;
     }
     .page-heading {
-      padding-top: 40px;
+      padding-top: 28px;
     }
     .page-heading :global(.page-title) {
       font-size: 36px;
     }
-    .empty-albums {
-      margin-top: 120px;
-    }
-    dialog {
-      padding: 16px;
-      width: calc(100% - 24px);
-      max-height: calc(100dvh - 24px);
+    .editor-toolbar :global(button) {
+      font-size: 12px;
+      padding-inline: 10px;
     }
     .selected-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -30,7 +30,8 @@ export const POST: RequestHandler = (event) =>
         bytes = await boundedImage(
           await client.assetMedia(
             asset.id,
-            ['image/png', 'image/webp'].includes(asset.originalMimeType)
+            ['image/png', 'image/webp'].includes(asset.originalMimeType) ||
+              /\.(png|webp)$/i.test(asset.originalFileName)
               ? 'original'
               : 'preview',
           ),

@@ -124,7 +124,7 @@ it('migrates v1 published pages, branding, and sessions without changing the liv
       revision: 7,
       status: 'published' as const,
       intent: null,
-      passwordHash: null,
+      passwordHash: 'existing-password-hash',
       logo: true,
       banner: false,
       createdAt: '2026-01-01',
@@ -139,6 +139,10 @@ it('migrates v1 published pages, branding, and sessions without changing the liv
     store.close();
     store = new Store(path);
     expect(store.editor('legacy', 'alice').draftRevision).toBe(7);
+    expect(store.editor('legacy', 'alice').hasPassword).toBe(true);
+    expect(JSON.stringify(store.draft('legacy', 'alice'))).not.toContain(
+      'existing-password-hash',
+    );
     expect(store.editor('legacy', 'alice').hasUnpublishedChanges).toBe(false);
     expect(store.draftBranding('legacy', 'logo')).toEqual(
       new Uint8Array([3, 4]),
@@ -149,4 +153,29 @@ it('migrates v1 published pages, branding, and sessions without changing the liv
     store.close();
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+it('recovers a failed publication and commits matching draft branding on retry', async () => {
+  const { store, drafts, upstream } = setup();
+  let draft = await drafts.save('alice', null, values);
+  store.changeDraftBranding(
+    store.draft(draft.id, 'alice'),
+    'banner',
+    new Uint8Array([9, 8]),
+  );
+  draft = store.editor(draft.id, 'alice');
+  upstream.createShare.mockRejectedValueOnce(Error('offline'));
+  await expect(
+    drafts.publish('alice', draft.id, {
+      password: '',
+      passwordMode: 'keep',
+      expectedDraftRevision: draft.draftRevision,
+    }),
+  ).rejects.toThrow('sharing is incomplete');
+  expect(store.publicPage('client')).toBeNull();
+  expect(store.branding(draft.id, 'banner')).toBeNull();
+  const result = await drafts.operation('alice', draft.id, 'retry');
+  expect('publishedSlug' in result && result.publishedSlug).toBe('client');
+  expect(store.branding(draft.id, 'banner')).toEqual(new Uint8Array([9, 8]));
+  expect(store.editor(draft.id, 'alice').hasUnpublishedChanges).toBe(false);
 });

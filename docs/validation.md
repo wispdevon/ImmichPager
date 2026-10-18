@@ -5,8 +5,8 @@
 - Node 22.23.3 and pnpm 11.28.5; frozen dependency installation.
 - TypeScript/Svelte checks with zero application errors or warnings.
 - ESLint and Prettier checks.
-- 35 domain/integration tests across ownership, slug validation, salted password hashing, interrupted creates/deletes, native slug preservation, public credential isolation, SQLite restart recovery, grouping, proxy streaming, and WebSocket upgrades.
-- Five production-browser scenarios covering desktop/mobile grids, year collapse, native viewer navigation, branded protected publishing, owner isolation, sidebar embedding, same-origin writes, monthly additions, password rotation/session invalidation, rejected SVG uploads, and unpublish revocation.
+- 55 domain/integration tests across ownership, slug validation, salted password hashing, interrupted creates/deletes, native slug preservation, public credential isolation, SQLite restart recovery, grouping, proxy streaming, and WebSocket upgrades.
+- Seven production-browser scenarios covering desktop/mobile grids, year collapse, native viewer navigation, branded protected publishing, owner isolation, sidebar embedding, same-origin writes, monthly additions, password rotation/session invalidation, rejected SVG uploads, and unpublish revocation.
 - Production build and runtime dependency audit with no known advisories at implementation time.
 
 ## Visual comparison
@@ -17,13 +17,19 @@ Screenshots in `docs/screenshots/` are actual browser captures. The revised edit
 
 Initial validation used the repository's automated Playwright suite with the installed Chromium executable. During live deployment, the browser runtime reported no connected browser backends, so an existing signed-in Immich browser session was unavailable. Browser tests use an isolated fixture and remain reproducible in CI.
 
+## Drafts and branding update
+
+Schema v1-to-v2 migration is tested with a published page, image bytes, a password hash, and a client session. Working edits and branding do not change public settings/media or invalidate live sessions. Revision conflicts preserve the second tab's edits; failed publication can retry and commit matching branding. PNG transparency, bounded streaming, owned-photo filtering, structured v3 search fields, and restricted raster media/redirects are covered by tests.
+
+Browser scenarios verify photo pagination/search, album and favorites filtering, logo selection, dropped branding before a title exists, private autosaving, explicit protected publication, header-only updates, desktop/mobile Options, copy-to-clipboard, and stale tabs. The browser runtime reported no connected backend; checks use the project's isolated Playwright/Chromium fixture, not a real library. No real library assets are selected or published by these checks.
+
 ## Empty-response regression
 
 The user confirmed Publish page triggered the error. Caddy's log records the matching initial draft-creation POST failing with EOF / HTTP 502 before the draft was persisted. Pager used Node's five-second idle keepalive, while Caddy pools upstream connections for two minutes. [Caddy documents failed non-idempotent requests when the upstream's keepalive is shorter](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy#the-http-transport). The gateway now keeps idle connections for three minutes, with a longer header timeout. A wire-level test reuses the same connection for a POST after 6.5 idle seconds and verifies the advertised timeout exceeds Caddy's pool duration.
 
 The editor reports status-specific errors for empty/non-JSON responses without discarding fields or automatically replaying writes. Decoder tests cover empty errors, invalid successes, session expiry, and proxy HTML. A browser scenario injects the empty 502 during Publish page, confirms the draft survives, then retries through a complete native-share publication.
 
-Independently, an oversized request reproduced the same parser failure with an empty HTTP 413 through the live gateway. The gateway now returns a JSON error for that case. Branding images larger than 5 MiB are rejected before upload, with the message visible inside Page settings. The gateway regression failed against the old code; the browser scenario also verifies that oversized branding makes no upload request.
+Independently, an oversized request reproduced the same parser failure with an empty HTTP 413 through the live gateway. The gateway now returns a JSON error for that case. Branding images larger than 5 MiB are rejected before upload, with an inline message next to the editor. The gateway regression failed against the old code; the browser scenario also verifies that oversized branding makes no upload request.
 
 ## Compatibility limits
 

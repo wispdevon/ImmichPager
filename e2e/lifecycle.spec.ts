@@ -24,7 +24,11 @@ test('monthly additions keep the URL, password rotation invalidates sessions, an
     (
       await page.request.post(`/page/api/pages/${record.id}/publish`, {
         headers,
-        data: { password: 'old-pin' },
+        data: {
+          password: 'old-pin',
+          passwordMode: 'set',
+          expectedDraftRevision: record.draftRevision,
+        },
       })
     ).ok(),
   ).toBe(true);
@@ -41,6 +45,7 @@ test('monthly additions keep the URL, password rotation invalidates sessions, an
       ...settings,
       albumIds: [albums[0].id, albums[1].id],
       password: 'new-pin',
+      expectedDraftRevision: record.draftRevision,
     },
   });
   expect(updated.ok()).toBe(true);
@@ -50,12 +55,16 @@ test('monthly additions keep the URL, password rotation invalidates sessions, an
         `/page/media/${record.id}/album/${albums[0].id}`,
       )
     ).status(),
-  ).toBe(404);
+  ).toBe(200);
   expect(
     (
-      await page.request.post(`/page/api/pages/${record.id}/retry`, {
+      await page.request.post(`/page/api/pages/${record.id}/publish`, {
         headers,
-        data: { password: 'new-pin' },
+        data: {
+          password: 'new-pin',
+          passwordMode: 'set',
+          expectedDraftRevision: (await updated.json()).draftRevision,
+        },
       })
     ).ok(),
   ).toBe(true);
@@ -75,6 +84,13 @@ test('monthly additions keep the URL, password rotation invalidates sessions, an
     {
       headers,
       multipart: {
+        expectedDraftRevision: String(
+          (
+            await (
+              await page.request.get(`/page/api/pages/${record.id}`)
+            ).json()
+          ).draftRevision,
+        ),
         image: {
           name: 'test.svg',
           mimeType: 'image/svg+xml',

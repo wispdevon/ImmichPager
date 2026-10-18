@@ -1,39 +1,80 @@
 <script lang="ts">
+  import { Button, Input } from '@immich/ui';
+  import CopyLink from '$lib/components/CopyLink.svelte';
   import type { PageData } from './$types';
   let { data }: { data: PageData } = $props();
+  let search = $state('');
+  const visible = $derived(
+    data.pages.filter((p) =>
+      `${p.title} ${p.slug}`.toLowerCase().includes(search.toLowerCase()),
+    ),
+  );
 </script>
 
 <svelte:head><title>Pages · ImmichPager</title></svelte:head>
 <main class="shell">
-  <div class="bar">
-    <div>
-      <p class="eyebrow">IMMICH / PAGES</p>
-      <h1>Client pages</h1>
-      <p class="muted">One link for every chapter of your work.</p>
+  <header class="pages-toolbar">
+    <h1>Pages</h1>
+    <div class="search">
+      <Input
+        type="search"
+        aria-label="Search pages"
+        placeholder="Search pages"
+        bind:value={search}
+      />
     </div>
-    <a class="new-page primary" href="/page/manage/new">＋ Create page</a>
-  </div>
-  <div class="list-heading">
-    <span>Page</span><span>Albums</span><span>Status</span>
-  </div>
-  {#each data.pages as page (page.id)}
-    <a class="page-row" href={`/page/manage/${page.id}`}
-      ><div>
-        <h2>{page.title}</h2>
-        <p class="muted">/page/{page.slug}</p>
+    <Button shape="round" href="/page/manage/new">＋ Create page</Button>
+  </header>
+  {#each visible as page (page.id)}<article class="page-row">
+      <a class="page-title" href={`/page/manage/${page.id}`}
+        ><h2>{page.title || 'Untitled page'}</h2>
+        <p class="muted">
+          {page.publishedSlug
+            ? `/page/${page.publishedSlug}`
+            : page.slug
+              ? `/page/${page.slug}`
+              : 'Add a title to set the URL'}
+        </p>
+        <div class="page-meta">
+          <span>{page.albumIds.length} albums</span><span
+            class:live={!!page.publishedSlug}
+            >{page.status === 'error'
+              ? 'Needs attention'
+              : page.publishedSlug
+                ? 'Published'
+                : 'Draft'}</span
+          >{#if page.publishedSlug && page.hasUnpublishedChanges}<span
+              >Unpublished changes</span
+            >{/if}
+        </div></a
+      >
+      <div class="row-actions">
+        <CopyLink slug={page.publishedSlug} />{#if page.publishedSlug}<Button
+            variant="ghost"
+            color="secondary"
+            href={`/page/${page.publishedSlug}`}
+            target="_blank"
+            aria-label={`Open ${page.title}`}>↗</Button
+          >{/if}<Button
+          variant="ghost"
+          color="secondary"
+          href={`/page/manage/${page.id}?options=1`}
+          aria-label={`Options for ${page.title || 'Untitled page'}`}>⋯</Button
+        >
       </div>
-      <span>{page.albumIds.length}</span><span
-        class:published={page.status === 'published'}
-        >{page.status === 'error' ? 'Needs attention' : page.status}</span
-      ></a
-    >
+    </article>
   {:else}<div class="empty">
-      <div class="empty-icon" aria-hidden="true">▦</div>
-      <h2>Your first client page starts here</h2>
+      <h2>
+        {search ? 'No matching pages' : 'Your first client page starts here'}
+      </h2>
       <p class="muted">
-        Choose albums from Immich, make it yours, and share one persistent link.
+        {search
+          ? 'Try another title or URL.'
+          : 'Choose albums, add your branding, and share one persistent link.'}
       </p>
-      <a href="/page/manage/new">Create a page →</a>
+      {#if !search}<Button variant="ghost" href="/page/manage/new"
+          >Create a page →</Button
+        >{/if}
     </div>{/each}
   <footer>
     <span class="muted">Signed in as {data.user.name}</span><a
@@ -44,64 +85,75 @@
 </main>
 
 <style>
-  .eyebrow {
-    font-size: 11px;
-    letter-spacing: 2px;
-    opacity: 0.5;
-    margin-bottom: 12px;
-  }
-  .new-page {
-    padding: 12px 18px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-size: 14px;
-  }
-  .list-heading,
-  .page-row {
-    display: grid;
-    grid-template-columns: 1fr 90px 150px;
+  .pages-toolbar {
+    display: flex;
     align-items: center;
-    gap: 16px;
-    border-bottom: 1px solid #292929;
+    gap: 24px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid #292a2d;
   }
-  .list-heading {
-    padding: 20px 0;
-    font-size: 12px;
-    opacity: 0.5;
+  .pages-toolbar h1 {
+    font-size: 24px;
+    letter-spacing: 0;
+    margin: 0;
+  }
+  .search {
+    margin-left: auto;
+    max-width: 360px;
+    flex: 1;
   }
   .page-row {
-    padding: 24px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    border-bottom: 1px solid #292a2d;
+    padding-block: 26px;
+    min-width: 0;
+  }
+  .page-title {
+    min-width: 0;
     text-decoration: none;
+    flex: 1;
   }
-  .page-row h2 {
-    margin: 0 0 6px;
+  .page-title:hover h2 {
+    color: #accbfa;
+  }
+  .page-title h2 {
     font-size: 19px;
+    line-height: 1.4;
+    margin: 0 0 8px;
+    overflow-wrap: anywhere;
   }
-  .page-row p {
+  .page-title p {
     margin: 0;
     font-size: 13px;
+    overflow-wrap: anywhere;
   }
-  .page-row > span:last-child {
-    text-transform: capitalize;
-    font-size: 13px;
+  .page-meta {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: #9aa0a6;
+    margin-top: 12px;
   }
-  .published {
+  .live {
     color: #a5d6b3;
   }
-  .page-row:hover h2 {
-    color: #accbfa;
+  .row-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
   }
   .empty {
     padding: 80px 20px;
     text-align: center;
   }
-  .empty-icon {
-    font-size: 52px;
-    opacity: 0.3;
-  }
   .empty p {
+    margin: 16px auto;
     max-width: 390px;
-    margin: 12px auto 28px;
     line-height: 1.7;
   }
   footer {
@@ -111,11 +163,28 @@
     padding-top: 32px;
     font-size: 12px;
   }
-  @media (max-width: 600px) {
-    .list-heading,
+  @media (max-width: 650px) {
+    .pages-toolbar {
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .search {
+      order: 3;
+      flex-basis: 100%;
+      max-width: none;
+    }
+    .pages-toolbar :global(a) {
+      margin-left: auto;
+    }
     .page-row {
-      grid-template-columns: 1fr 45px 95px;
-      gap: 8px;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+    .page-title {
+      flex-basis: 100%;
+    }
+    .row-actions {
+      margin-left: auto;
     }
     footer {
       flex-direction: column;

@@ -24,7 +24,7 @@ export const albums = [
 }));
 albums.push({
   ...albums[0],
-  id: 'bob-album',
+  id: '00000000-0000-4000-8000-000000000010',
   albumName: 'Bob’s private work',
   ownerId: 'bob',
   albumThumbnailAssetId: 'bob-photo',
@@ -34,6 +34,20 @@ const nativeAlbum = ({ ownerId, ...album }) => ({
   ...album,
   albumUsers: [{ user: { id: ownerId }, role: 'owner' }],
 });
+const photos = Array.from({ length: 72 }, (_, i) => ({
+  id: `10000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
+  ownerId: i === 71 ? 'bob' : 'alice',
+  type: 'IMAGE',
+  originalFileName: i === 0 ? 'Studio logo.webp' : `Photography ${i}.webp`,
+  originalMimeType: 'image/webp',
+  fileCreatedAt: '2026-10-01T00:00:00.000Z',
+  isTrashed: false,
+  isOffline: false,
+  visibility: 'timeline',
+  isFavorite: i % 2 === 0,
+  albumId: i === 71 ? albums[9].id : albums[i % 9].id,
+  photo: albums[i % 9].photo,
+}));
 const encode = (value) =>
   String(value)
     .replaceAll('&', '&amp;')
@@ -101,6 +115,46 @@ export function createFixture() {
               name: owner === 'alice' ? 'Alex Morgan' : 'Bob Parker',
             })
           : json({}, 401);
+      if (url.pathname === '/api/search/metadata') {
+        if (!owner) return json({}, 401);
+        const body = await parse(),
+          filter = body.filter || {},
+          q = (filter.originalFileName?.like || '')
+            .replaceAll('%', '')
+            .toLowerCase();
+        const results = photos.filter(
+          (p) =>
+            p.ownerId === owner &&
+            p.originalFileName.toLowerCase().includes(q) &&
+            (!filter.isFavorite?.eq || p.isFavorite) &&
+            (!filter.albumIds?.any || filter.albumIds.any.includes(p.albumId)),
+        );
+        const start = Number(body.cursor || 0),
+          size = body.size || 60;
+        return json({
+          assets: {
+            items: results.slice(start, start + size),
+            nextCursor:
+              start + size < results.length ? String(start + size) : null,
+          },
+        });
+      }
+      if (/^\/api\/assets\/[^/]+$/.test(url.pathname)) {
+        const photo = photos.find((p) => p.id === url.pathname.split('/')[3]);
+        return photo?.ownerId === owner ? json(photo) : json({}, 404);
+      }
+      if (/^\/api\/assets\/[^/]+\/(thumbnail|original)$/.test(url.pathname)) {
+        const photo = photos.find((p) => p.id === url.pathname.split('/')[3]);
+        if (photo) {
+          if (photo.ownerId !== owner) return json({}, 404);
+          const bytes = await readFile(
+            new URL(`./photos/${photo.photo}.webp`, import.meta.url),
+          );
+          res.writeHead(200, { 'content-type': 'image/webp' });
+          res.end(bytes);
+          return;
+        }
+      }
       if (url.pathname === '/api/albums')
         return owner
           ? json(albums.filter((a) => a.ownerId === owner).map(nativeAlbum))

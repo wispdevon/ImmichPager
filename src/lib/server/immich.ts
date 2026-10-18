@@ -26,9 +26,9 @@ const assetSchema = z.object({
   originalFileName: z.string(),
   originalMimeType: z.string().default(''),
   fileCreatedAt: z.string().default(''),
-  visibility: z.string().default('timeline'),
-  isTrashed: z.boolean().default(false),
-  isOffline: z.boolean().default(false),
+  visibility: z.string(),
+  isTrashed: z.boolean(),
+  isOffline: z.boolean(),
 });
 const shareSchema = z.object({
   id: z.string(),
@@ -220,6 +220,14 @@ export class Immich {
       if (!response.ok) {
         await response.body?.cancel();
         throw new AppError(502, 'Immich image is unavailable');
+      }
+      if (
+        !/^image\/(jpeg|png|webp|avif|gif|heic|heif|jxl|tiff)(;|$)/i.test(
+          response.headers.get('content-type') || '',
+        )
+      ) {
+        await response.body?.cancel();
+        throw new AppError(502, 'Immich did not return a supported image');
       }
       return response;
     }

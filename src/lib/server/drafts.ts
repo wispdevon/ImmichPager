@@ -79,8 +79,13 @@ export class DraftService {
       if (
         live?.status === 'published' &&
         input.passwordMode === 'keep' &&
-        JSON.stringify(live.albumIds) === JSON.stringify(draft.albumIds)
+        live.albumIds.length === draft.albumIds.length &&
+        live.albumIds.every((id) => draft.albumIds.includes(id))
       ) {
+        for (const albumId of draft.albumIds) {
+          if ((await this.immich.album(albumId)).ownerId !== owner)
+            throw new AppError(403, 'Album ownership has changed');
+        }
         const {
           password: _password,
           passwordMode: _mode,

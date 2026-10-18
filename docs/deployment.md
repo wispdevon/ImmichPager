@@ -69,3 +69,9 @@ If the HTTPS proxy's upstream address must stay unchanged, Pager can take the pr
 Use one container per `pager` volume. For a consistent backup, stop Pager, back up the complete volume, then restart it. Retain the database and WAL files together; do not copy only the live SQLite file. The volume contains private capabilities and should be backed up securely. `docker compose down --volumes` deletes it.
 
 For rollback, point the HTTPS proxy back at its previous upstream. Immich itself has not been replaced. Pager-created native links remain in Immich until revoked; unpublish pages before uninstalling if you want them removed. Preserve the volume when stopping Pager.
+
+## Schema upgrades
+
+The autosave/branding update uses Pager schema version 2. Stop the Pager container and back up the entire data volume (including any WAL files) before first startup of this version. Keep the previous image and Compose configuration. The migration adds working copies while retaining published pages, native link records, branding, and sessions.
+
+An older image refuses a version 2 database. To roll back, stop Pager, restore the complete pre-upgrade volume, restore the previous Compose image, and start it again. Do not restore a SQLite backup over a running process. Keep backup archives private: they contain share capabilities and client-session authorization. New changes made after the backup are not included in a restore. Immich's database and media are not part of this migration.

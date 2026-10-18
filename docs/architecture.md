@@ -29,11 +29,15 @@ The editor forwards the current browser's Immich session to `GET /api/users/me`.
 
 Public page passwords use salted scrypt hashes. Unlocking obtains native shared-link authorization using the submitted password and retains only the resulting cookie capabilities in a 12-hour server-side session. The browser receives an opaque, HttpOnly, SameSite cookie scoped to `/page`. Passwords are never persisted by Pager; Immich manages the native links according to its own implementation.
 
-Metadata and all image routes independently enforce publication and session checks. Owner previews require a freshly verified Immich session. Page revisions invalidate client sessions after settings or membership changes. Native album links are independent of the overview: Immich can prompt again, and previously authorized native sessions follow Immich's lifecycle.
+Metadata and all image routes independently enforce publication and session checks. Owner previews require a freshly verified Immich session. Published revisions invalidate client sessions after publication changes; autosaving a working draft does not touch the live revision or sessions. Native album links are independent of the overview: Immich can prompt again, and previously authorized native sessions follow Immich's lifecycle.
 
 ## Durable sharing operations
 
-Draft saves do not publish albums. Publishing creates one dedicated native link per page–album association, with deterministic custom slugs `pager-{page UUID}-{album UUID}`. Their custom URLs open the native viewer; the branded overview uses `/page/{client slug}`.
+DraftService owns working-copy persistence and revision checks. Draft saves do not publish albums or update live settings/media. Incomplete titles and URLs can be saved privately; publication applies the strict page schema. Password values are never part of the autosave document.
+
+Publication flushes the editor queue, checks the expected draft revision and album ownership, and stages a durable intent before changing native links. After synchronization, published settings, branding copies, and the matching draft marker commit in one SQLite transaction. Header/order-only updates retain existing native links and do not need the album password.
+
+Publishing creates one dedicated native link per page–album association, with deterministic custom slugs `pager-{page UUID}-{album UUID}`. Their custom URLs open the native viewer; the branded overview uses `/page/{client slug}`.
 
 Before changing links, persist `syncing` and the operation intent. Persist each successful create or delete. On retry, list the owner's native shares and adopt matching deterministic slugs, recovering creates whose response was lost. Missing links can be recreated. Native updates always include the slug because the reviewed Immich service otherwise clears it.
 
@@ -43,9 +47,9 @@ Use exactly one Pager process/container per database. A process-local mutation l
 
 ## Storage and migrations
 
-SQLite schema version 1 is initialized transactionally in `Store`. Tables hold pages, dedicated links, expiring public sessions, branding images, and password-attempt buckets. Forward migrations must use `PRAGMA user_version` and remain covered by tests. A newer database is refused by an older application. Future migrations must be added sequentially; do not modify the meaning of an existing version.
+SQLite schema version 2 is initialized and migrated transactionally in `Store`. Version 2 adds independent `drafts` and `draft_branding` tables; existing `pages` and `branding` retain the live version. Migration copies existing pages/media into working copies and preserves native shares, password hashes, and client sessions. Brand-new drafts need no published row until publication. Tables hold pages, dedicated links, expiring public sessions, branding images, and password-attempt buckets. Forward migrations must use `PRAGMA user_version` and remain covered by tests. A newer database is refused by an older application. Future migrations must be added sequentially; do not modify the meaning of an existing version.
 
-Branding uploads accept JPEG, PNG, and WebP up to 5 MB / 32 megapixels and are decoded, rotated, resized, stripped of metadata, and re-encoded to WebP. Photo covers are streamed from Immich. Protect the data volume: it contains share capabilities and session authorization, even though it contains no photo originals.
+Branding uploads accept JPEG, PNG, and WebP up to 5 MB / 32 megapixels and are decoded, rotated, resized, stripped of metadata, and re-encoded to WebP. The photo picker searches owned images using Immich v3 metadata filters, with cursor pagination, filenames, album scope, and favorites. Results expose minimal metadata; each thumbnail and branding selection rechecks ownership and excludes locked, trashed, offline, or non-image assets. PNG/WebP selections use bounded originals to retain transparency; other images use previews. Only same-upstream, same-asset media redirects are followed. Selected branding becomes a processed local copy, so removal of the Immich original does not break it. Photo covers are streamed from Immich. Protect the data volume: it contains share capabilities and session authorization, even though it contains no photo originals.
 
 ## Integration boundary
 
