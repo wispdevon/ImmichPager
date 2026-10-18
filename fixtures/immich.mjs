@@ -29,6 +29,11 @@ albums.push({
   ownerId: 'bob',
   albumThumbnailAssetId: 'bob-photo',
 });
+// Match Immich v3's HTTP DTO; ownerId is only an internal fixture field.
+const nativeAlbum = ({ ownerId, ...album }) => ({
+  ...album,
+  albumUsers: [{ user: { id: ownerId }, role: 'owner' }],
+});
 const encode = (value) =>
   String(value)
     .replaceAll('&', '&amp;')
@@ -72,7 +77,7 @@ export function createFixture() {
       slug: share.slug,
       type: 'ALBUM',
       password: share.password ? 'protected' : null,
-      album: albums.find((a) => a.id === share.albumId),
+      album: nativeAlbum(albums.find((a) => a.id === share.albumId)),
       allowDownload: true,
       allowUpload: false,
     });
@@ -98,11 +103,13 @@ export function createFixture() {
           : json({}, 401);
       if (url.pathname === '/api/albums')
         return owner
-          ? json(albums.filter((a) => a.ownerId === owner))
+          ? json(albums.filter((a) => a.ownerId === owner).map(nativeAlbum))
           : json({}, 401);
       if (/^\/api\/albums\//.test(url.pathname)) {
         const album = albums.find((a) => a.id === url.pathname.split('/')[3]);
-        return owner && album?.ownerId === owner ? json(album) : json({}, 404);
+        return owner && album?.ownerId === owner
+          ? json(nativeAlbum(album))
+          : json({}, 404);
       }
       if (
         url.pathname === '/api/shared-links/me' ||

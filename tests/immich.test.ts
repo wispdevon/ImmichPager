@@ -28,3 +28,44 @@ it('never forwards editor credentials to a public share request', async () => {
     cookie: 'immich_shared_link_token=client',
   });
 });
+
+it('normalizes v3 album ownership without treating a collaborator as owner', async () => {
+  const albums = [
+    {
+      id: 'owned',
+      albumName: 'My work',
+      albumUsers: [{ user: { id: 'alice' }, role: 'owner' }],
+    },
+    {
+      id: 'shared',
+      albumName: 'Shared with me',
+      albumUsers: [
+        { user: { id: 'bob' }, role: 'owner' },
+        { user: { id: 'alice' }, role: 'editor' },
+      ],
+    },
+    { id: 'legacy', albumName: 'Older Immich', ownerId: 'alice' },
+    { id: 'unknown', albumName: 'Missing owner' },
+  ];
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockImplementation((url: URL) =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify(
+              url.pathname.endsWith('/owned') ? albums[0] : albums,
+            ),
+          ),
+        ),
+      ),
+  );
+  const client = new Immich('http://immich:2283');
+  expect(
+    (await client.albums())
+      .filter((a) => a.ownerId === 'alice')
+      .map((a) => a.id),
+  ).toEqual(['owned', 'legacy']);
+  expect((await client.album('owned')).ownerId).toBe('alice');
+});

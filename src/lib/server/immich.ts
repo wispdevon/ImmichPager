@@ -1,15 +1,24 @@
 import { z } from 'zod';
 import { AppError, type Album } from '../contracts';
 
-const albumSchema = z.object({
-  id: z.string(),
-  albumName: z.string(),
-  ownerId: z.string().default(''),
-  assetCount: z.number().default(0),
-  startDate: z.string().nullish(),
-  endDate: z.string().nullish(),
-  albumThumbnailAssetId: z.string().nullish(),
-});
+const albumSchema = z
+  .object({
+    id: z.string(),
+    albumName: z.string(),
+    ownerId: z.string().optional(),
+    albumUsers: z
+      .array(z.object({ user: z.object({ id: z.string() }) }))
+      .optional(),
+    assetCount: z.number().default(0),
+    startDate: z.string().nullish(),
+    endDate: z.string().nullish(),
+    albumThumbnailAssetId: z.string().nullish(),
+  })
+  .transform(({ albumUsers, ownerId, ...album }) => ({
+    ...album,
+    // Immich v3 guarantees that the first album user is its owner.
+    ownerId: albumUsers?.[0]?.user.id ?? ownerId ?? '',
+  }));
 const shareSchema = z.object({
   id: z.string(),
   key: z.string(),
