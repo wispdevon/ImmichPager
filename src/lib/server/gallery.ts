@@ -41,6 +41,8 @@ export async function gallery(
     accent,
     alignment,
     bannerPosition,
+    headerLayout,
+    customCss,
     order,
   } = page;
   const suffix = access.preview ? '?preview=1' : '';
@@ -54,6 +56,8 @@ export async function gallery(
     accent,
     alignment,
     bannerPosition,
+    headerLayout,
+    customCss,
     order,
     logo: page.logo ? `/page/media/${id}/branding/logo${suffix}` : null,
     banner: page.banner ? `/page/media/${id}/branding/banner${suffix}` : null,

@@ -26,6 +26,8 @@ export const pageInputSchema = z
     foreground: color.nullable().default(null),
     accent: color.default('#accbfa'),
     alignment: z.enum(['left', 'center']).default('left'),
+    headerLayout: z.enum(['below', 'overlay']).default('below'),
+    customCss: z.string().max(20_000).default(''),
     bannerPosition: z.number().int().min(0).max(100).default(50),
     albumIds: z
       .array(z.string().min(1).max(100))
@@ -92,6 +94,8 @@ export type GalleryPage = Pick<
   | 'accent'
   | 'alignment'
   | 'bannerPosition'
+  | 'headerLayout'
+  | 'customCss'
   | 'order'
 > & {
   logo: string | null;
@@ -140,3 +144,10 @@ export type Photo = {
   takenAt: string;
   thumbnail: string;
 };
+
+/** Additive JSON settings: old records keep their original appearance. */
+export function appearanceDefaults<T extends object>(
+  record: T,
+): T & { headerLayout: 'below' | 'overlay'; customCss: string } {
+  return { headerLayout: 'below', customCss: '', ...record };
+}

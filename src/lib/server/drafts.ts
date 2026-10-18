@@ -1,3 +1,4 @@
+import { compileCustomCss } from '../custom-css';
 import { randomUUID } from 'node:crypto';
 import {
   AppError,
@@ -70,6 +71,8 @@ export class DraftService {
     return exclusive(`draft:${id}`, async () => {
       const draft = this.check(id, owner, input.expectedDraftRevision);
       const settings = parsePageInput({ ...draft, ...input });
+      const css = compileCustomCss(settings.customCss, id);
+      if (css.error) throw new AppError(400, `Custom CSS: ${css.error}`);
       if (!settings.albumIds.length)
         throw new AppError(400, 'Select at least one album before publishing');
       const live = this.store.get(id),

@@ -4,6 +4,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import {
   AppError,
+  appearanceDefaults,
   type DraftRecord,
   type DraftEditorPage,
   type PageRecord,
@@ -94,7 +95,7 @@ export class Store {
       .prepare('SELECT document FROM drafts WHERE id=? AND owner_id=?')
       .get(id, ownerId) as { document: string } | undefined;
     if (!row) throw new AppError(404, 'Page not found');
-    return JSON.parse(row.document);
+    return appearanceDefaults(JSON.parse(row.document));
   }
   putDraft(page: DraftRecord) {
     this.db
@@ -192,7 +193,7 @@ export class Store {
     const row = this.db
       .prepare('SELECT document FROM pages WHERE id=?')
       .get(id) as { document: string } | undefined;
-    return row ? JSON.parse(row.document) : null;
+    return row ? appearanceDefaults(JSON.parse(row.document)) : null;
   }
   owned(id: string, ownerId: string) {
     const page = this.get(id);
@@ -207,7 +208,7 @@ export class Store {
           'SELECT document FROM pages WHERE owner_id=? ORDER BY rowid DESC',
         )
         .all(ownerId) as { document: string }[]
-    ).map((r) => JSON.parse(r.document));
+    ).map((r) => appearanceDefaults(JSON.parse(r.document)));
   }
   publicPage(slug: string): PageRecord | null {
     const row = this.db

@@ -30,6 +30,12 @@ Publishing requires `{ "expectedDraftRevision": 3, "passwordMode": "keep", "pass
 
 Autosaving never changes the public version or its sessions. Publication commits the working branding and matching settings together. Failed native synchronization remains hidden until retry succeeds. Retry/unpublish bodies accept `{ "password": "…" }` when needed. For an uncertain native outcome, retry adopts deterministic native links rather than creating duplicates. Draft creation itself is not idempotent; after an unreadable success response, check the page list before repeating creation.
 
+## Appearance settings (dev)
+
+Working settings and gallery responses add `headerLayout: "below" | "overlay"` (default `"below"`) and `customCss: string` (default `""`, maximum 20,000 characters). These are per-page settings and use the existing autosave revision and explicit publication endpoints. Existing stored records receive defaults on read; database schema version remains 2.
+
+Draft saves accept unfinished or invalid CSS within the size limit. Publication validates CSS server-side and returns 400 with a `Custom CSS` message for invalid or unsupported rules before touching live data or shares. Gallery rendering independently compiles the stylesheet and omits it on error. See the [customization guide](customization.md) for selectors, variables and supported syntax. No external resources or global selectors are enabled.
+
 ## Branding and library media
 
 File uploads use multipart `image` and `expectedDraftRevision`. Library selection uses JSON `{ "assetId": "<uuid>", "expectedDraftRevision": 3 }`. DELETE uses JSON `{ "expectedDraftRevision": 3 }`. Both paths process the image into page-specific WebP bytes and never modify Immich assets. Limits are 5 MiB input and 32 megapixels.

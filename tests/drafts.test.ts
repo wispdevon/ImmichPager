@@ -64,7 +64,7 @@ it('keeps live settings, branding and sessions unchanged until publication', asy
   d = store.editor(d.id, 'alice');
   expect(store.publicPage('client')?.title).toBe('Client');
   expect(store.branding(d.id, 'logo')).toBeNull();
-  expect(store.session(token, store.get(d.id)!)).not.toBeNull();
+  expect(store.session(token, store.get(d.id)!)).toEqual({ tokens: {} });
   expect(d.hasUnpublishedChanges).toBe(true);
   d = await drafts.publish('alice', d.id, {
     password: '',
@@ -178,4 +178,78 @@ it('recovers a failed publication and commits matching draft branding on retry',
   expect('publishedSlug' in result && result.publishedSlug).toBe('client');
   expect(store.branding(draft.id, 'banner')).toEqual(new Uint8Array([9, 8]));
   expect(store.editor(draft.id, 'alice').hasUnpublishedChanges).toBe(false);
+});
+
+it('defaults older JSON records and publishes appearance changes only explicitly', async () => {
+  const { store, drafts } = setup();
+  let d = await drafts.save('alice', null, values);
+  const old = store.draft(d.id, 'alice') as Partial<
+    import('../src/lib/contracts').DraftRecord
+  >;
+  delete old.headerLayout;
+  delete old.customCss;
+  store.db
+    .prepare('UPDATE drafts SET document=? WHERE id=?')
+    .run(JSON.stringify(old), d.id);
+  expect(store.draft(d.id, 'alice')).toMatchObject({
+    headerLayout: 'below',
+    customCss: '',
+  });
+  d = await drafts.publish('alice', d.id, {
+    password: '',
+    passwordMode: 'keep',
+    expectedDraftRevision: d.draftRevision,
+  });
+  d = await drafts.save('alice', d.id, {
+    ...values,
+    headerLayout: 'overlay',
+    customCss: '.ip-title { color: coral; }',
+    expectedDraftRevision: d.draftRevision,
+  });
+  const oldLive = store.get(d.id)! as Partial<
+    import('../src/lib/contracts').PageRecord
+  >;
+  delete oldLive.headerLayout;
+  delete oldLive.customCss;
+  store.db
+    .prepare('UPDATE pages SET document=? WHERE id=?')
+    .run(JSON.stringify(oldLive), d.id);
+  expect(store.publicPage('client')).toMatchObject({
+    headerLayout: 'below',
+    customCss: '',
+  });
+  d = await drafts.publish('alice', d.id, {
+    password: '',
+    passwordMode: 'keep',
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(store.publicPage('client')).toMatchObject({
+    headerLayout: 'overlay',
+    customCss: '.ip-title { color: coral; }',
+  });
+  d = await drafts.save('alice', d.id, {
+    ...values,
+    customCss: '@import "https://example.com";',
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(store.draft(d.id, 'alice').customCss).toContain('@import');
+  await expect(
+    drafts.publish('alice', d.id, {
+      password: '',
+      passwordMode: 'keep',
+      expectedDraftRevision: d.draftRevision,
+    }),
+  ).rejects.toThrow('Custom CSS');
+  expect(store.publicPage('client')?.headerLayout).toBe('overlay');
+  d = await drafts.save('alice', d.id, {
+    ...values,
+    customCss: '',
+    expectedDraftRevision: d.draftRevision,
+  });
+  await drafts.publish('alice', d.id, {
+    password: '',
+    passwordMode: 'keep',
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(store.publicPage('client')?.customCss).toBe('');
 });

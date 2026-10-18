@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { compileCustomCss, CUSTOM_CSS_LIMIT } from '$lib/custom-css';
   import { labelDialog } from '$lib/actions/dialog-label';
   import {
     Modal,
@@ -37,6 +38,9 @@
     onSlugEdit: () => void;
   } = $props();
   let editUrl = $state(false);
+  const cssValidation = $derived(
+    compileCustomCss(fields.customCss, saved?.id ?? 'preview'),
+  );
   const protectedPage = $derived(
     fields.passwordMode === 'set' ||
       (fields.passwordMode === 'keep' && !!saved?.hasPassword),
@@ -83,6 +87,20 @@
             ]}
           /></Field
         >
+        <Field label="Header layout"
+          ><Select
+            bind:value={fields.headerLayout}
+            options={[
+              { value: 'below', label: 'Below banner' },
+              { value: 'overlay', label: 'Over banner' },
+            ]}
+          /></Field
+        >
+        {#if fields.headerLayout === 'overlay' && !saved?.banner}<p
+            class="hint"
+          >
+            Add a banner to place your logo, title and description over it.
+          </p>{/if}
         {#if saved?.banner}<label
             >Banner crop position<input
               type="range"
@@ -95,7 +113,9 @@
           <summary>Custom colors</summary>
           <div class="colors">
             <label
-              >Accent<input type="color" bind:value={fields.accent} /></label
+              >Accent<input type="color" bind:value={fields.accent} /><small
+                >Album title color on hover.</small
+              ></label
             ><label
               >Background<input
                 type="color"
@@ -121,6 +141,51 @@
               fields.foreground = null;
             }}>Reset colors</Button
           >
+        </details>
+      </section>
+      <section>
+        <details class="advanced-css">
+          <summary>Advanced · Custom CSS</summary>
+          <p class="hint">
+            Style this gallery only. Changes autosave privately and go live when
+            you publish.
+          </p>
+          <label for="custom-css">Custom CSS</label>
+          <textarea
+            id="custom-css"
+            class="css-editor"
+            bind:value={fields.customCss}
+            maxlength={CUSTOM_CSS_LIMIT}
+            rows="10"
+            spellcheck="false"
+            autocapitalize="off"
+            aria-invalid={!!cssValidation.error}
+            aria-describedby="css-feedback css-count"
+            placeholder={':scope { --pager-accent: #f0b67f; }\n.ip-title { font-family: Georgia, serif; }'}
+          ></textarea>
+          <small id="css-count"
+            >{fields.customCss.length.toLocaleString('en')} / 20,000 characters</small
+          >
+          <p
+            id="css-feedback"
+            class:error={!!cssValidation.error}
+            role={cssValidation.error ? 'alert' : undefined}
+          >
+            {cssValidation.error
+              ? `${cssValidation.error} Saved privately; omitted from preview. Fix before publishing.`
+              : 'Use Preview to check your styling. External resources and imports are blocked.'}
+          </p>
+          <div class="css-actions">
+            <a
+              href="https://github.com/wispdevon/ImmichPager/blob/dev/docs/customization.md"
+              target="_blank"
+              rel="noreferrer">CSS guide and examples ↗</a
+            ><Button
+              variant="ghost"
+              disabled={!fields.customCss}
+              onclick={() => (fields.customCss = '')}>Clear custom CSS</Button
+            >
+          </div>
         </details>
       </section>
       <section>
@@ -265,6 +330,45 @@
 </Modal>
 
 <style>
+  .advanced-css summary {
+    cursor: pointer;
+  }
+  .css-editor {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px;
+    border: 1px solid #49505b;
+    border-radius: 8px;
+    background: #171c24;
+    color: #e5e7eb;
+    font:
+      13px/1.6 ui-monospace,
+      monospace;
+    resize: vertical;
+    margin-block: 8px;
+  }
+  .css-editor:focus-visible {
+    outline: 2px solid #accbfa;
+    outline-offset: 2px;
+  }
+  .css-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+  .css-actions a {
+    color: #accbfa;
+    font-size: 13px;
+  }
+  #css-feedback {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  #css-feedback.error {
+    color: #ffb4ab;
+  }
+
   .options-body {
     padding-block: 8px;
   }

@@ -1,120 +1,138 @@
 <script lang="ts">
+  import { compileCustomCss, stylesheetMarkup } from '$lib/custom-css';
   import type { GalleryPage } from '$lib/contracts';
   import { albumGroups, dateRange } from '$lib/gallery';
   let { page, preview = false }: { page: GalleryPage; preview?: boolean } =
     $props();
   let failed = $state<string[]>([]);
   const groups = $derived(albumGroups(page));
+  const styling = $derived(compileCustomCss(page.customCss ?? '', page.id));
+  const overlay = $derived(page.headerLayout === 'overlay' && !!page.banner);
 </script>
 
-<div
-  class="gallery"
-  class:light={page.theme === 'light'}
-  class:system={page.theme === 'system'}
-  style:--custom-bg={page.background || undefined}
-  style:--custom-fg={page.foreground || undefined}
-  style:--accent={page.accent}
->
-  {#if page.banner}<div class="banner">
-      <img
-        src={page.banner}
-        alt=""
-        fetchpriority="high"
-        style:object-position={`center ${page.bannerPosition}%`}
-      />
-    </div>{/if}
-  <header class:centered={page.alignment === 'center'}>
-    {#if page.logo}<img
-        class="logo"
-        src={page.logo}
-        alt=""
-        width="80"
-        height="80"
-      />{/if}
-    <h1>{page.title}</h1>
-    {#if page.description}<p class="description">{page.description}</p>{/if}
-  </header>
-  <main class="albums" aria-label="Albums">
-    {#each groups as [year, albums], groupIndex (year)}
-      <details open>
-        <summary
-          ><span class="chevron" aria-hidden="true">›</span>
-          <h2>{year}</h2>
-          <span class="group-count"
-            >({albums.length} {albums.length === 1 ? 'Album' : 'Albums'})</span
-          ></summary
-        >
-        <div class="album-grid">
-          {#each albums as album, index (album.id)}
-            <a
-              class="album"
-              href={preview ? undefined : album.href || undefined}
-              aria-disabled={!album.available || preview}
-              tabindex={preview || !album.available ? -1 : 0}
-            >
-              <div class="cover">
-                {#if album.cover && !failed.includes(album.id)}
-                  <img
-                    src={album.cover}
-                    alt=""
-                    width="400"
-                    height="400"
-                    loading={groupIndex === 0 && index < 4 ? 'eager' : 'lazy'}
-                    fetchpriority={!page.banner &&
-                    groupIndex === 0 &&
-                    index === 0
-                      ? 'high'
-                      : undefined}
-                    onerror={() => (failed = [...failed, album.id])}
-                  />
-                {:else}<span class="placeholder" aria-hidden="true">▧</span
-                  >{/if}
-              </div>
-              <div class="album-info">
-                <h3 title={album.name}>{album.name}</h3>
-                {#if dateRange(album.startDate, album.endDate)}<p>
-                    {dateRange(album.startDate, album.endDate)}
-                  </p>{/if}
-                <p>
-                  {album.available
-                    ? `${album.count.toLocaleString('en')} items`
-                    : 'Currently unavailable'}{#if album.available}<span
-                      class="shared"
-                    >
-                      · Shared</span
+<div class="gallery-boundary">
+  {@html stylesheetMarkup(styling.css)}
+  <div
+    class="gallery ip-gallery"
+    data-pager-gallery={page.id}
+    class:overlay
+    class:light={page.theme === 'light'}
+    class:system={page.theme === 'system'}
+    style:--custom-bg={page.background || undefined}
+    style:--custom-fg={page.foreground || undefined}
+    style:--accent={page.accent}
+  >
+    <div class="hero ip-hero">
+      {#if page.banner}<div class="banner ip-banner">
+          <img
+            src={page.banner}
+            alt=""
+            fetchpriority="high"
+            style:object-position={`center ${page.bannerPosition}%`}
+          />
+        </div>{/if}
+      <header class="ip-header" class:centered={page.alignment === 'center'}>
+        {#if page.logo}<img
+            class="logo ip-logo"
+            src={page.logo}
+            alt=""
+            width="80"
+            height="80"
+          />{/if}
+        <h1 class="ip-title">{page.title}</h1>
+        {#if page.description}<p class="description ip-description">
+            {page.description}
+          </p>{/if}
+      </header>
+    </div>
+    <main class="albums ip-albums" aria-label="Albums">
+      {#each groups as [year, albums], groupIndex (year)}
+        <details class="ip-year-group" open>
+          <summary class="ip-year-heading"
+            ><span class="chevron" aria-hidden="true">›</span>
+            <h2>{year}</h2>
+            <span class="group-count"
+              >({albums.length}
+              {albums.length === 1 ? 'Album' : 'Albums'})</span
+            ></summary
+          >
+          <div class="album-grid ip-album-grid">
+            {#each albums as album, index (album.id)}
+              <a
+                class="album ip-album"
+                href={preview ? undefined : album.href || undefined}
+                aria-disabled={!album.available || preview}
+                tabindex={preview || !album.available ? -1 : 0}
+              >
+                <div class="cover ip-cover">
+                  {#if album.cover && !failed.includes(album.id)}
+                    <img
+                      src={album.cover}
+                      alt=""
+                      width="400"
+                      height="400"
+                      loading={groupIndex === 0 && index < 4 ? 'eager' : 'lazy'}
+                      fetchpriority={!page.banner &&
+                      groupIndex === 0 &&
+                      index === 0
+                        ? 'high'
+                        : undefined}
+                      onerror={() => (failed = [...failed, album.id])}
+                    />
+                  {:else}<span class="placeholder" aria-hidden="true">▧</span
                     >{/if}
-                </p>
-              </div>
-            </a>
-          {/each}
-        </div>
-      </details>
-    {:else}<div class="empty">
-        <h2>No albums yet</h2>
-        <p>The next chapter is on its way.</p>
-      </div>{/each}
-  </main>
-  <footer>
-    <a
-      href="https://github.com/wispdevon/ImmichPager"
-      target="_blank"
-      rel="noreferrer">ImmichPager</a
-    >
-    ·
-    <a
-      href="https://github.com/wispdevon/ImmichPager/blob/main/LICENSE"
-      target="_blank"
-      rel="noreferrer">Source & license</a
-    >
-  </footer>
+                </div>
+                <div class="album-info ip-album-info">
+                  <h3 title={album.name}>{album.name}</h3>
+                  {#if dateRange(album.startDate, album.endDate)}<p>
+                      {dateRange(album.startDate, album.endDate)}
+                    </p>{/if}
+                  <p>
+                    {album.available
+                      ? `${album.count.toLocaleString('en')} items`
+                      : 'Currently unavailable'}{#if album.available}<span
+                        class="shared"
+                      >
+                        · Shared</span
+                      >{/if}
+                  </p>
+                </div>
+              </a>
+            {/each}
+          </div>
+        </details>
+      {:else}<div class="empty">
+          <h2>No albums yet</h2>
+          <p>The next chapter is on its way.</p>
+        </div>{/each}
+    </main>
+    <footer class="ip-footer">
+      <a
+        href="https://github.com/wispdevon/ImmichPager"
+        target="_blank"
+        rel="noreferrer">ImmichPager</a
+      >
+      ·
+      <a
+        href="https://github.com/wispdevon/ImmichPager/blob/main/LICENSE"
+        target="_blank"
+        rel="noreferrer">Source & license</a
+      >
+    </footer>
+  </div>
 </div>
 
 <style>
+  .gallery-boundary {
+    contain: layout paint;
+    isolation: isolate;
+    min-height: 100dvh;
+  }
   .gallery {
     --base-bg: #000;
     --base-fg: #f5f5f5;
-    background: var(--custom-bg, var(--base-bg));
-    color: var(--custom-fg, var(--base-fg));
+    background: var(--pager-background, var(--custom-bg, var(--base-bg)));
+    color: var(--pager-foreground, var(--custom-fg, var(--base-fg)));
     min-height: 100dvh;
     color-scheme: dark;
   }
@@ -129,6 +147,34 @@
       --base-fg: #191919;
       color-scheme: light;
     }
+  }
+  .hero {
+    position: relative;
+  }
+  .overlay .hero {
+    display: grid;
+    min-height: clamp(260px, 32vw, 460px);
+    margin-block-end: 32px;
+  }
+  .overlay .banner {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+  }
+  .overlay .hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgb(0 0 0 / 25%), rgb(0 0 0 / 78%));
+    pointer-events: none;
+  }
+  .overlay header {
+    position: relative;
+    z-index: 1;
+    align-self: end;
+    width: 100%;
+    box-sizing: border-box;
+    color: #fff;
   }
   .banner {
     width: 100%;
@@ -227,7 +273,7 @@
     border-color: color-mix(in srgb, currentColor 12%, transparent);
   }
   .album:hover h3 {
-    color: var(--accent);
+    color: var(--pager-accent, var(--accent));
   }
   .cover {
     width: 100%;
