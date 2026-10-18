@@ -8,7 +8,7 @@ export const handle: Handle = async ({ event, resolve }) => {
   const managed = /^\/page\/(manage|api)(\/|$)/.test(path);
   event.locals.user = null;
   if (!['GET', 'HEAD', 'OPTIONS'].includes(event.request.method)) {
-    const expected = env.ORIGIN || event.url.origin;
+    const expected = env.ORIGIN ? new URL(env.ORIGIN).origin : event.url.origin;
     if (event.request.headers.get('origin') !== expected)
       error(403, 'A same-origin request is required');
     const length = Number(event.request.headers.get('content-length') || 0);
