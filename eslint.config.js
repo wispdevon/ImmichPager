@@ -7,6 +7,7 @@ export default ts.config(
       'build/**',
       '.svelte-kit/**',
       '.demo/**',
+      '.deploy/**',
       'test-results/**',
       'playwright-report/**',
     ],

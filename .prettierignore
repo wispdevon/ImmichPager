@@ -3,6 +3,7 @@ LICENSE
 build
 .svelte-kit
 .demo
+.deploy
 data
 node_modules
 test-results
