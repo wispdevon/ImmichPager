@@ -14,7 +14,10 @@ public native-share navigation, and simplified responsive layout (October 2026).
 installed package. Other dependencies retain their respective license notices.
 
 Fixture photos are NASA Apollo imagery. Sources and usage information are listed
-in fixtures/photos/README.md. Screenshots depict fixture data, not a live library.
+in fixtures/photos/README.md. Contributor-demo screenshots depict fixture data.
+docs/screenshots/client-gallery.png and client-editor-pages.png are user-supplied
+screenshots of a real installation, authorized for publication in this project's
+README. client-editor-pages.png includes an added Pages navigation callout.
 
 The inline page editor and add-albums tile also follow Immich AlbumTitle.svelte,
 AlbumDescription.svelte and the album route's empty state, under AGPL-3.0.
