@@ -1,0 +1,31 @@
+services:
+  immichpager:
+    image: ghcr.io/wispdevon/immichpager:${PAGER_TAG:-main}
+    build: .
+    restart: unless-stopped
+    init: true
+    environment:
+      IMMICH_URL: ${IMMICH_URL:?Set the internal Immich upstream URL}
+      ORIGIN: ${ORIGIN:?Set the public HTTPS Immich origin}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+      DATA_DIR: /data
+    ports:
+      - '${BIND_ADDRESS:-127.0.0.1}:${PAGER_PORT:-3102}:3000'
+    volumes:
+      - pager:/data
+    networks:
+      - immich
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    stop_grace_period: 15s
+networks:
+  immich:
+    external: true
+    name: ${IMMICH_NETWORK:-immich_default}
+volumes:
+  pager:

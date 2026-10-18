@@ -9,28 +9,61 @@ class FakeImmich {
   shares = new Map<string, NativeShare>();
   passwords = new Map<string, string | null>();
   failDelete = false;
-  async albums() { return [{ id: 'a', albumName: 'January', ownerId: 'alice', assetCount: 4 }]; }
-  async album(id: string) { return (await this.albums()).find(a => a.id === id)!; }
-  async listShares() { return [...this.shares.values()]; }
-  async createShare(albumId: string, slug: string, password: string | null) {
-    const share = { id: slug, key: `key-${slug}`, slug, album: { id: albumId } } as NativeShare;
-    this.shares.set(share.id, share); this.passwords.set(share.id, password); return share;
+  failCreateResponse = false;
+  async albums() {
+    return [{ id: 'a', albumName: 'January', ownerId: 'alice', assetCount: 4 }];
   }
-  async updateShare(id: string, password: string | null) { this.passwords.set(id, password); }
-  async deleteShare(id: string) { if (this.failDelete) throw Error('offline'); this.shares.delete(id); }
+  async album(id: string) {
+    return (await this.albums()).find((a) => a.id === id)!;
+  }
+  async listShares() {
+    return [...this.shares.values()];
+  }
+  async createShare(albumId: string, slug: string, password: string | null) {
+    const share = {
+      id: slug,
+      key: `key-${slug}`,
+      slug,
+      album: { id: albumId },
+    } as NativeShare;
+    this.shares.set(share.id, share);
+    this.passwords.set(share.id, password);
+    if (this.failCreateResponse) {
+      this.failCreateResponse = false;
+      throw Error('response lost');
+    }
+    return share;
+  }
+  async updateShare(id: string, password: string | null) {
+    this.passwords.set(id, password);
+  }
+  async deleteShare(id: string) {
+    if (this.failDelete) throw Error('offline');
+    this.shares.delete(id);
+  }
 }
 
 describe('page ownership and share lifecycle', () => {
   let store: Store;
   let immich: FakeImmich;
   let pages: PageService;
-  beforeEach(() => { store = new Store(':memory:'); immich = new FakeImmich(); pages = new PageService(store, immich as unknown as Immich); });
+  beforeEach(() => {
+    store = new Store(':memory:');
+    immich = new FakeImmich();
+    pages = new PageService(store, immich as unknown as Immich);
+  });
   afterEach(() => store.close());
-  const input = () => parsePageInput({ title: 'Acme photography', slug: 'acme', albumIds: ['a'] });
+  const input = () =>
+    parsePageInput({
+      title: 'Acme photography',
+      slug: 'acme',
+      albumIds: ['a'],
+    });
 
   it('creates drafts without publishing albums', async () => {
     const page = await pages.save('alice', null, input());
-    expect(page.status).toBe('draft'); expect(immich.shares.size).toBe(0);
+    expect(page.status).toBe('draft');
+    expect(immich.shares.size).toBe(0);
   });
   it('hides another photographer’s pages and refuses their album', async () => {
     const page = await pages.save('alice', null, input());
@@ -39,19 +72,35 @@ describe('page ownership and share lifecycle', () => {
     await expect(pages.save('bob', null, input())).rejects.toThrow();
   });
   it('reserves system routes and prevents duplicate global slugs', async () => {
-    for (const slug of ['manage', 'api', 'assets', 'media', 'health', 'ready', 'Bad/Path']) {
+    for (const slug of [
+      'manage',
+      'api',
+      'assets',
+      'media',
+      'health',
+      'ready',
+      'Bad/Path',
+    ]) {
       expect(() => parsePageInput({ title: 'A', slug })).toThrow();
     }
     await pages.save('alice', null, input());
     await expect(pages.save('alice', null, input())).rejects.toThrow();
   });
   it('publishes dedicated password-protected shares and preserves the URL', async () => {
-    const page = await pages.save('alice', null, { ...input(), passwordMode: 'set', password: 'client-pin' });
+    const page = await pages.save('alice', null, {
+      ...input(),
+      passwordMode: 'set',
+      password: 'client-pin',
+    });
     await pages.publish('alice', page.id, 'client-pin');
     expect(store.owned(page.id, 'alice').status).toBe('published');
     expect([...immich.passwords.values()]).toEqual(['client-pin']);
-    const renamed = await pages.save('alice', page.id, { ...input(), title: 'Acme shoots' });
-    expect(renamed.slug).toBe('acme'); expect(renamed.status).toBe('published');
+    const renamed = await pages.save('alice', page.id, {
+      ...input(),
+      title: 'Acme shoots',
+    });
+    expect(renamed.slug).toBe('acme');
+    expect(renamed.status).toBe('published');
   });
   it('fails closed when revocation fails and can retry without creating duplicates', async () => {
     const page = await pages.save('alice', null, input());
@@ -71,7 +120,11 @@ describe('page ownership and share lifecycle', () => {
     const current = store.owned(page.id, 'alice');
     const token = store.createSession(current, {});
     expect(store.session(token, current)).not.toBeNull();
-    await pages.save('alice', page.id, { ...input(), passwordMode: 'set', password: 'new-password' });
+    await pages.save('alice', page.id, {
+      ...input(),
+      passwordMode: 'set',
+      password: 'new-password',
+    });
     expect(store.session(token, store.owned(page.id, 'alice'))).toBeNull();
     expect(store.publicPage('acme')).toBeNull();
   });
@@ -82,6 +135,27 @@ describe('page ownership and share lifecycle', () => {
     await pages.publish('alice', page.id, '');
     expect(immich.shares.size).toBe(1);
     expect(store.shares(page.id)[0].shareId).toBe(slug);
+  });
+  it('recovers a create whose native side effect succeeded but response was lost', async () => {
+    const page = await pages.save('alice', null, input());
+    immich.failCreateResponse = true;
+    await expect(pages.publish('alice', page.id, '')).rejects.toThrow();
+    expect(immich.shares.size).toBe(1);
+    expect(store.shares(page.id)).toHaveLength(0);
+    await pages.retry('alice', page.id, '');
+    expect(immich.shares.size).toBe(1);
+    expect(store.publicPage('acme')?.status).toBe('published');
+  });
+  it('recreates a revoked link and deletes only this page’s dedicated shares', async () => {
+    const page = await pages.save('alice', null, input());
+    const unrelated = await immich.createShare('a', 'unrelated-share', null);
+    await pages.publish('alice', page.id, '');
+    immich.shares.delete(store.shares(page.id)[0].shareId);
+    await pages.publish('alice', page.id, '');
+    expect(immich.shares.size).toBe(2);
+    await pages.remove('alice', page.id);
+    expect(store.get(page.id)).toBeNull();
+    expect([...immich.shares.keys()]).toEqual([unrelated.id]);
   });
 });
 
