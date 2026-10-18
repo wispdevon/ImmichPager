@@ -1,0 +1,24 @@
+name: Bug report
+description: Report a reproducible ImmichPager problem
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Never include private photos, passwords, API keys, or real client share URLs. Report security issues privately.
+  - type: input
+    id: versions
+    attributes:
+      label: ImmichPager and Immich versions
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Describe expected and actual behavior using synthetic examples.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Deployment, browser, and sanitized logs or screenshots
