@@ -89,6 +89,16 @@ test('editor creates, previews and publishes a protected branded page', async ({
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Changes saved');
   await page.screenshot({ path: 'test-results/editor.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: 'test-results/editor-mobile.png',
+    fullPage: true,
+  });
   const client = await browser.newContext();
   const visitor = await client.newPage();
   const locked = await visitor.goto('/page/protected-client');

@@ -22,7 +22,7 @@ jobs:
       - run: corepack enable && corepack prepare pnpm@11.28.5 --activate
       - run: pnpm install --frozen-lockfile
       - run: pnpm format:check && pnpm lint && pnpm check && pnpm test
-      - run: pnpm audit --prod --audit-level=moderate
+      - run: pnpm audit --audit-level=moderate
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
