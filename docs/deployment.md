@@ -2,10 +2,10 @@
 
 ## Install beside Immich
 
-Build from source for this initial version. Prebuilt GHCR images have not yet been published because GitHub Actions is disabled for the maintainer account. The image workflow is configured for publication after validation once Actions is available.
+Build the stable version from source, or import the prebuilt ARM64 package below. GHCR images have not yet been published because GitHub Actions is disabled for the maintainer account. The image workflow is configured for publication after validation once Actions is available.
 
 ```sh
-git clone https://github.com/wispdevon/ImmichPager.git
+git clone --branch v0.1.0 --depth 1 https://github.com/wispdevon/ImmichPager.git
 cd ImmichPager
 cp .env.example .env
 # Edit IMMICH_URL and ORIGIN, plus IMMICH_NETWORK if necessary.
@@ -28,6 +28,26 @@ When the HTTPS proxy is on another host, configure `BIND_ADDRESS` to a private L
 
 ## Configuration
 
+### Prebuilt ARM64 package
+
+The [v0.1.0 release](https://github.com/wispdevon/ImmichPager/releases/tag/v0.1.0) includes a Docker image archive for **Linux arm64**. Use the source build above for amd64. Clone the stable tag and configure `.env` as above, then download and verify the package:
+
+```sh
+curl --fail --location --remote-name https://github.com/wispdevon/ImmichPager/releases/download/v0.1.0/immichpager-v0.1.0-linux-arm64-docker.tar.gz
+curl --fail --location --remote-name https://github.com/wispdevon/ImmichPager/releases/download/v0.1.0/SHA256SUMS
+sha256sum --check --ignore-missing SHA256SUMS
+docker load --input immichpager-v0.1.0-linux-arm64-docker.tar.gz
+docker tag immichpager:0.1.0 ghcr.io/wispdevon/immichpager:0.1.0
+```
+
+The second tag matches the Compose image name locally; it does not require a registry download. Set `PAGER_TAG=0.1.0` in `.env`, then start with:
+
+```sh
+docker compose up -d --no-build --pull never
+```
+
+For upgrades, back up the stopped Pager volume before starting the new image, as described under [schema upgrades](#schema-upgrades).
+
 ### Build the frontend off-device
 
 For a memory-constrained ARM64 host, compile on a development workstation first:
@@ -39,6 +59,8 @@ pnpm bundle:runtime
 ```
 
 Transfer `.deploy/runtime/` to the host and run `docker build -t immichpager:local .` inside that transferred directory. The generated context includes `Dockerfile.runtime` as its Dockerfile, compiled assets, and dependency manifests. Production dependencies, including native Sharp binaries, are installed for the host architecture during the container build. No workstation `node_modules`, credentials, or demo data are included. Set the Compose image to that local tag and use `docker compose up -d --no-build`.
+
+The release's `immichpager-v0.1.0-runtime.tar.gz` contains this compiled build context, so you can extract it and run the target-host Docker build without installing frontend tooling. It supports Linux amd64 and arm64 through the target Docker platform. The source archive remains available for inspection and rebuilding.
 
 ## Environment variables
 

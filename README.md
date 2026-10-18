@@ -18,12 +18,25 @@ An independent, self-hosted community companion. Photos stay in Immich; albums o
 
 ## A familiar album overview
 
+![A real ImmichPager client page with a banner, title, and year-grouped albums](docs/screenshots/client-gallery.png)
+
+Open **Pages** in Immich's left sidebar to create and manage client pages:
+
+![ImmichPager editor with an Open Pages callout pointing to the Pages sidebar entry](docs/screenshots/client-editor-pages.png)
+
+These real-use screenshots were supplied by the project maintainer for publication.
+
+<details>
+<summary>See the responsive contributor demo</summary>
+
 <p align="center">
   <img src="docs/screenshots/gallery-desktop.png" width="75%" alt="ImmichPager desktop client page with an Immich-style album grid and year headings" />
   <img src="docs/screenshots/gallery-mobile.png" width="23%" alt="The same client page in a responsive two-column mobile layout" />
 </p>
 
 Screenshots use attributed [NASA Apollo photographs](fixtures/photos/README.md) and illustrative album data, not a live client library.
+
+</details>
 
 ## Features
 
@@ -58,7 +71,7 @@ Start with **Add a title**, **Add a description**, and **Select albums**. Brandi
 Requires Docker Compose v2, an existing Immich installation, and control of its HTTPS reverse proxy.
 
 ```sh
-git clone https://github.com/wispdevon/ImmichPager.git
+git clone --branch v0.1.0 --depth 1 https://github.com/wispdevon/ImmichPager.git
 cd ImmichPager
 cp .env.example .env
 ```
@@ -73,11 +86,13 @@ Point the existing HTTPS proxy at Pager's default `127.0.0.1:3102` listener. Sig
 
 All Pager routes and assets use `/page/`; native Immich `/api/`, `/s/`, and `/share/` routes continue to the upstream. You can chain Pager in front of Immichinko or keep an Immicull custom server. See [deployment and configuration](docs/deployment.md) for exact setup, image tags, proxy trust, backups, and rollback.
 
+The [v0.1.0 release](https://github.com/wispdevon/ImmichPager/releases/tag/v0.1.0) also includes a prebuilt ARM64 Docker image, a compiled runtime build context, source, and SHA-256 checksums. See [importing the ARM64 package](docs/deployment.md#prebuilt-arm64-package) to install without a frontend build.
+
 ## Compatibility and current status
 
 Initial source review targets **Immich v3.3.1**, with an ARM64 runtime deployment and public HTTP smoke checks verified on **v3.3.3** alongside Immichinko and a RAW/JPEG companion. Authenticated editing and publishing tests use an isolated fixture; the signed-in live workflow remains to be checked. This is an early implementation, not a claim of compatibility with every Immich release.
 
-Use the source-build quick start for now. Hosted CI and prebuilt images are pending because GitHub Actions is currently disabled for the maintainer account; the workflows are committed and ready to run when that restriction is removed.
+The stable release was verified locally with 55 domain tests and 7 browser tests. GitHub Actions is currently disabled for the maintainer account, and GHCR publication is pending. The downloadable ARM64 Docker image is available from the release; source builds support amd64 and arm64. The committed workflows can publish registry images when Actions is available.
 
 The sidebar bridge is a maintained DOM integration rather than an official Immich plugin API. Use one Pager container per database. When upstream revocation fails, the overview is hidden; existing native links remain subject to Immich until the owner finishes synchronization. See [validation notes](docs/validation.md).
 
