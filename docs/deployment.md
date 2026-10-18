@@ -28,6 +28,20 @@ When the HTTPS proxy is on another host, configure `BIND_ADDRESS` to a private L
 
 ## Configuration
 
+### Build the frontend off-device
+
+For a memory-constrained ARM64 host, compile on a development workstation first:
+
+```sh
+pnpm install --frozen-lockfile
+pnpm build
+pnpm bundle:runtime
+```
+
+Transfer `.deploy/runtime/` to the host and run `docker build -t immichpager:local .` inside that transferred directory. The generated context includes `Dockerfile.runtime` as its Dockerfile, compiled assets, and dependency manifests. Production dependencies, including native Sharp binaries, are installed for the host architecture during the container build. No workstation `node_modules`, credentials, or demo data are included. Set the Compose image to that local tag and use `docker compose up -d --no-build`.
+
+## Environment variables
+
 | Variable         | Default           | Meaning                                                                                                              |
 | ---------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------- |
 | `IMMICH_URL`     | required          | Internal Immich/upstream gateway root, without `/api`                                                                |

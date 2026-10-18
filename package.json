@@ -23,6 +23,7 @@
     "dev": "vite dev --host 127.0.0.1",
     "dev:demo": "node scripts/demo.mjs",
     "build": "vite build",
+    "bundle:runtime": "node scripts/bundle-runtime.mjs",
     "start": "node server/index.mjs",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
