@@ -5,7 +5,11 @@
   import AlbumPicker from '$lib/components/AlbumPicker.svelte';
   import Gallery from '$lib/components/Gallery.svelte';
   import { readApiResponse } from '$lib/api-response';
-  import type { EditorPage, GalleryPage, PageInput } from '$lib/contracts';
+  import type {
+    DraftEditorPage as EditorPage,
+    GalleryPage,
+    PageInput,
+  } from '$lib/contracts';
   import type { PageData } from './$types';
   let { data }: { data: PageData } = $props();
   const initial = untrack(() => data.page);
@@ -94,9 +98,8 @@
     saved = await request(
       saved ? `/page/api/pages/${saved.id}` : '/page/api/pages',
       saved ? 'PUT' : 'POST',
-      fields,
+      { ...fields, expectedDraftRevision: saved?.draftRevision },
     );
-    fields.passwordMode = 'keep';
     if (wasNew) replaceState(`/page/manage/${saved!.id}`, {});
     return saved!;
   }
@@ -121,6 +124,8 @@
       if (action !== 'save' && saved)
         saved = await request(`/page/api/pages/${saved.id}/${action}`, 'POST', {
           password: fields.password,
+          passwordMode: fields.passwordMode,
+          expectedDraftRevision: saved.draftRevision,
         });
       success =
         action === 'save'
@@ -158,6 +163,7 @@
     try {
       const form = new FormData();
       form.set('image', file);
+      form.set('expectedDraftRevision', String(saved.draftRevision));
       saved = await request(
         `/page/api/pages/${saved.id}/branding/${kind}`,
         'POST',
@@ -179,6 +185,7 @@
       saved = await request(
         `/page/api/pages/${saved.id}/branding/${kind}`,
         'DELETE',
+        { expectedDraftRevision: saved.draftRevision },
       );
       brandingVersion++;
     } catch (cause) {

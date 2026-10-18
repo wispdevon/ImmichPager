@@ -1,23 +1,23 @@
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
 import { api, body } from '$lib/server/http';
-import { service } from '$lib/server/runtime';
-import { AppError, editorPage } from '$lib/contracts';
+import { drafts } from '$lib/server/runtime';
 export const POST: RequestHandler = (event) =>
   api(event, async (owner) => {
-    const { password } = z
-      .object({ password: z.string().max(256).default('') })
+    const input = z
+      .object({
+        password: z.string().max(256).default(''),
+        passwordMode: z.enum(['keep', 'set', 'remove']).default('keep'),
+        expectedDraftRevision: z.number().int().nonnegative().optional(),
+      })
       .parse(await body(event.request));
-    const svc = service(event.request);
-    const operation = event.params.operation;
-    const page =
-      operation === 'publish'
-        ? await svc.publish(owner, event.params.id, password)
-        : operation === 'unpublish'
-          ? await svc.unpublish(owner, event.params.id)
-          : operation === 'retry'
-            ? await svc.retry(owner, event.params.id, password)
-            : null;
-    if (!page) throw new AppError(404, 'Unknown operation');
-    return editorPage(page);
+    const svc = drafts(event.request);
+    return event.params.operation === 'publish'
+      ? svc.publish(owner, event.params.id, input)
+      : svc.operation(
+          owner,
+          event.params.id,
+          event.params.operation,
+          input.password,
+        );
   });

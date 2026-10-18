@@ -1,61 +1,83 @@
-import sharp from 'sharp';
+import { z } from 'zod';
 import type { RequestHandler } from './$types';
-import { api } from '$lib/server/http';
-import { database } from '$lib/server/runtime';
-import { AppError, editorPage } from '$lib/contracts';
+import { api, body } from '$lib/server/http';
+import { database, drafts, upstream } from '$lib/server/runtime';
+import { AppError } from '$lib/contracts';
 import { exclusive } from '$lib/server/security';
-
+import {
+  brandingImage,
+  boundedImage,
+  maxBrandingBytes,
+} from '$lib/server/branding';
 export const POST: RequestHandler = (event) =>
-  api(event, async (owner) =>
-    exclusive(event.params.id, async () => {
-      const store = database();
-      const page = store.owned(event.params.id, owner);
-      const kind = event.params.kind;
-      if (kind !== 'logo' && kind !== 'banner')
-        throw new AppError(404, 'Unknown image type');
-      const file = (await event.request.formData()).get('image');
-      if (!(file instanceof File) || !file.size || file.size > 5 * 1024 * 1024)
-        throw new AppError(400, 'Choose an image smaller than 5 MB');
-      let image: Buffer;
-      try {
-        const pipeline = sharp(Buffer.from(await file.arrayBuffer()), {
-          limitInputPixels: 32000000,
-        });
-        const metadata = await pipeline.metadata();
-        if (!['jpeg', 'png', 'webp'].includes(metadata.format || ''))
-          throw new Error('format');
-        image = await pipeline
-          .rotate()
-          .resize({
-            width: kind === 'logo' ? 512 : 2400,
-            height: kind === 'logo' ? 512 : 1200,
-            fit: 'inside',
-            withoutEnlargement: true,
+  api(event, (owner) =>
+    exclusive(`draft:${event.params.id}`, async () => {
+      const kind = z.enum(['logo', 'banner']).parse(event.params.kind);
+      let bytes: Uint8Array, revision: number;
+      if (
+        event.request.headers.get('content-type')?.includes('application/json')
+      ) {
+        const data = z
+          .object({
+            assetId: z.string().uuid(),
+            expectedDraftRevision: z.number().int().nonnegative(),
           })
-          .webp({ quality: 85 })
-          .toBuffer();
-      } catch {
-        throw new AppError(
-          400,
-          'Use a valid JPEG, PNG, or WebP image up to 32 megapixels',
+          .parse(await body(event.request));
+        revision = data.expectedDraftRevision;
+        drafts(event.request).check(event.params.id, owner, revision);
+        const client = upstream(event.request),
+          asset = await client.photo(data.assetId, owner);
+        bytes = await boundedImage(
+          await client.assetMedia(
+            asset.id,
+            ['image/png', 'image/webp'].includes(asset.originalMimeType)
+              ? 'original'
+              : 'preview',
+          ),
         );
+      } else {
+        const form = await event.request.formData();
+        revision = z.coerce
+          .number()
+          .int()
+          .nonnegative()
+          .parse(form.get('expectedDraftRevision'));
+        drafts(event.request).check(event.params.id, owner, revision);
+        const file = form.get('image');
+        if (
+          !(file instanceof File) ||
+          !file.size ||
+          file.size > maxBrandingBytes
+        )
+          throw new AppError(413, 'Choose an image that is 5 MB or smaller.');
+        bytes = new Uint8Array(await file.arrayBuffer());
       }
-      store.putBranding(page.id, kind, image);
-      page[kind] = true;
-      page.updatedAt = new Date().toISOString();
-      store.put(page);
-      return editorPage(page);
+      const draft = drafts(event.request).check(
+        event.params.id,
+        owner,
+        revision,
+      );
+      database().changeDraftBranding(
+        draft,
+        kind,
+        await brandingImage(bytes, kind),
+      );
+      return database().editor(draft.id, owner);
     }),
   );
 export const DELETE: RequestHandler = (event) =>
-  api(event, (owner) => {
-    const store = database();
-    const page = store.owned(event.params.id, owner);
-    const kind = event.params.kind;
-    if (kind !== 'logo' && kind !== 'banner')
-      throw new AppError(404, 'Unknown image type');
-    store.removeBranding(page.id, kind);
-    page[kind] = false;
-    store.put(page);
-    return editorPage(page);
-  });
+  api(event, (owner) =>
+    exclusive(`draft:${event.params.id}`, async () => {
+      const kind = z.enum(['logo', 'banner']).parse(event.params.kind);
+      const { expectedDraftRevision } = z
+        .object({ expectedDraftRevision: z.number().int().nonnegative() })
+        .parse(await body(event.request));
+      const draft = drafts(event.request).check(
+        event.params.id,
+        owner,
+        expectedDraftRevision,
+      );
+      database().changeDraftBranding(draft, kind, null);
+      return database().editor(draft.id, owner);
+    }),
+  );

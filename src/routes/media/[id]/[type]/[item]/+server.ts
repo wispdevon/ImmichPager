@@ -3,6 +3,28 @@ import type { RequestHandler } from './$types';
 import { database, upstream } from '$lib/server/runtime';
 import { pageAccess } from '$lib/server/gallery';
 export const GET: RequestHandler = async (event) => {
+  if (
+    event.url.searchParams.get('preview') === '1' &&
+    event.params.type === 'branding'
+  ) {
+    let owner: string;
+    try {
+      owner = (await upstream(event.request).user()).id;
+      database().draft(event.params.id, owner);
+    } catch {
+      error(404, 'Image not found');
+    }
+    if (!['logo', 'banner'].includes(event.params.item))
+      error(404, 'Image not found');
+    const image = database().draftBranding(event.params.id, event.params.item);
+    if (!image) error(404, 'Image not found');
+    return new Response(new Uint8Array(image), {
+      headers: {
+        'content-type': 'image/webp',
+        'cache-control': 'private, no-store',
+      },
+    });
+  }
   const page = database().get(event.params.id);
   if (!page) error(404, 'Image not found');
   const access = await pageAccess(event, page);

@@ -106,3 +106,37 @@ export class AppError extends Error {
     super(message);
   }
 }
+
+// Drafts deliberately allow incomplete title/URL fields. Publication is strict.
+export const draftInputSchema = z.object({
+  ...pageInputSchema.omit({ password: true, passwordMode: true }).shape,
+  title: z.string().max(160),
+  slug: z.string().max(80),
+  expectedDraftRevision: z.number().int().nonnegative().optional(),
+});
+export type DraftSettings = Omit<
+  z.infer<typeof draftInputSchema>,
+  'expectedDraftRevision'
+>;
+export type DraftRecord = DraftSettings & {
+  id: string;
+  ownerId: string;
+  revision: number;
+  publishedDraftRevision: number | null;
+  logo: boolean;
+  banner: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+export type DraftEditorPage = EditorPage & {
+  draftRevision: number;
+  publishedRevision: number | null;
+  publishedSlug: string | null;
+  hasUnpublishedChanges: boolean;
+};
+export type Photo = {
+  id: string;
+  name: string;
+  takenAt: string;
+  thumbnail: string;
+};

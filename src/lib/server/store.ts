@@ -2,7 +2,12 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomBytes } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { AppError, type PageRecord } from '../contracts';
+import {
+  AppError,
+  type DraftRecord,
+  type DraftEditorPage,
+  type PageRecord,
+} from '../contracts';
 import { tokenHash } from './security';
 
 export type ShareRecord = {
@@ -26,7 +31,7 @@ export class Store {
       (this.db.prepare('PRAGMA user_version').get() as { user_version: number })
         .user_version,
     );
-    if (version > 1) throw new Error('Database is newer than this application');
+    if (version > 2) throw new Error('Database is newer than this application');
     if (version < 1)
       this.db.exec(`
       BEGIN;
@@ -39,6 +44,40 @@ export class Store {
       PRAGMA user_version=1;
       COMMIT;
     `);
+    if (version < 2) {
+      this.db.exec(`BEGIN;
+        CREATE TABLE drafts (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, document TEXT NOT NULL);
+        CREATE INDEX drafts_owner ON drafts(owner_id);
+        CREATE TABLE draft_branding (page_id TEXT NOT NULL REFERENCES drafts(id) ON DELETE CASCADE, kind TEXT NOT NULL CHECK(kind IN ('logo','banner')), image BLOB NOT NULL, PRIMARY KEY(page_id,kind));
+      `);
+      try {
+        for (const row of this.db
+          .prepare('SELECT document FROM pages')
+          .all() as { document: string }[]) {
+          const page = JSON.parse(row.document) as PageRecord;
+          const {
+            passwordHash: _password,
+            status: _status,
+            intent: _intent,
+            ...settings
+          } = page;
+          void _password;
+          void _status;
+          void _intent;
+          this.putDraft({
+            ...settings,
+            publishedDraftRevision:
+              page.status === 'published' ? page.revision : null,
+          });
+        }
+        this.db.exec(
+          'INSERT INTO draft_branding SELECT * FROM branding; PRAGMA user_version=2; COMMIT;',
+        );
+      } catch (cause) {
+        this.db.exec('ROLLBACK');
+        throw cause;
+      }
+    }
     // An interrupted external operation remains private until its owner retries it.
     for (const row of this.db.prepare('SELECT document FROM pages').all() as {
       document: string;
@@ -48,6 +87,102 @@ export class Store {
         page.status = 'error';
         this.put(page);
       }
+    }
+  }
+  draft(id: string, ownerId: string): DraftRecord {
+    const row = this.db
+      .prepare('SELECT document FROM drafts WHERE id=? AND owner_id=?')
+      .get(id, ownerId) as { document: string } | undefined;
+    if (!row) throw new AppError(404, 'Page not found');
+    return JSON.parse(row.document);
+  }
+  putDraft(page: DraftRecord) {
+    this.db
+      .prepare(
+        'INSERT INTO drafts VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET document=excluded.document',
+      )
+      .run(page.id, page.ownerId, JSON.stringify(page));
+  }
+  editor(id: string, ownerId: string): DraftEditorPage {
+    const draft = this.draft(id, ownerId),
+      live = this.get(id);
+    return {
+      ...draft,
+      status: live?.status ?? 'draft',
+      intent: live?.intent ?? null,
+      hasPassword: !!live?.passwordHash,
+      revision: live?.revision ?? 0,
+      draftRevision: draft.revision,
+      publishedRevision: live?.status === 'published' ? live.revision : null,
+      publishedSlug: live?.status === 'published' ? live.slug : null,
+      hasUnpublishedChanges:
+        !live || draft.publishedDraftRevision !== draft.revision,
+    };
+  }
+  editors(ownerId: string) {
+    return (
+      this.db
+        .prepare('SELECT id FROM drafts WHERE owner_id=? ORDER BY rowid DESC')
+        .all(ownerId) as { id: string }[]
+    ).map((row) => this.editor(row.id, ownerId));
+  }
+  deleteDraft(id: string) {
+    this.db.prepare('DELETE FROM drafts WHERE id=?').run(id);
+  }
+  draftBranding(id: string, kind: string): Uint8Array | null {
+    return (
+      (
+        this.db
+          .prepare(
+            'SELECT image FROM draft_branding WHERE page_id=? AND kind=?',
+          )
+          .get(id, kind) as { image: Uint8Array } | undefined
+      )?.image ?? null
+    );
+  }
+  changeDraftBranding(
+    page: DraftRecord,
+    kind: 'logo' | 'banner',
+    image: Uint8Array | null,
+  ) {
+    this.db.exec('BEGIN');
+    try {
+      if (image)
+        this.db
+          .prepare(
+            'INSERT INTO draft_branding VALUES (?,?,?) ON CONFLICT(page_id,kind) DO UPDATE SET image=excluded.image',
+          )
+          .run(page.id, kind, image);
+      else
+        this.db
+          .prepare('DELETE FROM draft_branding WHERE page_id=? AND kind=?')
+          .run(page.id, kind);
+      page[kind] = !!image;
+      page.revision++;
+      page.updatedAt = new Date().toISOString();
+      this.putDraft(page);
+      this.db.exec('COMMIT');
+    } catch (cause) {
+      this.db.exec('ROLLBACK');
+      throw cause;
+    }
+  }
+  commitPublication(page: PageRecord, draft: DraftRecord) {
+    this.db.exec('BEGIN');
+    try {
+      this.db.prepare('DELETE FROM branding WHERE page_id=?').run(page.id);
+      this.db
+        .prepare(
+          'INSERT INTO branding SELECT * FROM draft_branding WHERE page_id=?',
+        )
+        .run(page.id);
+      this.put(page);
+      draft.publishedDraftRevision = draft.revision;
+      this.putDraft(draft);
+      this.db.exec('COMMIT');
+    } catch (cause) {
+      this.db.exec('ROLLBACK');
+      throw cause;
     }
   }
   close() {

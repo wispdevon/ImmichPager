@@ -1,3 +1,4 @@
+import { DraftService } from './drafts';
 import { env } from '$env/dynamic/private';
 import { join } from 'node:path';
 import { Store } from './store';
@@ -17,4 +18,8 @@ export function upstream(request?: Request) {
 }
 export function service(request: Request) {
   return new PageService(database(), upstream(request));
+}
+
+export function drafts(request: Request) {
+  return new DraftService(database(), upstream(request));
 }

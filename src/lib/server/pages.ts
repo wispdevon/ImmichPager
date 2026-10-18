@@ -8,8 +8,14 @@ export class PageService {
   constructor(
     private store: Store,
     private immich: Immich,
+    private onPublished?: (page: PageRecord) => void,
   ) {}
-  async save(ownerId: string, id: string | null, input: PageInput) {
+  async save(
+    ownerId: string,
+    id: string | null,
+    input: PageInput,
+    stagingId?: string,
+  ) {
     return exclusive(id ?? `new:${ownerId}`, async () => {
       const previous = id ? this.store.owned(id, ownerId) : null;
       if (previous?.status === 'syncing' || previous?.status === 'error')
@@ -34,7 +40,7 @@ export class PageService {
       const now = new Date().toISOString();
       const page: PageRecord = {
         ...settings,
-        id: previous?.id ?? randomUUID(),
+        id: previous?.id ?? stagingId ?? randomUUID(),
         ownerId,
         passwordHash,
         status: previous?.status ?? 'draft',
@@ -46,6 +52,10 @@ export class PageService {
         updatedAt: now,
       };
       if (accessChanged && previous.status === 'published') {
+        page.status = 'error';
+        page.intent = 'publish';
+      }
+      if (stagingId) {
         page.status = 'error';
         page.intent = 'publish';
       }
@@ -163,7 +173,9 @@ export class PageService {
         page.status = intent === 'publish' ? 'published' : 'draft';
         page.intent = null;
         page.updatedAt = new Date().toISOString();
-        this.store.put(page);
+        if (page.status === 'published' && this.onPublished)
+          this.onPublished(page);
+        else this.store.put(page);
         return page;
       } catch {
         page.status = 'error';

@@ -79,7 +79,7 @@ if (!existing.some((p) => p.slug === 'acme')) {
   const published = await fetch(`${origin}/page/api/pages/${page.id}/publish`, {
     method: 'POST',
     headers,
-    body: '{}',
+    body: JSON.stringify({ expectedDraftRevision: page.draftRevision }),
   });
   if (!published.ok) throw Error('Could not seed demo page');
 }
