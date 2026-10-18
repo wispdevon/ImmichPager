@@ -65,7 +65,7 @@ All Pager routes and assets use `/page/`; native Immich `/api/`, `/s/`, and `/sh
 
 ## Compatibility and current status
 
-Initial API and sidebar source review targets **Immich v3.3.1**. Domain tests and production-browser tests run against an isolated matching fixture. Live Immich validation is still required; this is an early implementation, not a claim of compatibility with every Immich release.
+Initial source review targets **Immich v3.3.1**, with an ARM64 runtime deployment and public HTTP smoke checks verified on **v3.3.3** alongside Immichinko and a RAW/JPEG companion. Authenticated editing and publishing tests use an isolated fixture; the signed-in live workflow remains to be checked. This is an early implementation, not a claim of compatibility with every Immich release.
 
 Use the source-build quick start for now. Hosted CI and prebuilt images are pending because GitHub Actions is currently disabled for the maintainer account; the workflows are committed and ready to run when that restriction is removed.
 

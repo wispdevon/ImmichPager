@@ -60,6 +60,8 @@ Without `TRUST_PROXY`, password throttling groups clients by the directly connec
 
 Use the existing Immichinko gateway as `IMMICH_URL`, and have the public HTTPS proxy point at Pager. Other companion routes continue upstream. Do not configure the gateways to point at each other. If using an Immicull custom server, keep that image and use its existing internal server URL.
 
+If the HTTPS proxy's upstream address must stay unchanged, Pager can take the previous companion's published host port. Move that companion's host-port mapping to another available port, retain its internal Docker service port, and publish Pager at the original address. Point `IMMICH_URL` at the companion's Docker DNS name/internal port. Back up both Compose configurations and any environment file before changing mappings; persist the changes so restarts retain the chain. Rollback must restore both port mappings, not just the proxy configuration.
+
 ## Health, backup, and rollback
 
 `/page/health` checks the running process. `/page/ready` also checks SQLite and the upstream version endpoint. Normal logs contain operation categories, not passwords or share URLs.
