@@ -23,6 +23,8 @@ Immich v3.3.1 DTOs, shared-link controller/service, album presentation, and side
 
 The precompiled runtime image was built successfully for ARM64 and deployed alongside an existing Immicull/Immich **v3.3.3** server, Immichinko gateway, and RAW/JPEG integration. Public HTTPS smoke checks verified health/readiness JSON, native version passthrough, all three integration scripts, anonymous editor/API denial, and unknown-page 404 responses. The containers reported healthy. The native Immich image, database, and photo library were not changed.
 
+The inline-editor update (`237dab9`) was also built and deployed for ARM64. Public checks confirmed the bundled Google Sans WOFF2 asset, readiness, upstream passthrough, companion scripts, and authorization boundaries after the existing Immich server completed a concurrent restart. Compose rollback retains image `390ad7a`; no database migration was needed.
+
 No real albums were selected or published during deployment. Authenticated page editing, password rotation, and publication are verified against the fixture; a signed-in live user workflow remains to be checked.
 
 The workstation account cannot access its Docker daemon. The ARM64 **runtime** Dockerfile was built and smoke-tested on the deployment host instead. The standard Dockerfile's full source-build stage and amd64 image remain unverified. GitHub rejected manual CI dispatch with `Actions has been disabled for this user` (HTTP 422); no hosted CI run or GHCR image has been produced. The committed workflow performs a Docker build and health smoke test before amd64/arm64 publication when account-level Actions access is restored.
