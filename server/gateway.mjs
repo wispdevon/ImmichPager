@@ -111,54 +111,68 @@ export function createGateway({
     });
     req.pipe(request);
   }
-  const server = http.createServer((req, res) => {
-    if (!req.url.startsWith('/') || req.url.startsWith('//')) {
-      res.writeHead(400);
-      res.end('Invalid request target');
-      return;
-    }
-    let path;
-    try {
-      path = new URL(req.url, publicUrl).pathname;
-    } catch {
-      res.writeHead(400);
-      res.end();
-      return;
-    }
-    // Reject ambiguous encoded separators instead of routing them to the other application.
-    if (/%2f|%5c|\\/i.test(path)) {
-      res.writeHead(400);
-      res.end('Invalid path');
-      return;
-    }
-    if (path === '/page/assets/sidebar.js') {
-      res.writeHead(200, {
-        'content-type': 'application/javascript; charset=utf-8',
-        'cache-control': 'public, max-age=300',
-        'x-content-type-options': 'nosniff',
-      });
-      res.end(script);
-      return;
-    }
-    if (isPagerPath(path)) {
-      if (Number(req.headers['content-length'] || 0) > 6 * 1024 * 1024) {
-        res.writeHead(413);
+  // Outlast Caddy's default 2-minute upstream keepalive. Otherwise a reused
+  // socket can close during a POST, producing an empty proxy 502.
+  const server = http.createServer(
+    { keepAliveTimeout: 180000, headersTimeout: 190000 },
+    (req, res) => {
+      if (!req.url.startsWith('/') || req.url.startsWith('//')) {
+        res.writeHead(400);
+        res.end('Invalid request target');
+        return;
+      }
+      let path;
+      try {
+        path = new URL(req.url, publicUrl).pathname;
+      } catch {
+        res.writeHead(400);
         res.end();
         return;
       }
-      if (handler) {
-        req.headers.host = publicUrl.host;
-        req.headers['x-pager-client-address'] =
-          trustProxy && req.headers['x-forwarded-for']
-            ? String(req.headers['x-forwarded-for']).split(',')[0].trim()
-            : req.socket.remoteAddress;
-        handler(req, res);
-      } else proxy(req, res, new URL(appUrl), false);
-    } else {
-      const inject = !/^\/(api|share|s)(\/|$)/.test(path);
-      proxy(req, res, target, inject);
-    }
-  });
+      // Reject ambiguous encoded separators instead of routing them to the other application.
+      if (/%2f|%5c|\\/i.test(path)) {
+        res.writeHead(400);
+        res.end('Invalid path');
+        return;
+      }
+      if (path === '/page/assets/sidebar.js') {
+        res.writeHead(200, {
+          'content-type': 'application/javascript; charset=utf-8',
+          'cache-control': 'public, max-age=300',
+          'x-content-type-options': 'nosniff',
+        });
+        res.end(script);
+        return;
+      }
+      if (isPagerPath(path)) {
+        if (Number(req.headers['content-length'] || 0) > 6 * 1024 * 1024) {
+          res.writeHead(413, {
+            'content-type': 'application/json; charset=utf-8',
+            'cache-control': 'no-store',
+            'x-content-type-options': 'nosniff',
+          });
+          res.end(
+            JSON.stringify({
+              message:
+                'Request is too large. Branding images must be 5 MB or smaller.',
+            }),
+          );
+          return;
+        }
+        if (handler) {
+          req.headers.host = publicUrl.host;
+          req.headers['x-pager-client-address'] =
+            trustProxy && req.headers['x-forwarded-for']
+              ? String(req.headers['x-forwarded-for']).split(',')[0].trim()
+              : req.socket.remoteAddress;
+          handler(req, res);
+        } else proxy(req, res, new URL(appUrl), false);
+      } else {
+        const inject = !/^\/(api|share|s)(\/|$)/.test(path);
+        proxy(req, res, target, inject);
+      }
+    },
+  );
   server.on('upgrade', (req, socket, head) => {
     const path = new URL(req.url, publicUrl).pathname;
     const url = appUrl && isPagerPath(path) ? new URL(appUrl) : target;

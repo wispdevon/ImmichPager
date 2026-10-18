@@ -255,3 +255,54 @@ test('ownership, same-origin writes, reserved slugs and sidebar integration', as
   await anonymous.close();
   await bob.close();
 });
+
+test('publishing recovers after an empty proxy error and oversized branding is rejected before upload', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/dev-login/alice');
+  await page.goto('/page/manage/new');
+  await page
+    .getByLabel('Title', { exact: true })
+    .fill('Test response recovery');
+  await page.route('**/page/api/pages', (route) =>
+    route.request().method() === 'POST'
+      ? route.fulfill({ status: 502, body: '' })
+      : route.continue(),
+  );
+  await page.getByRole('button', { name: 'Publish page', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('HTTP 502');
+  await expect(page.getByRole('alert')).not.toContainText('JSON');
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue(
+    'Test response recovery',
+  );
+  await expect(page).toHaveURL(/\/manage\/new$/);
+  await page.unroute('**/page/api/pages');
+  await page
+    .getByRole('button', { name: 'Select albums', exact: true })
+    .click();
+  await page
+    .getByRole('checkbox', { name: 'Include Liberty Family Camp ’26' })
+    .check();
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await page.getByRole('button', { name: 'Publish page', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Page published');
+  await expect(page).not.toHaveURL(/\/manage\/new$/);
+  await page
+    .getByRole('button', { name: 'Page settings', exact: true })
+    .click();
+  let uploads = 0;
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().includes('/branding/'))
+      uploads++;
+  });
+  await page.getByLabel('Banner', { exact: true }).setInputFiles({
+    name: 'too-large.jpg',
+    mimeType: 'image/jpeg',
+    buffer: Buffer.alloc(7 * 1024 * 1024),
+  });
+  await expect(page.getByRole('alert')).toContainText('5 MB or smaller');
+  expect(uploads).toBe(0);
+  expect(errors).toEqual([]);
+});

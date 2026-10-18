@@ -4,6 +4,7 @@
   import { Button, PasswordInput, Textarea } from '@immich/ui';
   import AlbumPicker from '$lib/components/AlbumPicker.svelte';
   import Gallery from '$lib/components/Gallery.svelte';
+  import { readApiResponse } from '$lib/api-response';
   import type { EditorPage, GalleryPage, PageInput } from '$lib/contracts';
   import type { PageData } from './$types';
   let { data }: { data: PageData } = $props();
@@ -31,6 +32,7 @@
   let slugEdited = $state(!!initial),
     brandingVersion = $state(0);
   let albumPickerOpen = $state(false);
+  let settingsOpen = $state(false);
   let settingsDialog = $state<HTMLDialogElement>(null!);
   const selected = $derived(
     fields.albumIds
@@ -72,9 +74,7 @@
             ? undefined
             : JSON.stringify(body),
     });
-    const result = await response.json();
-    if (!response.ok) throw Error(result.message || 'The operation failed');
-    return result;
+    return readApiResponse<EditorPage>(response);
   }
   function select(id: string) {
     fields.albumIds = fields.albumIds.includes(id)
@@ -148,6 +148,11 @@
     const input = event.currentTarget as HTMLInputElement,
       file = input.files?.[0];
     if (!file || !saved) return;
+    if (file.size > 5 * 1024 * 1024) {
+      message = 'Choose a branding image that is 5 MB or smaller.';
+      input.value = '';
+      return;
+    }
     busy = true;
     message = '';
     try {
@@ -222,7 +227,10 @@
         <Button
           variant="ghost"
           color="secondary"
-          onclick={() => settingsDialog.showModal()}>Page settings</Button
+          onclick={() => {
+            settingsDialog.showModal();
+            settingsOpen = true;
+          }}>Page settings</Button
         >
         <Button
           variant="ghost"
@@ -246,7 +254,9 @@
         >
       </div>
     </header>
-    {#if message}<div class="notice error" role="alert">{message}</div>{/if}
+    {#if message && !settingsOpen}<div class="notice error" role="alert">
+        {message}
+      </div>{/if}
     {#if success}<div class="notice" role="status">{success}</div>{/if}
     {#if saved?.status === 'error'}<div class="notice">
         <p>
@@ -338,6 +348,7 @@
       bind:this={settingsDialog}
       class="settings-dialog"
       aria-labelledby="settings-dialog-title"
+      onclose={() => (settingsOpen = false)}
     >
       <header class="dialog-heading">
         <h2 id="settings-dialog-title">Page settings</h2>
@@ -348,6 +359,7 @@
           aria-label="Close page settings">×</Button
         >
       </header>
+      {#if message}<div class="notice error" role="alert">{message}</div>{/if}
       <div class="settings-content">
         <section>
           <h2>Page link</h2>

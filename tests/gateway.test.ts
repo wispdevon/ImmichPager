@@ -74,6 +74,79 @@ describe('same-origin integration gateway', () => {
     ).toEqual({ method: 'POST', url: '/api/upload?x=1' });
     expect((await fetch(`${gateway}/page%2Facme`)).status).toBe(400);
   });
+  it('returns a JSON error before passing oversized Pager requests to the app', async () => {
+    let handled = false;
+    const gateway = await listen(
+      createGateway({
+        upstream: 'http://127.0.0.1:1',
+        origin: 'http://localhost',
+        handler: (_req: http.IncomingMessage, res: http.ServerResponse) => {
+          handled = true;
+          res.end('unexpected');
+        },
+      }),
+    );
+    const response = await fetch(`${gateway}/page/api/pages`, {
+      method: 'POST',
+      body: ' '.repeat(7 * 1024 * 1024),
+    });
+    expect(response.status).toBe(413);
+    expect(response.headers.get('content-type')).toContain('application/json');
+    expect(await response.json()).toEqual({
+      message: 'Request is too large. Branding images must be 5 MB or smaller.',
+    });
+    expect(handled).toBe(false);
+  });
+  it('keeps a proxy connection alive across an idle pause before a POST', async () => {
+    const gateway = await listen(
+      createGateway({
+        upstream: 'http://127.0.0.1:1',
+        origin: 'http://localhost',
+        handler: (req: http.IncomingMessage, res: http.ServerResponse) => {
+          req.resume();
+          res.setHeader('content-type', 'application/json');
+          res.end(JSON.stringify({ method: req.method }));
+        },
+      }),
+    );
+    const agent = new http.Agent({ keepAlive: true, maxSockets: 1 });
+    const send = (method: string) =>
+      new Promise<{ reused: boolean; keepalive?: string; body: string }>(
+        (resolve, reject) => {
+          const req = http.request(
+            `${gateway}/page/api/pages`,
+            { method, agent },
+            (res) => {
+              let body = '';
+              res.on('data', (chunk) => (body += chunk));
+              res.on('end', () =>
+                resolve({
+                  reused: req.reusedSocket,
+                  keepalive: res.headers['keep-alive']?.toString(),
+                  body,
+                }),
+              );
+            },
+          );
+          req.on('error', reject);
+          req.end();
+        },
+      );
+    try {
+      const first = await send('GET');
+      // Caddy pools upstream connections for two minutes; advertised lifetime must exceed it.
+      expect(
+        Number(first.keepalive?.match(/timeout=(\d+)/)?.[1]),
+      ).toBeGreaterThan(120);
+      // This exceeds Node's old five-second timeout plus its one-second buffer.
+      await new Promise((resolve) => setTimeout(resolve, 6500));
+      const next = await send('POST');
+      expect(next.reused).toBe(true);
+      expect(JSON.parse(next.body)).toEqual({ method: 'POST' });
+    } finally {
+      agent.destroy();
+    }
+  }, 10000);
   it('does not allow an absolute request target to change the upstream host', async () => {
     const upstream = await listen(
       http.createServer((_req, res) => res.end('safe')),

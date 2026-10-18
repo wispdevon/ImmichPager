@@ -5,8 +5,8 @@
 - Node 22.23.3 and pnpm 11.28.5; frozen dependency installation.
 - TypeScript/Svelte checks with zero application errors or warnings.
 - ESLint and Prettier checks.
-- 21 domain/integration tests across ownership, slug validation, salted password hashing, interrupted creates/deletes, native slug preservation, public credential isolation, SQLite restart recovery, grouping, proxy streaming, and WebSocket upgrades.
-- Four production-browser scenarios covering desktop/mobile grids, year collapse, native viewer navigation, branded protected publishing, owner isolation, sidebar embedding, same-origin writes, monthly additions, password rotation/session invalidation, rejected SVG uploads, and unpublish revocation.
+- 35 domain/integration tests across ownership, slug validation, salted password hashing, interrupted creates/deletes, native slug preservation, public credential isolation, SQLite restart recovery, grouping, proxy streaming, and WebSocket upgrades.
+- Five production-browser scenarios covering desktop/mobile grids, year collapse, native viewer navigation, branded protected publishing, owner isolation, sidebar embedding, same-origin writes, monthly additions, password rotation/session invalidation, rejected SVG uploads, and unpublish revocation.
 - Production build and runtime dependency audit with no known advisories at implementation time.
 
 ## Visual comparison
@@ -16,6 +16,14 @@ The supplied reference shows the Immich Albums grid in dark mode. The implementa
 Screenshots in `docs/screenshots/` are actual browser captures. The revised editor uses Immich's ghost Textarea and Buttons, bundled Google Sans (WOFF2), inline title/description, and the ADD ALBUMS empty state. The album picker was checked on desktop and at 390 px, including loaded covers, search, selected filtering, Escape dismissal/focus restoration, and protected branded publishing. The original supplied native editor screenshot is cropped/zoomed; the editor follows its layout and upstream component sizes rather than claiming a pixel-exact match to that crop. Below-the-fold images are lazy-loaded; the first cover or banner receives high fetch priority.
 
 Initial validation used the repository's automated Playwright suite with the installed Chromium executable. During live deployment, the browser runtime reported no connected browser backends, so an existing signed-in Immich browser session was unavailable. Browser tests use an isolated fixture and remain reproducible in CI.
+
+## Empty-response regression
+
+The user confirmed Publish page triggered the error. Caddy's log records the matching initial draft-creation POST failing with EOF / HTTP 502 before the draft was persisted. Pager used Node's five-second idle keepalive, while Caddy pools upstream connections for two minutes. [Caddy documents failed non-idempotent requests when the upstream's keepalive is shorter](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy#the-http-transport). The gateway now keeps idle connections for three minutes, with a longer header timeout. A wire-level test reuses the same connection for a POST after 6.5 idle seconds and verifies the advertised timeout exceeds Caddy's pool duration.
+
+The editor reports status-specific errors for empty/non-JSON responses without discarding fields or automatically replaying writes. Decoder tests cover empty errors, invalid successes, session expiry, and proxy HTML. A browser scenario injects the empty 502 during Publish page, confirms the draft survives, then retries through a complete native-share publication.
+
+Independently, an oversized request reproduced the same parser failure with an empty HTTP 413 through the live gateway. The gateway now returns a JSON error for that case. Branding images larger than 5 MiB are rejected before upload, with the message visible inside Page settings. The gateway regression failed against the old code; the browser scenario also verifies that oversized branding makes no upload request.
 
 ## Compatibility limits
 
