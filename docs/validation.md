@@ -44,3 +44,7 @@ No real albums were selected or published during deployment. Authenticated page 
 The workstation account cannot access its Docker daemon. The ARM64 **runtime** Dockerfile was built and smoke-tested on the deployment host instead. The standard Dockerfile's full source-build stage and amd64 image remain unverified. GitHub rejected manual CI dispatch with `Actions has been disabled for this user` (HTTP 422); no hosted CI run or GHCR image has been produced. The committed workflow performs a Docker build and health smoke test before amd64/arm64 publication when account-level Actions access is restored.
 
 Node 22 currently prints its built-in SQLite experimental warning. The production build also reports an adapter bundling notice for `node:sqlite`; it remains a Node built-in at runtime. These are not application type errors.
+
+### Live deployment: 9a768a9
+
+Deployed to the existing instance with a stopped-volume backup before the schema 1 → 2 migration. The existing page, share, two branding images and sessions were preserved; one working draft and two draft branding snapshots were initialized. Pager and native Immich remained healthy. Public health/readiness, native version, unauthorized management/photo API responses, missing-page handling and all three companion integration scripts passed. Authenticated editing flows were verified against the fixture instance, without publishing changes to the user's live albums. The host deployment notes record the backup checksum and the required database restore when rolling back to schema 1.
