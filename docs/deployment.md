@@ -2,6 +2,8 @@
 
 ## Install beside Immich
 
+Build from source for this initial version. Prebuilt GHCR images have not yet been published because GitHub Actions is disabled for the maintainer account. The image workflow is configured for publication after validation once Actions is available.
+
 ```sh
 git clone https://github.com/wispdevon/ImmichPager.git
 cd ImmichPager

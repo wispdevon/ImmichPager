@@ -21,6 +21,6 @@ The in-app browser JavaScript execution tool was not exposed in this session. Va
 
 Immich v3.3.1 DTOs, shared-link controller/service, album presentation, and sidebar/main layout were reviewed from the local Immicull checkout. The fixture implements those integration contracts. No live Immich server or client library was modified or tested.
 
-The local account cannot access the Docker daemon, and passwordless sudo is unavailable. Local container build/smoke testing therefore remains unverified; the CI workflow includes an actual Docker build and health smoke test, followed by gated amd64/arm64 image publication. Record CI results here when available.
+The local account cannot access the Docker daemon, and passwordless sudo is unavailable. Local container build/smoke testing therefore remains unverified. The public repository has active workflows, but GitHub rejected manual CI dispatch with `Actions has been disabled for this user` (HTTP 422). No hosted CI run or container image was produced during implementation. The committed workflow performs a Docker build and health smoke test before amd64/arm64 publication when account-level Actions access is restored.
 
 Node 22 currently prints its built-in SQLite experimental warning. The production build also reports an adapter bundling notice for `node:sqlite`; it remains a Node built-in at runtime. These are not application type errors.

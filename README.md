@@ -67,6 +67,8 @@ All Pager routes and assets use `/page/`; native Immich `/api/`, `/s/`, and `/sh
 
 Initial API and sidebar source review targets **Immich v3.3.1**. Domain tests and production-browser tests run against an isolated matching fixture. Live Immich validation is still required; this is an early implementation, not a claim of compatibility with every Immich release.
 
+Use the source-build quick start for now. Hosted CI and prebuilt images are pending because GitHub Actions is currently disabled for the maintainer account; the workflows are committed and ready to run when that restriction is removed.
+
 The sidebar bridge is a maintained DOM integration rather than an official Immich plugin API. Use one Pager container per database. When upstream revocation fails, the overview is hidden; existing native links remain subject to Immich until the owner finishes synchronization. See [validation notes](docs/validation.md).
 
 ## Development
@@ -127,7 +129,6 @@ Automatic album naming rules, client accounts, and a replacement photo viewer ar
 
 - [Immich](https://github.com/immich-app/immich): photo storage, shared albums, UI components, and the album layout reference.
 - [Immichinko](https://github.com/wispdevon/Immichinko): daily photo rediscovery and companion gateway patterns.
-- [Immicull](https://github.com/wispdevon/Immicull): integrated photo culling.
 - [Best-README-Template](https://github.com/othneildrew/Best-README-Template): inspiration for the documentation structure.
 
 ImmichPager is not affiliated with the Immich team or NASA.
