@@ -5,8 +5,8 @@
 - Node 22.23.3 and pnpm 11.28.5; frozen dependency installation.
 - TypeScript/Svelte checks with zero application errors or warnings.
 - ESLint and Prettier checks.
-- 55 domain/integration tests across ownership, slug validation, salted password hashing, interrupted creates/deletes, native slug preservation, public credential isolation, SQLite restart recovery, grouping, proxy streaming, and WebSocket upgrades.
-- Seven production-browser scenarios covering desktop/mobile grids, year collapse, native viewer navigation, branded protected publishing, owner isolation, sidebar embedding, same-origin writes, monthly additions, password rotation/session invalidation, rejected SVG uploads, and unpublish revocation.
+- 74 domain/integration tests across ownership, slug validation, salted password hashing, interrupted creates/deletes, native slug preservation, public credential isolation, SQLite restart recovery, grouping, proxy streaming, and WebSocket upgrades.
+- Nine production-browser scenarios covering desktop/mobile grids, year collapse, native viewer navigation, branded protected publishing, owner isolation, sidebar embedding, same-origin writes, monthly additions, password rotation/session invalidation, rejected SVG uploads, and unpublish revocation.
 - Production build and runtime dependency audit with no known advisories at implementation time.
 
 ## Visual comparison
@@ -48,3 +48,7 @@ Node 22 currently prints its built-in SQLite experimental warning. The productio
 ### Live deployment: 9a768a9
 
 Deployed to the existing instance with a stopped-volume backup before the schema 1 → 2 migration. The existing page, share, two branding images and sessions were preserved; one working draft and two draft branding snapshots were initialized. Pager and native Immich remained healthy. Public health/readiness, native version, unauthorized management/photo API responses, missing-page handling and all three companion integration scripts passed. Authenticated editing flows were verified against the fixture instance, without publishing changes to the user's live albums. The host deployment notes record the backup checksum and the required database restore when rolling back to schema 1.
+
+## Dev branch: banner composition and custom CSS
+
+The dev branch adds header overlays and per-page CSS without changing main or the live instance. Browser coverage verifies desktop/mobile overlays, centered whole-header composition, missing-banner fallback, private autosave, explicit publication, clearing CSS, and rejection of invalid CSS without altering live styling. Security cases cover resource/attribute functions, escaped URLs, imports, unsupported nesting/at-rules, selector escape attempts, fixed-position containment and style-closing HTML strings. Screenshots use public NASA fixtures. No live deployment was performed for this increment.

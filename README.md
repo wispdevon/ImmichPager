@@ -53,6 +53,10 @@ Start with **Add a title**, **Add a description**, and **Select albums**. Brandi
 
 </details>
 
+## Gallery customization (dev)
+
+Choose **Below banner** or **Over banner** to compose your logo, title, and description. Advanced per-page CSS supports typography, cover corners, responsive spacing, and theme variables. Changes remain private until published. See the [customization guide and CSS examples](docs/customization.md). These additions are on `dev`; `main` and the current live deployment retain the existing UI.
+
 ## Quick start
 
 Requires Docker Compose v2, an existing Immich installation, and control of its HTTPS reverse proxy.
