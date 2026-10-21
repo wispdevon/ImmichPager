@@ -28,6 +28,16 @@ The roadmap is in [TODO.md](../TODO.md). These changes are proposed for `dev`; a
 
 All 18 planned roadmap items have a proposed feature PR. PR #18 includes its #10/#16 dependency commits; approve those controls before the preset PR. Review each feature independently before approving the integrated merge candidate.
 
+## Verified integration candidate
+
+[Draft PR #19](https://github.com/wispdevon/ImmichPager/pull/19) preserves the conflict resolutions and cross-feature fixes across all 18 feature PRs. Review and approve the individual features first, then promote and merge this candidate to preserve the verified combined result. Every final feature PR head is included in its history. Nothing has been merged into `dev` except documentation.
+
+Combined verification passed with Node 22.23.3 and pnpm 11.28.5: zero type/Svelte errors or warnings, 114 domain tests across 16 files, all 24 Chromium scenarios, lint, formatting, moderate-level dependency audit, and production build. No tests were disabled. Desktop/mobile screenshots were visually reviewed.
+
+The integration also ensures all five header controls survive design duplication and appearance export/import and appear in publication reviews. Older v1 appearance files receive defaults. Browser tests cover inline editing with responsive iframe previews, combined page-list actions, actual password-protected published views, and missing-cover fallback before hydration.
+
+An isolated fixture-only preview runs on the review workstation: [client gallery](http://127.0.0.1:4300/page/acme) and [fixture editor login](http://127.0.0.1:4300/dev-login/alice). It does not connect to a real library. The next requested goal is evidence-driven Immich UI/UX parity; its research is recorded in the [implementation plan](plan.md).
+
 ## Verification and limits
 
 Every feature PR records its own Node 22.23.3 / pnpm 11.28.5 checks, domain tests, build, and browser evidence. Browser tests use the isolated synthetic/NASA fixture library; no real client albums are published. The in-app browser connection was unavailable, so the repository's Playwright/Chromium workflow provides runtime checks.
@@ -36,6 +46,6 @@ The local environment cannot access its Docker daemon. Compose configuration is 
 
 ## Merge and release discipline
 
-Some PRs touch the same editor, gallery renderer, appearance contract, or tests. Resolve overlaps in a review branch and run combined checks before merging the series. Header controls must be included when reviewing presets, design duplication, portable appearance files, and publication appearance summaries. A local integration branch is being used to check these interactions; it does not update `dev`.
+Some PRs touch the same editor, gallery renderer, appearance contract, or tests. Resolve overlaps in a review branch and run combined checks before merging the series. Header controls must be included when reviewing presets, design duplication, portable appearance files, and publication appearance summaries. The verified draft integration candidate above preserves these resolutions without merging features into `dev`.
 
 Do not mark roadmap entries “Implemented on dev” until their PRs are merged, and do not mark them “Released” until release verification and publication are complete. Deferred product ideas remain deferred.
