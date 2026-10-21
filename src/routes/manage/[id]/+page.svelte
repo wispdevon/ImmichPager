@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto, replaceState, beforeNavigate } from '$app/navigation';
   import { untrack, onMount } from 'svelte';
-  import { Button, Textarea } from '@immich/ui';
+  import { Button } from '@immich/ui';
   import Gallery from '$lib/components/Gallery.svelte';
   import AlbumPicker from '$lib/components/AlbumPicker.svelte';
   import BrandingSlot from '$lib/components/BrandingSlot.svelte';
@@ -70,7 +70,7 @@
   const previewPage = $derived<GalleryPage>({
     ...fields,
     id: saved?.id ?? 'preview',
-    title: fields.title || 'Your client page',
+    title: fields.title,
     logo,
     banner,
     albums: selected.map((a) => ({
@@ -83,6 +83,10 @@
       href: null,
       available: true,
     })),
+  });
+  const privatePreviewPage = $derived<GalleryPage>({
+    ...previewPage,
+    title: fields.title || 'Your client page',
   });
   let queue: Promise<unknown> = Promise.resolve();
   function enqueue<T>(work: () => Promise<T>): Promise<T> {
@@ -191,6 +195,15 @@
     fields.albumIds = fields.albumIds.includes(id)
       ? fields.albumIds.filter((x) => x !== id)
       : [...fields.albumIds, id];
+  }
+  function editTitle(title: string) {
+    fields.title = title;
+    if (!slugLocked)
+      fields.slug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 80);
   }
   async function perform(action: 'publish' | 'retry' | 'unpublish' | 'delete') {
     if (
@@ -303,10 +316,9 @@
       >← Back to editor</Button
     ><span>Private preview · includes your draft changes</span>
   </div>
-  <Gallery page={previewPage} preview />
+  <Gallery page={privatePreviewPage} preview />
 {:else}
   <main class="editor">
-    <h1 class="sr-only">{fields.title || 'New client page'}</h1>
     <header class="editor-toolbar">
       <Button
         variant="ghost"
@@ -398,35 +410,13 @@
         onremove={() => void branding('banner', null).catch(() => {})}
       />
     </div>
-    <section class="page-heading">
-      <Textarea
-        variant="ghost"
-        class="page-title"
-        aria-label="Title"
-        placeholder="Add a title"
-        maxlength={160}
-        disabled={busy}
-        bind:value={fields.title}
-        oninput={(event) => {
-          const title = event.currentTarget.value.replaceAll('\n', ' ');
-          event.currentTarget.value = title;
-          if (!slugLocked)
-            fields.slug = title
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, '-')
-              .replace(/^-|-$/g, '')
-              .slice(0, 80);
-        }}
-      /><Textarea
-        variant="ghost"
-        class="page-description"
-        aria-label="Description"
-        placeholder="Add a description"
-        maxlength={2000}
-        disabled={busy}
-        bind:value={fields.description}
-      />
-    </section>
+    <Gallery
+      page={previewPage}
+      editorHeader
+      editDisabled={busy}
+      onTitleInput={editTitle}
+      onDescriptionInput={(description) => (fields.description = description)}
+    />
     {#if selected.length}<section class="selected-albums">
         <div class="bar">
           <h2>
@@ -539,41 +529,6 @@
     gap: 28px;
     margin-top: 40px;
   }
-  .page-heading {
-    padding-top: 40px;
-    max-width: 1300px;
-  }
-  .page-heading :global(.page-title) {
-    border: 0;
-    border-radius: 0;
-    padding: 0 0 8px;
-    background: transparent;
-    font-size: 60px;
-    line-height: 1.2;
-    font-weight: 410;
-    color: #accbfa;
-  }
-  .page-heading :global(.page-title::placeholder) {
-    color: #53647c;
-    opacity: 1;
-  }
-  .page-heading :global(.page-description) {
-    border: 0;
-    border-radius: 0;
-    padding: 12px 0 8px;
-    background: transparent;
-    font-size: 16px;
-    line-height: 1.5;
-    font-weight: 410;
-  }
-  .page-heading :global(.page-description::placeholder) {
-    color: #777;
-    opacity: 1;
-  }
-  .page-heading :global(textarea:focus-visible) {
-    outline: none;
-    box-shadow: 0 2px #accbfa;
-  }
   .empty-albums {
     margin-top: 80px;
     display: flex;
@@ -685,12 +640,6 @@
     .branding-grid {
       grid-template-columns: 1fr;
       margin-top: 24px;
-    }
-    .page-heading {
-      padding-top: 28px;
-    }
-    .page-heading :global(.page-title) {
-      font-size: 36px;
     }
     .editor-toolbar :global(button) {
       font-size: 12px;

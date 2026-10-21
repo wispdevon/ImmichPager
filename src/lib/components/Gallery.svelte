@@ -1,19 +1,51 @@
 <script lang="ts">
+  import { Textarea } from '@immich/ui';
   import { compileCustomCss, stylesheetMarkup } from '$lib/custom-css';
   import type { GalleryPage } from '$lib/contracts';
   import { albumGroups, dateRange } from '$lib/gallery';
-  let { page, preview = false }: { page: GalleryPage; preview?: boolean } =
-    $props();
+  let {
+    page,
+    preview = false,
+    editorHeader = false,
+    editDisabled = false,
+    onTitleInput = () => {},
+    onDescriptionInput = () => {},
+  }: {
+    page: GalleryPage;
+    preview?: boolean;
+    editorHeader?: boolean;
+    editDisabled?: boolean;
+    onTitleInput?: (value: string) => void;
+    onDescriptionInput?: (value: string) => void;
+  } = $props();
   let failed = $state<string[]>([]);
+  let editing = $state<'title' | 'description' | null>(null);
+  let titleInput = $state<HTMLTextAreaElement | null>(null);
+  let descriptionInput = $state<HTMLTextAreaElement | null>(null);
   const groups = $derived(albumGroups(page));
-  const styling = $derived(compileCustomCss(page.customCss ?? '', page.id));
+  const styling = $derived(
+    compileCustomCss(editorHeader ? '' : (page.customCss ?? ''), page.id),
+  );
   const overlay = $derived(page.headerLayout === 'overlay' && !!page.banner);
+
+  function editField(field: 'title' | 'description') {
+    if (!editDisabled) editing = field;
+  }
+
+  $effect(() => {
+    const input = editing === 'title' ? titleInput : descriptionInput;
+    if (input) {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+  });
 </script>
 
-<div class="gallery-boundary">
+<div class="gallery-boundary" class:header-editor={editorHeader}>
   {@html stylesheetMarkup(styling.css)}
   <div
     class="gallery ip-gallery"
+    class:header-editor={editorHeader}
     data-pager-gallery={page.id}
     class:overlay
     class:light={page.theme === 'light'}
@@ -39,13 +71,86 @@
             width="80"
             height="80"
           />{/if}
-        <h1 class="ip-title">{page.title}</h1>
-        {#if page.description}<p class="description ip-description">
+        {#if editorHeader && editing === 'title'}<Textarea
+            bind:ref={titleInput}
+            variant="ghost"
+            class="ip-title ip-title-editor"
+            aria-label="Title"
+            placeholder="Add a title"
+            maxlength={160}
+            disabled={editDisabled}
+            value={page.title}
+            oninput={(event) => {
+              const title = event.currentTarget.value.replaceAll('\n', ' ');
+              event.currentTarget.value = title;
+              onTitleInput(title);
+            }}
+            onblur={() => (editing = null)}
+            onkeydown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                editing = null;
+              } else if (event.key === 'Escape') {
+                editing = null;
+              }
+            }}
+          />{:else}<h1
+            class="ip-title"
+            aria-label={editorHeader ? page.title || 'Add a title' : undefined}
+          >
+            {#if editorHeader}<button
+                type="button"
+                class="header-edit-field title-edit-field"
+                class:is-placeholder={!page.title}
+                aria-label={`Edit title, ${page.title || 'Add a title'}`}
+                disabled={editDisabled}
+                onclick={() => editField('title')}
+                >{page.title || 'Add a title'}<span
+                  class="edit-hint"
+                  aria-hidden="true">✎</span
+                ></button
+              >{:else}{page.title}{/if}
+          </h1>{/if}
+        {#if editorHeader}
+          {#if editing === 'description'}<div
+              class="description ip-description description-editor"
+            >
+              <Textarea
+                bind:ref={descriptionInput}
+                variant="ghost"
+                class="ip-description ip-description-editor"
+                aria-label="Description"
+                placeholder="Add a description"
+                maxlength={2000}
+                disabled={editDisabled}
+                value={page.description}
+                oninput={(event) =>
+                  onDescriptionInput(event.currentTarget.value)}
+                onblur={() => (editing = null)}
+                onkeydown={(event) => {
+                  if (event.key === 'Escape') editing = null;
+                }}
+              />
+            </div>{:else}<p class="description ip-description">
+              <button
+                type="button"
+                class="header-edit-field description-edit-field"
+                class:is-placeholder={!page.description}
+                aria-label={`Edit description, ${page.description || 'Add a description'}`}
+                disabled={editDisabled}
+                onclick={() => editField('description')}
+                >{page.description || 'Add a description'}<span
+                  class="edit-hint"
+                  aria-hidden="true">✎</span
+                ></button
+              >
+            </p>{/if}
+        {:else if page.description}<p class="description ip-description">
             {page.description}
           </p>{/if}
       </header>
     </div>
-    <main class="albums ip-albums" aria-label="Albums">
+    <main class="albums ip-albums" aria-label="Albums" hidden={editorHeader}>
       {#each groups as [year, albums], groupIndex (year)}
         <details class="ip-year-group" open>
           <summary class="ip-year-heading"
@@ -106,7 +211,7 @@
           <p>The next chapter is on its way.</p>
         </div>{/each}
     </main>
-    <footer class="ip-footer">
+    <footer class="ip-footer" hidden={editorHeader}>
       <a
         href="https://gitlab.com/wispd/ImmichPager"
         target="_blank"
@@ -128,6 +233,10 @@
     isolation: isolate;
     min-height: 100dvh;
   }
+  .gallery-boundary.header-editor {
+    min-height: 0;
+    margin-inline: -40px;
+  }
   .gallery {
     --base-bg: #000;
     --base-fg: #f5f5f5;
@@ -135,6 +244,9 @@
     color: var(--pager-foreground, var(--custom-fg, var(--base-fg)));
     min-height: 100dvh;
     color-scheme: dark;
+  }
+  .gallery.header-editor {
+    min-height: 0;
   }
   .gallery.light {
     --base-bg: #fff;
@@ -218,6 +330,89 @@
   }
   .centered .description {
     margin-inline: auto;
+  }
+  .header-edit-field {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
+    overflow-wrap: anywhere;
+    cursor: text;
+  }
+  .header-edit-field:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 5px;
+  }
+  .description-edit-field {
+    white-space: pre-line;
+  }
+  .header-edit-field.is-placeholder {
+    opacity: 0.7;
+  }
+  .edit-hint {
+    display: inline-block;
+    margin-inline-start: 0.5em;
+    font-size: 0.55em;
+    vertical-align: top;
+    opacity: 0;
+    transition: opacity 120ms ease;
+  }
+  .header-edit-field:hover .edit-hint,
+  .header-edit-field:focus-visible .edit-hint {
+    opacity: 0.7;
+  }
+  :global(textarea.ip-title-editor) {
+    width: 100%;
+    min-height: 1.15em;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: inherit;
+    font-size: clamp(30px, 3.4vw, 48px);
+    font-weight: 650;
+    letter-spacing: -1.3px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+  :global(textarea.ip-title-editor::placeholder) {
+    color: #8798b0;
+    opacity: 1;
+  }
+  :global(textarea.ip-description-editor) {
+    width: 100%;
+    max-width: 720px;
+    min-height: 1.6em;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: inherit;
+    font-size: 18px;
+    font-weight: 410;
+    line-height: 1.6;
+    opacity: 0.72;
+    white-space: pre-line;
+  }
+  :global(textarea.ip-description-editor::placeholder) {
+    color: #a1a1aa;
+    opacity: 1;
+  }
+  .description-editor {
+    margin-block: 16px 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .edit-hint {
+      transition: none;
+    }
   }
   .albums {
     padding: 0 16px 40px;
@@ -325,6 +520,9 @@
     opacity: 0.5;
   }
   @media (max-width: 600px) {
+    .gallery-boundary.header-editor {
+      margin-inline: -20px;
+    }
     header {
       padding: 32px 20px;
     }
