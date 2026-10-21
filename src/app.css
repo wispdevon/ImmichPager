@@ -40,9 +40,12 @@ button,
 summary {
   cursor: pointer;
 }
-/* Immich Button links carry aria-disabled and need their theme text utilities. */
-a:not([aria-disabled]) {
-  color: inherit;
+@layer base {
+  a {
+    color: inherit;
+  }
+}
+a {
   text-underline-offset: 4px;
 }
 :focus-visible {

@@ -122,12 +122,50 @@ test('Immich button links retain theme contrast and ordinary links inherit', asy
       expect(ordinaryLinkColors.color).toBe(ordinaryLinkColors.parentColor);
       expect(ordinaryLinkColors.underlineOffset).toBe('4px');
 
+      const disabledLinkColors = await page.evaluate(() => {
+        const parent = document.createElement('div');
+        parent.style.color = 'rgb(35, 72, 115)';
+        const link = document.createElement('a');
+        link.href = '#disabled-link-color-check';
+        link.setAttribute('aria-disabled', 'true');
+        link.textContent = 'Disabled ordinary link';
+        parent.append(link);
+        document.body.append(parent);
+        return {
+          color: getComputedStyle(link).color,
+          parentColor: getComputedStyle(parent).color,
+        };
+      });
+      expect(disabledLinkColors.color).toBe(disabledLinkColors.parentColor);
+
+      await page.goto('/page/acme');
+      await disableTransitions(page);
+      await useTheme(page, theme);
+      await page.mouse.move(viewport.width - 1, viewport.height - 1);
+      const galleryLink = page.locator('a.ip-album[aria-disabled]').first();
+      await expect(galleryLink).toBeVisible();
+      const galleryLinkColors = await galleryLink.evaluate((element) => {
+        const gallery = element.closest('.gallery');
+        if (!gallery) throw new Error('Album link has no gallery ancestor.');
+        return {
+          color: getComputedStyle(element).color,
+          galleryColor: getComputedStyle(gallery).color,
+        };
+      });
+      expect(galleryLinkColors.color).toBe(galleryLinkColors.galleryColor);
+
       if (theme === 'dark' && viewport.name === 'mobile') {
+        await page.goto('/page/manage');
+        await disableTransitions(page);
+        await useTheme(page, theme);
         await page.keyboard.press('Tab');
-        await createLink.focus();
-        await expect(createLink).toBeFocused();
+        const keyboardCreateLink = page
+          .getByRole('link', { name: /Create page/ })
+          .first();
+        await keyboardCreateLink.focus();
+        await expect(keyboardCreateLink).toBeFocused();
         expect(
-          await createLink.evaluate(
+          await keyboardCreateLink.evaluate(
             (element) => getComputedStyle(element).outlineWidth,
           ),
         ).toBe('2px');
@@ -160,6 +198,12 @@ test('Immich button links retain theme contrast and ordinary links inherit', asy
           `${theme} button links should match the native primary button text color`,
         )
         .toBe(buttonColors.color);
+      expect
+        .soft(
+          linkColors.backgroundColor,
+          `${theme} button links should match the native primary button background`,
+        )
+        .toBe(buttonColors.backgroundColor);
     }
   }
 });
