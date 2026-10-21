@@ -35,7 +35,7 @@ Autosaving never changes the public version or its sessions. Publication commits
 
 ## Appearance settings (dev)
 
-Working settings and gallery responses include per-page `headerLayout` (`"below"` or `"overlay"`, default `"below"`), `headerSize` (`"compact"`, `"standard"`, or `"tall"`, default `"standard"`), `logoSize` (integer pixels, 48–160, default 80), and `customCss` (string, default `""`, maximum 20,000 characters). The visual settings and CSS use the existing autosave revision and explicit publication endpoints. Existing stored records receive defaults on read; database schema version remains 2.
+Working settings and gallery responses include per-page `headerLayout` (`"below"` or `"overlay"`, default `"below"`), `headerSize` (`"compact"`, `"standard"`, or `"tall"`, default `"standard"`), `logoSize` (integer pixels, 48–160, default 80), `titleSize` (rem, 1.5–4, default 3), `descriptionSize` (rem, 0.875–1.5, default 1.125), `headerSpacing` (rem, 1.5–5, default 2.5), and `customCss` (string, default `""`, maximum 20,000 characters). These settings use the existing autosave revision and explicit publication endpoints. Existing stored records receive defaults on read; database schema version remains 2.
 
 Draft saves accept unfinished or invalid CSS within the size limit. Publication validates CSS server-side and returns 400 with a `Custom CSS` message for invalid or unsupported rules before touching live data or shares. Gallery rendering independently compiles the stylesheet and omits it on error. See the [customization guide](customization.md) for selectors, variables and supported syntax. No external resources or global selectors are enabled.
 

@@ -29,6 +29,9 @@ export const pageInputSchema = z
     headerLayout: z.enum(['below', 'overlay']).default('below'),
     headerSize: z.enum(['compact', 'standard', 'tall']).default('standard'),
     logoSize: z.number().int().min(48).max(160).default(80),
+    titleSize: z.number().min(1.5).max(4).default(3),
+    descriptionSize: z.number().min(0.875).max(1.5).default(1.125),
+    headerSpacing: z.number().min(1.5).max(5).default(2.5),
     customCss: z.string().max(20_000).default(''),
     bannerPosition: z.number().int().min(0).max(100).default(50),
     albumIds: z
@@ -99,6 +102,9 @@ export type GalleryPage = Pick<
   | 'headerLayout'
   | 'headerSize'
   | 'logoSize'
+  | 'titleSize'
+  | 'descriptionSize'
+  | 'headerSpacing'
   | 'customCss'
   | 'order'
 > & {
@@ -156,18 +162,27 @@ export function appearanceDefaults<T extends object>(
   headerLayout: 'below' | 'overlay';
   headerSize: 'compact' | 'standard' | 'tall';
   logoSize: number;
+  titleSize: number;
+  descriptionSize: number;
+  headerSpacing: number;
   customCss: string;
 } {
   return {
     headerLayout: 'below',
     headerSize: 'standard',
     logoSize: 80,
+    titleSize: 3,
+    descriptionSize: 1.125,
+    headerSpacing: 2.5,
     customCss: '',
     ...record,
   } as T & {
     headerLayout: 'below' | 'overlay';
     headerSize: 'compact' | 'standard' | 'tall';
     logoSize: number;
+    titleSize: number;
+    descriptionSize: number;
+    headerSpacing: number;
     customCss: string;
   };
 }

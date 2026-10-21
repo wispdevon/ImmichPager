@@ -121,6 +121,12 @@
     style:--custom-fg={page.foreground || undefined}
     style:--accent={page.accent}
     style:--logo-size={`${page.logoSize}px`}
+    style:--title-min-size={`${Math.min(1.875, page.titleSize * 0.625)}rem`}
+    style:--title-fluid-size={`${(3.4 / 3) * page.titleSize}vw`}
+    style:--title-max-size={`${page.titleSize}rem`}
+    style:--description-size={`${page.descriptionSize}rem`}
+    style:--header-spacing={`${page.headerSpacing}rem`}
+    style:--mobile-header-spacing={`${Math.max(1.5, page.headerSpacing * 0.8)}rem`}
   >
     <div class="hero ip-hero">
       {#if page.banner}<div class="banner ip-banner">
@@ -469,7 +475,7 @@
     height: clamp(240px, 35vw, 480px);
   }
   header {
-    padding: 52px 40px 40px;
+    padding: calc(var(--header-spacing) + 0.75rem) 40px var(--header-spacing);
     max-width: 1600px;
     margin: auto;
   }
@@ -484,7 +490,11 @@
     display: inline-block;
   }
   h1 {
-    font-size: clamp(30px, 3.4vw, 48px);
+    font-size: clamp(
+      var(--title-min-size),
+      var(--title-fluid-size),
+      var(--title-max-size)
+    );
     line-height: 1.15;
     font-weight: 650;
     letter-spacing: -1.3px;
@@ -492,7 +502,7 @@
     overflow-wrap: anywhere;
   }
   .description {
-    font-size: 18px;
+    font-size: var(--description-size);
     opacity: 0.72;
     max-width: 720px;
     white-space: pre-line;
@@ -547,7 +557,11 @@
     background: transparent;
     box-shadow: none;
     color: inherit;
-    font-size: clamp(30px, 3.4vw, 48px);
+    font-size: clamp(
+      var(--title-min-size),
+      var(--title-fluid-size),
+      var(--title-max-size)
+    );
     font-weight: 650;
     letter-spacing: -1.3px;
     line-height: 1.15;
@@ -568,7 +582,7 @@
     background: transparent;
     box-shadow: none;
     color: inherit;
-    font-size: 18px;
+    font-size: var(--description-size);
     font-weight: 410;
     line-height: 1.6;
     opacity: 0.72;
@@ -782,7 +796,7 @@
       margin-inline: -20px;
     }
     header {
-      padding: 32px 20px;
+      padding: var(--mobile-header-spacing) 20px;
     }
     .albums {
       padding-inline: 8px;

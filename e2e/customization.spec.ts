@@ -52,25 +52,33 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await page.getByRole('button', { name: 'Preview', exact: true }).click();
-  const defaultAppearance = await page
+  let gallery = page.frameLocator('[data-testid="responsive-preview-frame"]');
+  const defaultAppearance = await gallery
     .locator('.ip-gallery')
     .evaluate((root) => {
       const style = getComputedStyle(root);
       const logo = root.querySelector('.ip-logo');
+      const description = root.querySelector('.ip-description');
+      const title = root.querySelector('.ip-title');
       return {
         headerSize:
           root.classList.contains('header-compact') ||
           root.classList.contains('header-tall'),
         logoSize: style.getPropertyValue('--logo-size').trim(),
         logoWidth: logo && getComputedStyle(logo).width,
-        titleFont: getComputedStyle(root.querySelector('.ip-title')!)
-          .fontFamily,
+        titleSize: style.getPropertyValue('--title-max-size').trim(),
+        spacing: style.getPropertyValue('--header-spacing').trim(),
+        descriptionSize: description && getComputedStyle(description).fontSize,
+        titleFont: title && getComputedStyle(title).fontFamily,
       };
     });
   expect(defaultAppearance).toMatchObject({
     headerSize: false,
     logoSize: '80px',
     logoWidth: '80px',
+    titleSize: '3rem',
+    spacing: '2.5rem',
+    descriptionSize: '18px',
   });
   expect(defaultAppearance.titleFont).toContain('GoogleSans');
   await page.getByRole('button', { name: 'Back to editor' }).click();
@@ -78,6 +86,13 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
   await page.getByRole('button', { name: 'Header size', exact: true }).click();
   await page.getByRole('option', { name: 'Tall', exact: true }).click();
   await page.getByRole('slider', { name: 'Logo size' }).press('ArrowRight');
+  await page.getByRole('slider', { name: 'Title size' }).press('ArrowRight');
+  await page
+    .getByRole('slider', { name: 'Description size' })
+    .press('ArrowRight');
+  await page
+    .getByRole('slider', { name: 'Header spacing' })
+    .press('ArrowRight');
   await page.getByText('Advanced · Custom CSS', { exact: true }).click();
   const source =
     ':scope { --pager-accent: #ff6600; } .ip-title { color: rgb(240, 182, 127) !important; font-family: Georgia, serif; } .ip-cover { border-radius: 4px; } @media (max-width:600px) { .ip-title { font-size: 38px !important; } }';
@@ -95,7 +110,7 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
     (await anonymous.request.get('/page/banner-composition')).status(),
   ).toBe(404);
   await page.getByRole('button', { name: 'Preview', exact: true }).click();
-  const gallery = page.frameLocator('[data-testid="responsive-preview-frame"]');
+  gallery = page.frameLocator('[data-testid="responsive-preview-frame"]');
   await expect(gallery.locator('.ip-title')).toHaveCSS(
     'color',
     'rgb(240, 182, 127)',
@@ -103,6 +118,15 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
   await expect(gallery.locator('.ip-gallery')).toHaveClass(/overlay/);
   await expect(gallery.locator('.ip-header')).toHaveClass(/centered/);
   await expect(gallery.locator('.ip-gallery')).toHaveClass(/header-tall/);
+  await expect(gallery.locator('.ip-gallery')).toHaveCSS(
+    '--title-max-size',
+    '3.125rem',
+  );
+  await expect(gallery.locator('.ip-description')).toHaveCSS(
+    'font-size',
+    '19px',
+  );
+  await expect(gallery.locator('.ip-header')).toHaveCSS('padding-bottom', '44px');
   await expect(gallery.locator('.ip-logo')).toBeVisible();
   await expect(gallery.locator('.ip-logo')).toHaveCSS('width', '88px');
   await expect(gallery.locator('.ip-description')).toHaveText(
@@ -114,6 +138,10 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
   });
   await page.getByRole('button', { name: 'Phone preview' }).click();
   await expect(gallery.locator('.ip-title')).toHaveCSS('font-size', '38px');
+  await expect(gallery.locator('.ip-header')).toHaveCSS(
+    'padding-bottom',
+    '35.2px',
+  );
   const boxes = await Promise.all([
     gallery.locator('.ip-hero').boundingBox(),
     gallery.locator('.ip-header').boundingBox(),
@@ -143,6 +171,18 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
   await expect(client.locator('.ip-gallery')).toHaveClass(/overlay/);
   await expect(client.locator('.ip-gallery')).toHaveClass(/header-tall/);
   await expect(client.locator('.ip-logo')).toHaveCSS('width', '88px');
+  await expect(client.locator('.ip-gallery')).toHaveCSS(
+    '--title-max-size',
+    '3.125rem',
+  );
+  await expect(client.locator('.ip-description')).toHaveCSS(
+    'font-size',
+    '19px',
+  );
+  await expect(client.locator('.ip-header')).toHaveCSS(
+    'padding-bottom',
+    '44px',
+  );
   // CSS remains a working change until explicit publication, even when invalid.
   await page.getByRole('button', { name: 'Options', exact: true }).click();
   await page.getByText('Advanced · Custom CSS', { exact: true }).click();

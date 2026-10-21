@@ -62,6 +62,12 @@ In **Options → Appearance**, choose **Compact**, **Standard**, or **Tall** for
 
 Changes autosave to the private draft, appear in Preview, and only update your client page after you publish. Existing pages receive these defaults without a database migration.
 
+## Set typography and spacing
+
+In **Options → Appearance**, use the sliders to set title size (1.5–4 rem), description size (0.875–1.5 rem), and header spacing (1.5–5 rem). The title scales with page width, and spacing adjusts on narrow screens. Google Sans remains the default font. Existing and new pages start with a 3 rem title, 1.125 rem description, and 2.5 rem header spacing.
+
+Changes autosave to the private draft and appear in Preview. Your client page changes only after you publish. Existing pages receive defaults without a database migration.
+
 ## Add CSS
 
 Expand **Advanced · Custom CSS** in Options. Enter ordinary CSS, close Options, and use Preview. CSS is limited to 20,000 characters. **Clear custom CSS** removes the draft stylesheet; publish that change to reset the live gallery too.
@@ -165,7 +171,7 @@ Use installed system fonts, including the gallery's bundled Google Sans, without
 
 ## Contributor implementation notes
 
-`headerLayout`, `headerSize`, `logoSize`, and `customCss` are additive settings on working drafts, published records, and gallery DTOs. Missing fields in older stored JSON receive defaults on read; the SQLite schema stays at version 2. Draft writes preserve invalid CSS text so an unfinished edit is recoverable. Publication validates the stylesheet before changing any live data or native shares.
+`headerLayout`, `headerSize`, `logoSize`, `titleSize`, `descriptionSize`, `headerSpacing`, and `customCss` (raw CSS text) are additive settings on working drafts, published records, and gallery DTOs. Missing fields in older stored JSON receive defaults on read; the SQLite schema stays at version 2. Draft writes preserve invalid CSS text so an unfinished edit is recoverable. Publication validates the stylesheet before changing any live data or native shares.
 
 The shared compiler uses CSS Tree to parse, validate supported constructs, and add a page-specific guard to each selector's target, including selectors with pseudo-elements. `:scope` maps to the gallery root. A separate, untargetable layout/paint containment wrapper isolates positioned descendants. The renderer only serializes compiled CSS and escapes `<` as a CSS escape before placing it in a style element; raw author text is never inserted as HTML. Existing CSP directives remain unchanged. Browser tests cover style-closing strings, selector escape attempts, containment, private drafts, publication and resetting.
 
