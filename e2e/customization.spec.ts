@@ -81,21 +81,36 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
     descriptionSize: '18px',
   });
   expect(defaultAppearance.titleFont).toContain('GoogleSans');
+  await page.getByRole('button', { name: 'Phone preview' }).click();
+  await expect(gallery.locator('.ip-title')).toHaveCSS('font-size', '30px');
+  await page.getByRole('button', { name: 'Desktop preview' }).click();
   await page.getByRole('button', { name: 'Back to editor' }).click();
   await page.getByRole('button', { name: 'Options', exact: true }).click();
   await page.getByRole('button', { name: 'Header size', exact: true }).click();
   await page.getByRole('option', { name: 'Tall', exact: true }).click();
   await page.getByRole('slider', { name: 'Logo size' }).press('ArrowRight');
-  await page.getByRole('slider', { name: 'Title size' }).press('ArrowRight');
+  await page.getByRole('slider', { name: 'Title size' }).press('End');
   await page
     .getByRole('slider', { name: 'Description size' })
     .press('ArrowRight');
   await page
     .getByRole('slider', { name: 'Header spacing' })
     .press('ArrowRight');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
+  await page.getByRole('button', { name: 'Preview', exact: true }).click();
+  gallery = page.frameLocator('[data-testid="responsive-preview-frame"]');
+  await expect(gallery.locator('.ip-gallery')).toHaveCSS(
+    '--title-max-size',
+    '4rem',
+  );
+  await page.getByRole('button', { name: 'Phone preview' }).click();
+  await expect(gallery.locator('.ip-title')).toHaveCSS('font-size', '40px');
+  await page.getByRole('button', { name: 'Back to editor' }).click();
+  await page.getByRole('button', { name: 'Options', exact: true }).click();
   await page.getByText('Advanced · Custom CSS', { exact: true }).click();
   const source =
-    ':scope { --pager-accent: #ff6600; } .ip-title { color: rgb(240, 182, 127) !important; font-family: Georgia, serif; } .ip-cover { border-radius: 4px; } @media (max-width:600px) { .ip-title { font-size: 38px !important; } }';
+    ':scope { --pager-accent: #ff6600; } .ip-title { color: rgb(240, 182, 127) !important; font-family: Georgia, serif; } .ip-cover { border-radius: 4px; } @media (max-width:600px) { .ip-title { color: rgb(30, 200, 120) !important; } }';
   await page.getByLabel('Custom CSS', { exact: true }).fill(source);
   await expect(page.locator('#css-feedback')).toContainText('Use Preview');
   await page.screenshot({
@@ -120,7 +135,7 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
   await expect(gallery.locator('.ip-gallery')).toHaveClass(/header-tall/);
   await expect(gallery.locator('.ip-gallery')).toHaveCSS(
     '--title-max-size',
-    '3.125rem',
+    '4rem',
   );
   await expect(gallery.locator('.ip-description')).toHaveCSS(
     'font-size',
@@ -137,7 +152,11 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
     fullPage: false,
   });
   await page.getByRole('button', { name: 'Phone preview' }).click();
-  await expect(gallery.locator('.ip-title')).toHaveCSS('font-size', '38px');
+  await expect(gallery.locator('.ip-title')).toHaveCSS('font-size', '40px');
+  await expect(gallery.locator('.ip-title')).toHaveCSS(
+    'color',
+    'rgb(30, 200, 120)',
+  );
   await expect(gallery.locator('.ip-header')).toHaveCSS(
     'padding-bottom',
     '35.2px',
@@ -173,7 +192,7 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
   await expect(client.locator('.ip-logo')).toHaveCSS('width', '88px');
   await expect(client.locator('.ip-gallery')).toHaveCSS(
     '--title-max-size',
-    '3.125rem',
+    '4rem',
   );
   await expect(client.locator('.ip-description')).toHaveCSS(
     'font-size',
