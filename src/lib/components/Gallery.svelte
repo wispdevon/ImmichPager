@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { Textarea } from '@immich/ui';
   import { compileCustomCss, stylesheetMarkup } from '$lib/custom-css';
   import type { GalleryPage } from '$lib/contracts';
@@ -30,6 +30,8 @@
   let editing = $state<'title' | 'description' | null>(null);
   let titleInput = $state<HTMLTextAreaElement | null>(null);
   let descriptionInput = $state<HTMLTextAreaElement | null>(null);
+  let titleEditButton = $state<HTMLButtonElement | null>(null);
+  let descriptionEditButton = $state<HTMLButtonElement | null>(null);
   let searchTerm = $state('');
   let selectedMonth = $state('');
   let selectedYear = $state('');
@@ -76,7 +78,21 @@
   });
 
   function editField(field: 'title' | 'description') {
-    if (!editDisabled) editing = field;
+    if (editDisabled) return;
+    editing = field;
+  }
+
+  async function finishEditing(field: 'title' | 'description') {
+    if (editing !== field) return;
+    editing = null;
+    await tick();
+    const trigger = field === 'title' ? titleEditButton : descriptionEditButton;
+    trigger?.focus();
+  }
+
+  function finishOnBlur(field: 'title' | 'description') {
+    // Let the browser keep its natural Tab or pointer focus destination.
+    if (editing === field) editing = null;
   }
 
   function updateSearch(event: Event) {
@@ -189,13 +205,15 @@
               event.currentTarget.value = title;
               onTitleInput(title);
             }}
-            onblur={() => (editing = null)}
+            onblur={() => finishOnBlur('title')}
             onkeydown={(event) => {
               if (event.key === 'Enter') {
+                if (event.isComposing || event.keyCode === 229) return;
                 event.preventDefault();
-                editing = null;
+                void finishEditing('title');
               } else if (event.key === 'Escape') {
-                editing = null;
+                event.preventDefault();
+                void finishEditing('title');
               }
             }}
           />{:else}<h1
@@ -206,6 +224,7 @@
                 type="button"
                 class="header-edit-field title-edit-field"
                 class:is-placeholder={!page.title}
+                bind:this={titleEditButton}
                 aria-label={`Edit title, ${page.title || 'Add a title'}`}
                 disabled={editDisabled}
                 onclick={() => editField('title')}
@@ -230,9 +249,15 @@
                 value={page.description}
                 oninput={(event) =>
                   onDescriptionInput(event.currentTarget.value)}
-                onblur={() => (editing = null)}
+                onblur={() => finishOnBlur('description')}
                 onkeydown={(event) => {
-                  if (event.key === 'Escape') editing = null;
+                  if (event.key === 'Enter' && event.ctrlKey) {
+                    event.preventDefault();
+                    void finishEditing('description');
+                  } else if (event.key === 'Escape') {
+                    event.preventDefault();
+                    void finishEditing('description');
+                  }
                 }}
               />
             </div>{:else}<p class="description ip-description">
@@ -240,6 +265,7 @@
                 type="button"
                 class="header-edit-field description-edit-field"
                 class:is-placeholder={!page.description}
+                bind:this={descriptionEditButton}
                 aria-label={`Edit description, ${page.description || 'Add a description'}`}
                 disabled={editDisabled}
                 onclick={() => editField('description')}
