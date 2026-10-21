@@ -13,13 +13,13 @@ The [release downloads](https://github.com/wispdevon/ImmichPager/releases/tag/v0
 
 Local verification covers type checking, lint, formatting, dependency audit, 55 domain tests, 7 production-browser tests, and the production build. The ARM64 image receives an isolated startup and health smoke check; publishing does not change an existing deployment.
 
-GitHub rejected workflow dispatch with `Actions has been disabled for this user`. The available publishing credential also lacks `write:packages`, so this release has no GHCR image. Use the downloadable image or source/runtime build until registry publication is available.
+GitHub rejected workflow dispatch with `Actions has been disabled for this user`. The available publishing credential also lacks `write:packages`, so this release has no GHCR image. Use the downloadable image or source/runtime build until a GitLab release image is published.
 
 ## Release process
 
 Use semantic versions. Keep `CHANGELOG.md` current and bump `package.json` in a reviewed commit. Verify type checks, linting, tests, browser flows, formatting, production build, dependency audit, and Docker smoke tests before tagging.
 
-Create and push a `vMAJOR.MINOR.PATCH` tag only when releasing a verified version. When GitHub Actions is available, the image workflow builds Linux amd64/arm64 images and publishes version and major.minor tags to GHCR. Main branch pushes publish the rolling `main` image. Image metadata records the source commit and license.
+Create a protected `vMAJOR.MINOR.PATCH` tag only for a verified release. The GitLab pipeline runs the same checks on merge requests, branches, and tags. Its `publish_image` job appears only for a protected semantic-version tag, waits for checks and a Docker smoke test, and requires a maintainer to start it manually. It publishes Linux amd64/arm64 images to `registry.gitlab.com/wispd/immichpager` with version, major.minor, and `latest` tags. There is no rolling branch image. Image metadata records the GitLab source URL, version, and source commit. See [GitLab distribution](gitlab-distribution.md) before switching the primary repository.
 
 Container builds execute for PRs without publishing. Do not add credentials to workflow files or broaden pull-request permissions. Contributors' PRs use read-only repository permissions.
 

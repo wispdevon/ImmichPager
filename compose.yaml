@@ -1,6 +1,6 @@
 services:
   immichpager:
-    image: ghcr.io/wispdevon/immichpager:${PAGER_TAG:-main}
+    image: registry.gitlab.com/wispd/immichpager:${PAGER_TAG:-latest}
     build: .
     restart: unless-stopped
     init: true
