@@ -86,6 +86,7 @@ test('public gallery browsing, responsive layout, and year navigation work', asy
   const firstAlbum = page.locator('.album').first();
   await expect(firstAlbum).toHaveCSS('padding', '20px');
   await expect(firstAlbum).toHaveCSS('border-top-left-radius', '16px');
+  await expect(firstAlbum).toHaveCSS('transition-duration', '0s');
   await expect(firstAlbum.locator('h3')).toHaveCSS('font-size', '18px');
   await expect(firstAlbum.locator('.album-info p').first()).toHaveCSS(
     'font-size',
