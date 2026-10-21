@@ -42,7 +42,7 @@ Screenshots use attributed [NASA Apollo photographs](fixtures/photos/README.md) 
 
 - **Persistent client links:** one `/page/custom-slug` URL across months of work.
 - **Immich-style albums:** square covers, dates, item counts, collapsible years, and manual or chronological ordering.
-- **Per-page branding:** choose a logo/banner from Immich Photos, drop an image, or upload; adjust crop, alignment, and colors.
+- **Per-page branding:** choose a logo/banner from Immich Photos, drop an image, or upload; adjust crop, alignment, header size, logo size, and colors.
 - **Private autosaved drafts:** edit freely without changing the live page; publish updates explicitly.
 - **Easy sharing:** Copy link on each published page, with an Immich-style Options panel for configuration.
 - **Password protection:** optional page password/PIN applied to dedicated Immich album shares too. The native viewer may prompt again.
@@ -68,7 +68,7 @@ Start with **Add a title**, **Add a description**, and **Select albums**. Brandi
 
 ## Gallery customization (dev)
 
-Choose **Below banner** or **Over banner** to compose your logo, title, and description. Advanced per-page CSS supports typography, cover corners, responsive spacing, and theme variables. Changes remain private until published. See the [customization guide and CSS examples](docs/customization.md). These additions are on `dev`; `main` and the current live deployment retain the existing UI.
+Choose **Below banner** or **Over banner** to compose your logo, title, and description. Set compact, standard, or tall banners and tune logo size. Advanced per-page CSS supports typography, cover corners, responsive spacing, and theme variables. Changes remain private until published. See the [customization guide and CSS examples](docs/customization.md). These additions are on `dev`; `main` and the current live deployment retain the existing UI.
 
 ## Quick start
 
