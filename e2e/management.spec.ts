@@ -116,10 +116,12 @@ test('management status filters, draft branding previews, and mobile rows', asyn
   await filter.click();
   await page.getByRole('option', { name: 'Published', exact: true }).click();
   await expect(search).toHaveValue('LTR02');
+  const changedPublishedRow = page
+    .getByTestId('management-page-row')
+    .filter({ hasText: 'LTR02 published with unpublished changes' });
+  await expect(changedPublishedRow).toBeVisible();
   await expect(
-    page
-      .getByTestId('management-page-row')
-      .filter({ hasText: 'LTR02 published with unpublished changes' }),
+    changedPublishedRow.getByText('1 album', { exact: true }),
   ).toBeVisible();
   await expect(
     page

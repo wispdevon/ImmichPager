@@ -251,7 +251,10 @@
               {/if}
             </p>
             <div class="page-meta">
-              <span>{page.albumIds.length} albums</span>
+              <span>
+                {page.albumIds.length}
+                {page.albumIds.length === 1 ? 'album' : 'albums'}
+              </span>
               <span
                 class:live={page.status === 'published'}
                 class:attention={page.status === 'error'}
