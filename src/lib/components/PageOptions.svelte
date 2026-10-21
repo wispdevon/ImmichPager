@@ -1,5 +1,10 @@
 <script lang="ts">
   import { compileCustomCss, CUSTOM_CSS_LIMIT } from '$lib/custom-css';
+  import {
+    albumOrderGroups,
+    moveAlbumBy,
+    moveAlbumRelative,
+  } from '$lib/album-order';
   import { labelDialog } from '$lib/actions/dialog-label';
   import {
     Modal,
@@ -38,6 +43,9 @@
     onSlugEdit: () => void;
   } = $props();
   let editUrl = $state(false);
+  let drag = $state<{ albumId: string; pointerId: number } | null>(null);
+  let orderStatus = $state('');
+  const orderGroups = $derived(albumOrderGroups(fields.albumIds, albums));
   const cssValidation = $derived(
     compileCustomCss(fields.customCss, saved?.id ?? 'preview'),
   );
@@ -54,12 +62,73 @@
     )
       editUrl = true;
   }
-  function move(index: number, by: number) {
-    const next = index + by;
-    if (next < 0 || next >= fields.albumIds.length) return;
-    const ids = [...fields.albumIds];
-    [ids[index], ids[next]] = [ids[next], ids[index]];
-    fields.albumIds = ids;
+  function applyOrder(next: string[], albumId: string) {
+    if (next === fields.albumIds) return;
+    fields.albumIds = next;
+    const name =
+      albums.find((album) => album.id === albumId)?.albumName ??
+      'Unavailable album';
+    const group = albumOrderGroups(next, albums).find(([, ids]) =>
+      ids.includes(albumId),
+    );
+    if (group)
+      orderStatus = `Moved ${name} to position ${group[1].indexOf(albumId) + 1} of ${group[1].length} in ${group[0]}.`;
+  }
+  function move(albumId: string, by: number) {
+    applyOrder(moveAlbumBy(fields.albumIds, albums, albumId, by), albumId);
+  }
+  function startDrag(albumId: string, event: PointerEvent) {
+    if (!event.isPrimary || event.button !== 0) return;
+    (event.currentTarget as HTMLButtonElement).setPointerCapture(
+      event.pointerId,
+    );
+    drag = { albumId, pointerId: event.pointerId };
+  }
+  function updateDrag(albumId: string, event: PointerEvent) {
+    if (drag?.albumId !== albumId || drag.pointerId !== event.pointerId) return;
+    const year = orderGroups.find(([, ids]) => ids.includes(albumId))?.[0];
+    if (!year) return;
+    const rows = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-album-order-row]'),
+    ).filter(
+      (row) =>
+        row.dataset.orderYear === year && row.dataset.albumId !== albumId,
+    );
+    if (!rows.length) return;
+    for (const row of rows) {
+      const bounds = row.getBoundingClientRect();
+      if (event.clientY < bounds.top + bounds.height / 2) {
+        const targetId = row.dataset.albumId;
+        if (targetId)
+          applyOrder(
+            moveAlbumRelative(
+              fields.albumIds,
+              albums,
+              albumId,
+              targetId,
+              'before',
+            ),
+            albumId,
+          );
+        return;
+      }
+    }
+    const targetId = rows.at(-1)?.dataset.albumId;
+    if (targetId)
+      applyOrder(
+        moveAlbumRelative(fields.albumIds, albums, albumId, targetId, 'after'),
+        albumId,
+      );
+  }
+  function endDrag(event: PointerEvent) {
+    if (drag?.pointerId === event.pointerId) drag = null;
+  }
+  function handleReorderKey(event: KeyboardEvent, albumId: string) {
+    const by = event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0;
+    if (by) {
+      event.preventDefault();
+      move(albumId, by);
+    }
   }
 </script>
 
@@ -199,27 +268,55 @@
             ]}
           /></Field
         >
-        {#if fields.order === 'manual'}<p class="hint">
-            Albums remain grouped by year.
+        {#if fields.order === 'manual'}<p id="album-order-help" class="hint">
+            Drag albums within a year, or use the arrow controls. Year groups
+            stay in chronological order.
           </p>
-          {#each fields.albumIds as id, index}<div class="order-row">
-              <span
-                >{albums.find((a) => a.id === id)?.albumName ||
-                  'Unavailable album'}</span
-              ><Button
-                size="small"
-                variant="ghost"
-                disabled={index === 0}
-                aria-label={`Move album ${index + 1} up`}
-                onclick={() => move(index, -1)}>↑</Button
-              ><Button
-                size="small"
-                variant="ghost"
-                disabled={index === fields.albumIds.length - 1}
-                aria-label={`Move album ${index + 1} down`}
-                onclick={() => move(index, 1)}>↓</Button
-              >
-            </div>{/each}{/if}
+          {#each orderGroups as [year, ids] (year)}<div class="order-year">
+              <h3>{year}</h3>
+              {#each ids as id, index (id)}{@const name =
+                  albums.find((a) => a.id === id)?.albumName ||
+                  'Unavailable album'}
+                <div
+                  class="order-row"
+                  class:dragging={drag?.albumId === id}
+                  data-album-order-row
+                  data-album-id={id}
+                  data-order-year={year}
+                >
+                  <button
+                    type="button"
+                    class="drag-handle"
+                    aria-label={`Reorder ${name}. Use arrow keys or the adjacent move buttons.`}
+                    aria-describedby="album-order-help"
+                    onpointerdown={(event) => startDrag(id, event)}
+                    onpointermove={(event) => updateDrag(id, event)}
+                    onpointerup={endDrag}
+                    onpointercancel={endDrag}
+                    onlostpointercapture={endDrag}
+                    onkeydown={(event) => handleReorderKey(event, id)}
+                    ><span aria-hidden="true">⠿</span></button
+                  >
+                  <span>{name}</span>
+                  <Button
+                    size="small"
+                    variant="ghost"
+                    disabled={index === 0}
+                    aria-label={`Move ${name} up within ${year}`}
+                    onclick={() => move(id, -1)}>↑</Button
+                  ><Button
+                    size="small"
+                    variant="ghost"
+                    disabled={index === ids.length - 1}
+                    aria-label={`Move ${name} down within ${year}`}
+                    onclick={() => move(id, 1)}>↓</Button
+                  >
+                </div>
+              {/each}
+            </div>{/each}
+          <p class="visually-hidden" role="status" aria-live="polite">
+            {orderStatus}
+          </p>{/if}
       </section>
       <section>
         <h2>Sharing</h2>
@@ -457,8 +554,57 @@
     gap: 6px;
     font-size: 13px;
   }
+  .order-year {
+    display: grid;
+    gap: 8px;
+  }
+  .order-year h3 {
+    margin: 0;
+    color: #9aa0a6;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .drag-handle {
+    display: grid;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 1px solid #ffffff24;
+    border-radius: 6px;
+    color: #e5e7eb;
+    background: #ffffff08;
+    cursor: grab;
+    touch-action: pan-x pinch-zoom;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .drag-handle:active,
+  .order-row.dragging .drag-handle {
+    cursor: grabbing;
+  }
+  .drag-handle:focus-visible {
+    outline: 2px solid #accbfa;
+    outline-offset: 2px;
+  }
+  .order-row.dragging {
+    opacity: 0.65;
+  }
   .order-row > span {
     flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
   .danger-zone {
     display: flex !important;
