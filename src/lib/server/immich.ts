@@ -10,6 +10,7 @@ const albumSchema = z
       .array(z.object({ user: z.object({ id: z.string() }) }))
       .optional(),
     assetCount: z.number().default(0),
+    createdAt: z.string().optional(),
     startDate: z.string().nullish(),
     endDate: z.string().nullish(),
     albumThumbnailAssetId: z.string().nullish(),
