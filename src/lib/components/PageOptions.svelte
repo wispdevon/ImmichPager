@@ -11,6 +11,11 @@
     moveAlbumBy,
     moveAlbumRelative,
   } from '$lib/album-order';
+  import {
+    applyHeaderPreset,
+    headerPresets,
+    type HeaderPreset,
+  } from '$lib/appearance-presets';
   import { labelDialog } from '$lib/actions/dialog-label';
   import {
     Modal,
@@ -255,6 +260,9 @@
       input.value = '';
     }
   }
+  function applyPreset(preset: HeaderPreset) {
+    fields = applyHeaderPreset(fields, preset);
+  }
 </script>
 
 <Modal title="Options" size="small" {onClose} focusOnOpen>
@@ -263,6 +271,32 @@
       {#if message}<div role="alert" class="notice error">{message}</div>{/if}
       <section>
         <h2>Appearance</h2>
+        <ul
+          class="preset-list"
+          role="list"
+          aria-label="Header composition presets"
+          aria-describedby="preset-description"
+        >
+          {#each headerPresets as preset (preset.id)}
+            <li>
+              <button
+                class="preset-card"
+                type="button"
+                onclick={() => applyPreset(preset)}
+              >
+                <strong>{preset.label}</strong>
+                <span>{preset.description}</span>
+              </button>
+            </li>
+          {/each}
+        </ul>
+        <p id="preset-description" class="hint">
+          A preset changes only header layout, alignment, banner and logo size,
+          title and description size, and spacing. It keeps your title,
+          description, theme, colors, banner crop, CSS, albums, password, and
+          page URL. Changes autosave privately; publish when ready. Google Sans
+          remains the default.
+        </p>
         <Field label="Appearance"
           ><Select
             bind:value={fields.theme}
@@ -752,6 +786,39 @@
   .options-body h2 {
     font-size: 18px;
     margin: 0;
+  }
+  .preset-list {
+    display: grid;
+    gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .preset-card {
+    display: grid;
+    gap: 4px;
+    min-height: 44px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ffffff24;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .preset-card:hover {
+    background: #ffffff0d;
+  }
+  .preset-card:focus-visible {
+    outline: 2px solid #accbfa;
+    outline-offset: 2px;
+  }
+  .preset-card span {
+    color: #9aa0a6;
+    font-size: 12px;
+    line-height: 1.45;
   }
   .options-body label {
     font-size: 13px;

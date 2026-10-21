@@ -448,7 +448,7 @@ it('defaults older JSON records and publishes appearance changes only explicitly
   expect(store.publicPage('client')?.customCss).toBe('');
 });
 
-it('keeps header appearance settings private until the page is published', async () => {
+it('keeps header composition, sizing, and typography private until the page is published', async () => {
   const { store, drafts } = setup();
   let d = await drafts.save('alice', null, values);
   d = await drafts.publish('alice', d.id, {

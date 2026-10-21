@@ -68,6 +68,10 @@ In **Options → Appearance**, use the sliders to set title size (1.5–4 rem), 
 
 Changes autosave to the private draft and appear in Preview. Your client page changes only after you publish. Existing pages receive defaults without a database migration.
 
+## Apply a header preset
+
+Choose **Classic**, **Centered**, or **Editorial** in **Options → Appearance** to start with a complete header composition. Each preset sets only layout, alignment, banner size, logo size, title size, description size, and header spacing for the current page. It keeps your title and description text, theme and colors, banner crop, CSS, logo and banner images, albums and their order, password, and page URL. Presets are private draft edits until you publish; Google Sans remains the default font.
+
 ## Add CSS
 
 Expand **Advanced · Custom CSS** in Options. Enter ordinary CSS, close Options, and use Preview. CSS is limited to 20,000 characters. **Clear custom CSS** removes the draft stylesheet; publish that change to reset the live gallery too.
