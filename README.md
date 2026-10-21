@@ -148,13 +148,7 @@ Report vulnerabilities privately according to [SECURITY.md](SECURITY.md). Never 
 
 ## Roadmap
 
-- [x] Persistent pages, branding, themes, and year-grouped albums.
-- [x] Multi-photographer ownership and dedicated native sharing.
-- [x] Passwords, recovery, Docker packaging, and a local contributor demo.
-- [ ] Record live compatibility against supported Immich releases.
-- [ ] Expand automated compatibility fixtures as Immich evolves.
-
-Automatic album naming rules, client accounts, and a replacement photo viewer are outside the initial scope.
+See the [ImmichPager roadmap](TODO.md) for released features, work on `dev`, and planned priorities.
 
 ## Related projects and acknowledgments
 
