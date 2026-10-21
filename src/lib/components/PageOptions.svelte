@@ -41,10 +41,74 @@
   const cssValidation = $derived(
     compileCustomCss(fields.customCss, saved?.id ?? 'preview'),
   );
+  const bannerCropPreview = $derived(
+    saved?.banner ? `/page/media/${saved.id}/branding/banner?preview=1` : null,
+  );
   const protectedPage = $derived(
     fields.passwordMode === 'set' ||
       (fields.passwordMode === 'keep' && !!saved?.hasPassword),
   );
+  function bannerCropDrag(node: HTMLDivElement) {
+    let drag: {
+      pointerId: number;
+      startY: number;
+      startPosition: number;
+      overflowY: number;
+    } | null = null;
+
+    function start(event: PointerEvent) {
+      if (!event.isPrimary || event.button !== 0) return;
+      const image = node.querySelector('img');
+      if (!image?.naturalWidth || !image.naturalHeight) return;
+
+      const scale = Math.max(
+        node.clientWidth / image.naturalWidth,
+        node.clientHeight / image.naturalHeight,
+      );
+      const overflowY = image.naturalHeight * scale - node.clientHeight;
+      if (overflowY <= 0) return;
+
+      drag = {
+        pointerId: event.pointerId,
+        startY: event.clientY,
+        startPosition: fields.bannerPosition,
+        overflowY,
+      };
+      node.setPointerCapture(event.pointerId);
+      node.classList.add('dragging');
+      event.preventDefault();
+    }
+
+    function move(event: PointerEvent) {
+      if (drag?.pointerId !== event.pointerId) return;
+      const position =
+        drag.startPosition -
+        ((event.clientY - drag.startY) / drag.overflowY) * 100;
+      fields.bannerPosition = Math.max(0, Math.min(100, Math.round(position)));
+    }
+
+    function stop(event: PointerEvent) {
+      if (drag?.pointerId !== event.pointerId) return;
+      drag = null;
+      node.classList.remove('dragging');
+    }
+
+    node.addEventListener('pointerdown', start);
+    node.addEventListener('pointermove', move);
+    node.addEventListener('pointerup', stop);
+    node.addEventListener('pointercancel', stop);
+    node.addEventListener('lostpointercapture', stop);
+
+    return {
+      destroy() {
+        node.removeEventListener('pointerdown', start);
+        node.removeEventListener('pointermove', move);
+        node.removeEventListener('pointerup', stop);
+        node.removeEventListener('pointercancel', stop);
+        node.removeEventListener('lostpointercapture', stop);
+      },
+    };
+  }
   function changeUrl() {
     if (
       !saved?.publishedSlug ||
@@ -101,14 +165,39 @@
           >
             Add a banner to place your logo, title and description over it.
           </p>{/if}
-        {#if saved?.banner}<label
-            >Banner crop position<input
+        {#if bannerCropPreview}<div class="banner-crop-control">
+            <span class="crop-label">Banner crop preview</span>
+            <div
+              class="banner-crop-preview"
+              role="group"
+              aria-label="Banner crop preview"
+              aria-describedby="banner-crop-hint"
+              use:bannerCropDrag
+            >
+              <img
+                src={bannerCropPreview}
+                alt=""
+                draggable="false"
+                style:object-position={`center ${fields.bannerPosition}%`}
+              />
+              <span class="crop-guides" aria-hidden="true"></span>
+            </div>
+            <small id="banner-crop-hint" class="hint">
+              Drag the image up or down to choose the crop. The slider supports
+              keyboard controls.
+            </small>
+            <label for="banner-crop-position">Banner crop position</label>
+            <input
+              id="banner-crop-position"
               type="range"
               min="0"
               max="100"
+              step="1"
+              aria-describedby="banner-crop-hint"
+              aria-valuetext={`${fields.bannerPosition}% from top`}
               bind:value={fields.bannerPosition}
-            /></label
-          >{/if}
+            />
+          </div>{/if}
         <details>
           <summary>Custom colors</summary>
           <div class="colors">
@@ -393,6 +482,61 @@
     font-size: 12px;
     color: #9aa0a6;
     line-height: 1.6;
+  }
+  .banner-crop-control {
+    display: grid;
+    gap: 8px;
+  }
+  .crop-label {
+    font-size: 13px;
+  }
+  .banner-crop-preview {
+    position: relative;
+    width: 100%;
+    max-block-size: 10rem;
+    aspect-ratio: 16 / 5;
+    overflow: hidden;
+    border: 1px solid #49505b;
+    border-radius: 8px;
+    background: #171c24;
+    cursor: grab;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .banner-crop-preview:global(.dragging) {
+    cursor: grabbing;
+  }
+  .banner-crop-preview img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
+  .crop-guides {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(
+        to right,
+        transparent calc(33.333% - 0.5px),
+        rgb(255 255 255 / 58%) 33.333%,
+        transparent calc(33.333% + 0.5px),
+        transparent calc(66.666% - 0.5px),
+        rgb(255 255 255 / 58%) 66.666%,
+        transparent calc(66.666% + 0.5px)
+      ),
+      linear-gradient(
+        to bottom,
+        transparent calc(33.333% - 0.5px),
+        rgb(255 255 255 / 58%) 33.333%,
+        transparent calc(33.333% + 0.5px),
+        transparent calc(66.666% - 0.5px),
+        rgb(255 255 255 / 58%) 66.666%,
+        transparent calc(66.666% + 0.5px)
+      );
   }
   .colors {
     display: grid;
