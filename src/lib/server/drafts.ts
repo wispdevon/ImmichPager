@@ -100,6 +100,42 @@ export class DraftService {
       return this.store.editor(draft.id, owner);
     });
   }
+  async duplicateDesign(owner: string, sourceId: string) {
+    return exclusive(`draft:${sourceId}`, async () => {
+      const source = this.store.draft(sourceId, owner),
+        now = new Date().toISOString(),
+        draft: DraftRecord = {
+          id: randomUUID(),
+          ownerId: owner,
+          title: '',
+          description: '',
+          slug: '',
+          albumIds: [],
+          order: 'newest',
+          theme: source.theme,
+          background: source.background,
+          foreground: source.foreground,
+          accent: source.accent,
+          alignment: source.alignment,
+          headerLayout: source.headerLayout,
+          headerSize: source.headerSize,
+          logoSize: source.logoSize,
+          titleSize: source.titleSize,
+          descriptionSize: source.descriptionSize,
+          headerSpacing: source.headerSpacing,
+          customCss: source.customCss,
+          bannerPosition: source.bannerPosition,
+          revision: 1,
+          publishedDraftRevision: null,
+          logo: false,
+          banner: false,
+          createdAt: now,
+          updatedAt: now,
+        };
+      this.store.copyDraftDesign(sourceId, owner, draft);
+      return this.store.editor(draft.id, owner);
+    });
+  }
   async publish(
     owner: string,
     id: string,

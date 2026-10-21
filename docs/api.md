@@ -8,6 +8,7 @@ All Pager routes use `/page/`. Management routes require a verified Immich sessi
 | POST         | `/page/api/pages`                        | Create an incomplete private draft                                            |
 | GET, PUT     | `/page/api/pages/:id`                    | Read or replace working settings                                              |
 | GET          | `/page/api/pages/:id/publication-review` | Compare an expected draft revision with the current live page                 |
+| POST         | `/page/api/pages/:id/duplicate`          | Copy owned appearance and branding into a new empty private draft             |
 | DELETE       | `/page/api/pages/:id`                    | Revoke dedicated links and delete draft/live data                             |
 | POST         | `/page/api/pages/:id/publish`            | Validate and publish the expected draft revision                              |
 | POST         | `/page/api/pages/:id/unpublish`          | Hide page and revoke links                                                    |
@@ -17,7 +18,7 @@ All Pager routes use `/page/`. Management routes require a verified Immich sessi
 | GET          | `/page/api/photos/:id/thumbnail`         | Owner-checked library thumbnail                                               |
 | GET          | `/page/api/albums`                       | Owned albums                                                                  |
 | GET          | `/page/api/albums/:id/cover`             | Owner-authorized cover                                                        |
-| GET, POST    | `/page/:slug`                            | Published overview / password form                                            |
+| GET, POST    | `/page/:slug`                             | Published overview / password form                                            |
 | GET          | `/page/media/:id/album/:albumId`         | Authorized published album cover                                              |
 | GET          | `/page/media/:id/branding/:kind`         | Authorized published branding; `?preview=1` reads owner-only working branding |
 
@@ -32,6 +33,8 @@ A reviewed publish sends `{ "expectedDraftRevision": 3, "expectedPublishedRevisi
 Before publishing, the editor requests the owner-only publication review with the saved `expectedDraftRevision` query parameter. The response lists added/removed album IDs, changed page/appearance fields, the prior and next page URL, and both the draft and live revisions. It contains no passwords, password hashes, or native share capabilities. The publish request supplies both reviewed revisions; a 409 asks the editor to review again if either the draft or live page changed in another tab.
 
 Autosaving never changes the public version or its sessions. Publication commits the working branding and matching settings together. Failed native synchronization remains hidden until retry succeeds. Retry/unpublish bodies accept `{ "password": "…" }` when needed. For an uncertain native outcome, retry adopts deterministic native links rather than creating duplicates. Draft creation itself is not idempotent; after an unreadable success response, check the page list before repeating creation.
+
+`POST /page/api/pages/:id/duplicate` checks ownership of the source draft, then creates a new private draft with its appearance settings and processed logo/banner copies. It starts with a blank title, description, URL, and album list, with default album ordering; no live page, password, or native share capabilities are copied. This creation is not idempotent, so inspect the page list before retrying after an unreadable response.
 
 ## Appearance settings (dev)
 

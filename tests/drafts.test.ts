@@ -164,6 +164,117 @@ it('never stores password values in a draft', async () => {
   expect(JSON.stringify(store.draft(d.id, 'alice'))).not.toContain('secret');
 });
 
+it('duplicates only an owned page design into an empty private draft', async () => {
+  const { store, drafts, upstream } = setup();
+  let source = await drafts.save('alice', null, {
+    title: 'Acme monthly work',
+    slug: 'acme-monthly-work',
+    description: 'Client-specific copy',
+    albumIds: ['a'],
+    theme: 'light',
+    background: '#112233',
+    foreground: '#ddeeff',
+    accent: '#abcdef',
+    alignment: 'center',
+    headerLayout: 'overlay',
+    headerSize: 'tall',
+    logoSize: 112,
+    titleSize: 3.5,
+    descriptionSize: 1.25,
+    headerSpacing: 3.5,
+    customCss: ':scope { --pager-accent: #abcdef; }',
+    bannerPosition: 28,
+    order: 'manual',
+  });
+  store.changeDraftBranding(
+    store.draft(source.id, 'alice'),
+    'logo',
+    new Uint8Array([1, 2, 3]),
+  );
+  store.changeDraftBranding(
+    store.draft(source.id, 'alice'),
+    'banner',
+    new Uint8Array([4, 5, 6]),
+  );
+  source = store.editor(source.id, 'alice');
+  source = await drafts.publish('alice', source.id, {
+    password: 'source-pin',
+    passwordMode: 'set',
+    expectedDraftRevision: source.draftRevision,
+  });
+
+  const duplicate = await drafts.duplicateDesign('alice', source.id);
+
+  expect(duplicate.id).not.toBe(source.id);
+  expect(duplicate).toMatchObject({
+    ownerId: 'alice',
+    title: '',
+    description: '',
+    slug: '',
+    albumIds: [],
+    order: 'newest',
+    theme: 'light',
+    background: '#112233',
+    foreground: '#ddeeff',
+    accent: '#abcdef',
+    alignment: 'center',
+    headerLayout: 'overlay',
+    headerSize: 'tall',
+    logoSize: 112,
+    titleSize: 3.5,
+    descriptionSize: 1.25,
+    headerSpacing: 3.5,
+    customCss: ':scope { --pager-accent: #abcdef; }',
+    bannerPosition: 28,
+    logo: true,
+    banner: true,
+    status: 'draft',
+    publishedSlug: null,
+    publishedRevision: null,
+    hasPassword: false,
+    hasUnpublishedChanges: true,
+  });
+  expect(store.get(duplicate.id)).toBeNull();
+  expect(store.shares(duplicate.id)).toEqual([]);
+  expect(store.draftBranding(duplicate.id, 'logo')).toEqual(
+    new Uint8Array([1, 2, 3]),
+  );
+  expect(store.draftBranding(duplicate.id, 'banner')).toEqual(
+    new Uint8Array([4, 5, 6]),
+  );
+  expect(upstream.createShare).toHaveBeenCalledTimes(1);
+  expect(JSON.stringify(duplicate)).not.toContain('source-pin');
+  expect(JSON.stringify(duplicate)).not.toContain('key-a');
+
+  store.changeDraftBranding(
+    store.draft(duplicate.id, 'alice'),
+    'logo',
+    new Uint8Array([9]),
+  );
+  store.changeDraftBranding(store.draft(duplicate.id, 'alice'), 'banner', null);
+  expect(store.draftBranding(source.id, 'logo')).toEqual(
+    new Uint8Array([1, 2, 3]),
+  );
+  expect(store.draftBranding(source.id, 'banner')).toEqual(
+    new Uint8Array([4, 5, 6]),
+  );
+  expect(store.draftBranding(duplicate.id, 'logo')).toEqual(
+    new Uint8Array([9]),
+  );
+  expect(store.draftBranding(duplicate.id, 'banner')).toBeNull();
+});
+
+it('does not duplicate another owner’s private page design', async () => {
+  const { store, drafts } = setup();
+  const source = await drafts.save('alice', null, values);
+
+  await expect(drafts.duplicateDesign('bob', source.id)).rejects.toThrow(
+    'Page not found',
+  );
+
+  expect(store.editors('bob')).toEqual([]);
+});
+
 it('migrates v1 published pages, branding, and sessions without changing the live version', async () => {
   const { mkdtempSync, rmSync } = await import('node:fs');
   const { tmpdir } = await import('node:os');
