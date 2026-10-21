@@ -166,9 +166,15 @@ test('management status filters, draft branding previews, and mobile rows', asyn
   await search.fill('LTR02 draft with branding');
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(brandedRow).toBeVisible();
+  const mobileActions = brandedRow.getByTestId(
+    'management-actions-menu-trigger',
+  );
+  await expect(mobileActions).toBeVisible();
+  await mobileActions.click();
   await expect(
-    page.getByRole('link', { name: 'Options for LTR02 draft with branding' }),
+    page.getByRole('menuitem', { name: 'Options', exact: true }),
   ).toBeVisible();
+  await page.keyboard.press('Escape');
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,

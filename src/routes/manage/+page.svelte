@@ -1,6 +1,15 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { Button, Field, Input, Select } from '@immich/ui';
+  import { onDestroy } from 'svelte';
+  import {
+    Button,
+    ContextMenuButton,
+    Field,
+    Input,
+    Select,
+    type ActionItem,
+  } from '@immich/ui';
+  import { mdiCogOutline, mdiContentDuplicate, mdiOpenInNew } from '@mdi/js';
   import CopyLink from '$lib/components/CopyLink.svelte';
   import PagePreviewThumbnail from '$lib/components/PagePreviewThumbnail.svelte';
   import {
@@ -8,6 +17,7 @@
     pageManagementFilters,
     type PageManagementFilter,
   } from '$lib/page-management';
+  import type { DraftEditorPage } from '$lib/contracts';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
@@ -25,6 +35,15 @@
       'All pages',
   );
   const hasFilters = $derived(Boolean(search) || filter !== 'all');
+
+  type MobileMenuFocusHandoff = {
+    trigger: HTMLElement;
+    existingMenus: Set<HTMLElement>;
+    observer?: MutationObserver;
+    cancelled: boolean;
+  };
+
+  let pendingMobileMenuFocus: MobileMenuFocusHandoff | undefined;
 
   async function duplicateDesign(id: string) {
     if (duplicating) return;
@@ -65,6 +84,125 @@
       duplicating = null;
     }
   }
+
+  function getMobileActions(page: DraftEditorPage): ActionItem[] {
+    const actions: ActionItem[] = [
+      {
+        title: 'Duplicate design',
+        icon: mdiContentDuplicate,
+        onAction: () => duplicateDesign(page.id),
+      },
+    ];
+
+    if (page.publishedSlug) {
+      actions.push({
+        title: 'Open client page',
+        icon: mdiOpenInNew,
+        onAction: () =>
+          window.open(
+            `/page/${encodeURIComponent(page.publishedSlug!)}`,
+            '_blank',
+            'noopener,noreferrer',
+          ),
+      });
+    }
+
+    actions.push({
+      title: 'Options',
+      icon: mdiCogOutline,
+      onAction: () => goto(`/page/manage/${page.id}?options=1`),
+    });
+
+    return actions;
+  }
+
+  function cancelMobileMenuFocus(handoff = pendingMobileMenuFocus) {
+    if (!handoff) return;
+    handoff.cancelled = true;
+    handoff.observer?.disconnect();
+    if (pendingMobileMenuFocus === handoff) pendingMobileMenuFocus = undefined;
+  }
+
+  function prepareMobileMenuFocus(event: KeyboardEvent) {
+    if (event.key === 'Escape' || event.key === 'Tab') {
+      cancelMobileMenuFocus();
+      return;
+    }
+
+    if ((event.key !== 'Enter' && event.key !== ' ') || event.repeat) return;
+
+    cancelMobileMenuFocus();
+    const handoff: MobileMenuFocusHandoff = {
+      trigger: event.currentTarget as HTMLElement,
+      existingMenus: new Set(
+        document.querySelectorAll<HTMLElement>('[role="menu"]'),
+      ),
+      cancelled: false,
+    };
+    pendingMobileMenuFocus = handoff;
+
+    let observedMenu: HTMLElement | undefined;
+    const observer = new MutationObserver(() => {
+      if (
+        handoff.cancelled ||
+        pendingMobileMenuFocus !== handoff ||
+        !handoff.trigger.isConnected
+      ) {
+        cancelMobileMenuFocus(handoff);
+        return;
+      }
+
+      if (
+        observedMenu &&
+        (!observedMenu.isConnected || observedMenu.dataset.state === 'closed')
+      ) {
+        cancelMobileMenuFocus(handoff);
+        return;
+      }
+
+      const ownedMenu = Array.from(
+        document.querySelectorAll<HTMLElement>('[role="menu"]'),
+      ).find((menu) => !handoff.existingMenus.has(menu));
+      if (!ownedMenu) {
+        if (document.activeElement !== handoff.trigger) {
+          cancelMobileMenuFocus(handoff);
+        }
+        return;
+      }
+      observedMenu = ownedMenu;
+
+      const firstAction = ownedMenu.querySelector<HTMLElement>(
+        '[role="menuitem"]:not([aria-disabled="true"])',
+      );
+      if (!firstAction) return;
+
+      const activeElement = document.activeElement;
+      const focusIsInOwnedMenu =
+        activeElement === ownedMenu || ownedMenu.contains(activeElement);
+      if (document.activeElement !== handoff.trigger && !focusIsInOwnedMenu) {
+        cancelMobileMenuFocus(handoff);
+        return;
+      }
+
+      observer.disconnect();
+      if (pendingMobileMenuFocus === handoff) {
+        pendingMobileMenuFocus = undefined;
+      }
+      if (activeElement === ownedMenu || activeElement === handoff.trigger) {
+        firstAction.focus({ preventScroll: true });
+      }
+    });
+
+    handoff.observer = observer;
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['role', 'data-state'],
+    });
+  }
+
+  onDestroy(() => cancelMobileMenuFocus());
 </script>
 
 <svelte:head><title>Pages · ImmichPager</title></svelte:head>
@@ -137,34 +275,49 @@
         </a>
         <div class="row-actions">
           <CopyLink slug={page.publishedSlug} />
-          <Button
-            variant="ghost"
-            color="secondary"
-            disabled={duplicating !== null}
-            aria-busy={duplicating === page.id}
-            onclick={() => void duplicateDesign(page.id)}
-            >{duplicating === page.id ? 'Creating…' : 'Duplicate design'}<span
-              class="sr-only"
-            >
-              for {page.title || 'Untitled page'}</span
-            ></Button
-          >
-          {#if page.publishedSlug}
+          <div class="desktop-actions">
             <Button
               variant="ghost"
               color="secondary"
-              href={`/page/${page.publishedSlug}`}
-              target="_blank"
-              aria-label={`Open ${page.title}`}>↗</Button
+              disabled={duplicating !== null}
+              aria-busy={duplicating === page.id}
+              onclick={() => void duplicateDesign(page.id)}
+              >{duplicating === page.id ? 'Creating…' : 'Duplicate design'}<span
+                class="sr-only"
+              >
+                for {page.title || 'Untitled page'}</span
+              ></Button
             >
-          {/if}
-          <Button
-            variant="ghost"
-            color="secondary"
-            href={`/page/manage/${page.id}?options=1`}
-            aria-label={`Options for ${page.title || 'Untitled page'}`}
-            >⋯</Button
-          >
+            {#if page.publishedSlug}
+              <Button
+                variant="ghost"
+                color="secondary"
+                href={`/page/${page.publishedSlug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Open ${page.title || 'Untitled page'}`}>↗</Button
+              >
+            {/if}
+            <Button
+              variant="ghost"
+              color="secondary"
+              href={`/page/manage/${page.id}?options=1`}
+              aria-label={`Options for ${page.title || 'Untitled page'}`}
+              >⋯</Button
+            >
+          </div>
+          <div class="mobile-actions">
+            <ContextMenuButton
+              aria-label={`More actions for ${page.title || 'Untitled page'}`}
+              items={getMobileActions(page)}
+              position="top-right"
+              disabled={duplicating !== null}
+              aria-busy={duplicating === page.id}
+              data-testid="management-actions-menu-trigger"
+              class="management-actions-menu-trigger"
+              onkeydown={prepareMobileMenuFocus}
+            />
+          </div>
         </div>
       </article>
     {/each}
@@ -294,6 +447,18 @@
     gap: 4px;
     flex-shrink: 0;
   }
+  .desktop-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .mobile-actions {
+    display: none;
+  }
+  :global(.management-actions-menu-trigger) {
+    min-inline-size: 40px;
+    min-block-size: 40px;
+  }
   .empty {
     padding: 80px 20px;
     text-align: center;
@@ -352,11 +517,18 @@
       margin-top: 8px;
     }
     .row-actions {
-      margin-left: auto;
-      max-width: 100%;
-      flex-shrink: 1;
-      flex-wrap: wrap;
-      justify-content: flex-end;
+      width: 100%;
+      margin-left: 0;
+      justify-content: space-between;
+      flex-shrink: 0;
+      flex-wrap: nowrap;
+    }
+    .desktop-actions {
+      display: none;
+    }
+    .mobile-actions {
+      display: flex;
+      align-items: center;
     }
     footer {
       flex-direction: column;

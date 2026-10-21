@@ -389,9 +389,10 @@ test('duplicates only appearance and branding into a private draft', async ({
   });
   await sourceRow
     .getByRole('button', {
-      name: 'Duplicate design for A source design for Acme',
+      name: 'More actions for A source design for Acme',
     })
     .click();
+  await page.getByRole('menuitem', { name: 'Duplicate design' }).click();
   await expect(page).toHaveURL(/\/page\/manage\/[0-9a-f-]+$/);
   const duplicateId = page.url().split('/').pop()!;
   await expect(
