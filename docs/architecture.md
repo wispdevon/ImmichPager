@@ -55,6 +55,8 @@ Branding uploads accept JPEG, PNG, and WebP up to 5 MB / 32 megapixels and are d
 
 The gateway injects a small external sidebar script into eligible uncompressed Immich HTML. The bridge clones the Sharing entry and mounts the editor in a same-origin iframe. If the main layout is unavailable, the link falls back to the standalone editor. This is a maintained DOM integration, not an official Immich plugin API. Native API requests, share pages, binary responses, uploads, and WebSocket upgrades remain upstream.
 
+The management screen inherits the host's exclusive `light` or `dark` root class while embedded. In standalone mode, it reads only Immich's `immich-ui-theme` preference and falls back to the system color scheme. A self-hosted script applies the first theme before paint; the editor then follows same-origin root-class changes, preference storage events, and system changes. The bridge is limited to `/page/manage`, excluding nested Gallery previews, and does not read credentials or use `postMessage`. Editor surfaces use Immich UI palette tokens; public Gallery theme and custom CSS stay scoped to each page. This mirrors Immich 3.3.3's [theme initializer](https://github.com/immich-app/immich/blob/v3.3.3/web/src/app.html#L515-L536) and its separate [user appearance preference](https://github.com/immich-app/immich/blob/v3.3.3/web/src/routes/%28user%29/user-settings/AppSettings.svelte#L534-L553).
+
 Initial source review targets Immich v3.3.1. See [validation](validation.md) for the distinction between fixture verification and live compatibility.
 
 ## Gallery customization (dev)

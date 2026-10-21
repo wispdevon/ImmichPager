@@ -1,0 +1,278 @@
+/* Management controls follow Immich UI's active root palette. The Gallery owns
+   separate per-page theme variables and never reads these management tokens. */
+:root[data-pager-host-theme] {
+  --pager-management-background: var(--immich-ui-light);
+  --pager-management-surface: var(--immich-ui-gray);
+  --pager-management-surface-quiet: var(--immich-ui-light-100);
+  --pager-management-surface-raised: var(--immich-ui-light-200);
+  --pager-management-text: var(--immich-ui-dark);
+  --pager-management-text-secondary: var(--immich-ui-dark-400);
+  --pager-management-border: var(--immich-ui-default-border);
+  --pager-management-border-subtle: color-mix(
+    in oklab,
+    var(--pager-management-border) 72%,
+    transparent
+  );
+  --pager-management-accent: var(--immich-ui-primary-500);
+  --pager-management-accent-text: var(--immich-ui-light);
+  --pager-management-danger: var(--immich-ui-danger-600);
+  --pager-management-success: var(--immich-ui-success-700);
+  --pager-management-warning: var(--immich-ui-warning-700);
+  --pager-management-focus: var(--immich-ui-primary-500);
+  color: var(--pager-management-text);
+  background: var(--pager-management-background);
+}
+
+:root[data-pager-host-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-pager-host-theme='dark'] {
+  color-scheme: dark;
+}
+
+:root[data-pager-host-theme] body {
+  color: var(--pager-management-text);
+  background: var(--pager-management-background);
+}
+
+:root[data-pager-host-theme] :focus-visible:not(.gallery *) {
+  outline-color: var(--pager-management-focus);
+}
+
+:root[data-pager-host-theme] .muted {
+  color: var(--pager-management-text-secondary);
+  opacity: 1;
+}
+
+:root[data-pager-host-theme] details[open] summary {
+  color: var(--pager-management-text);
+}
+
+:root[data-pager-host-theme] .primary {
+  background: var(--pager-management-accent);
+  color: var(--pager-management-accent-text);
+}
+
+:root[data-pager-host-theme] .notice {
+  background: var(--pager-management-surface);
+  border-color: var(--pager-management-border);
+}
+
+:root[data-pager-host-theme] .error,
+:root[data-pager-host-theme] .action-error {
+  color: var(--pager-management-danger);
+}
+
+:root[data-pager-host-theme] .editor-toolbar,
+:root[data-pager-host-theme] .pages-toolbar,
+:root[data-pager-host-theme] .page-row,
+:root[data-pager-host-theme] .options-body section,
+:root[data-pager-host-theme] .album-toolbar {
+  border-color: var(--pager-management-border);
+}
+
+:root[data-pager-host-theme] .add-albums,
+:root[data-pager-host-theme] .drop-area,
+:root[data-pager-host-theme] .pick-cover,
+:root[data-pager-host-theme] .photo-tile img,
+:root[data-pager-host-theme] .unavailable,
+:root[data-pager-host-theme] .css-editor,
+:root[data-pager-host-theme] .banner-crop-preview,
+:root[data-pager-host-theme] .album-search,
+:root[data-pager-host-theme] .album-sort select,
+:root[data-pager-host-theme] .album-dialog {
+  background-color: var(--pager-management-surface-quiet);
+  color: var(--pager-management-text);
+}
+
+:root[data-pager-host-theme] .add-albums:hover,
+:root[data-pager-host-theme] .preset-card:hover,
+:root[data-pager-host-theme] .segments button[aria-pressed='true'] {
+  background-color: var(--pager-management-surface-raised);
+}
+
+:root[data-pager-host-theme] .preset-card,
+:root[data-pager-host-theme] .drag-handle,
+:root[data-pager-host-theme] .css-editor,
+:root[data-pager-host-theme] .banner-crop-preview,
+:root[data-pager-host-theme] .album-sort select {
+  border-color: var(--pager-management-border);
+}
+
+:root[data-pager-host-theme] .drop-area,
+:root[data-pager-host-theme] .drop-area strong,
+:root[data-pager-host-theme] .css-editor,
+:root[data-pager-host-theme] .drag-handle,
+:root[data-pager-host-theme] .review {
+  color: var(--pager-management-text);
+}
+
+:root[data-pager-host-theme] .review strong {
+  color: var(--pager-management-text);
+}
+
+:root[data-pager-host-theme] .review section {
+  border-color: var(--pager-management-border);
+}
+
+:root[data-pager-host-theme] .drop-area:hover,
+:root[data-pager-host-theme] .drop-area.dragging {
+  border-color: var(--pager-management-accent);
+  background: var(--pager-management-surface-raised);
+  color: var(--pager-management-accent);
+}
+
+:root[data-pager-host-theme] .drop-area:hover strong,
+:root[data-pager-host-theme] .drop-area.dragging strong {
+  color: var(--pager-management-accent);
+}
+
+:root[data-pager-host-theme] .selected-cover,
+:root[data-pager-host-theme] .pick-cover {
+  background: var(--pager-management-surface-quiet);
+}
+
+:root[data-pager-host-theme] .selected-cover,
+:root[data-pager-host-theme] .selected .pick-cover,
+:root[data-pager-host-theme] .photo-tile.selected img {
+  border-color: var(--pager-management-accent);
+}
+
+:root[data-pager-host-theme] .pick-cover,
+:root[data-pager-host-theme] .album-sort select,
+:root[data-pager-host-theme] .album-search,
+:root[data-pager-host-theme] .css-editor,
+:root[data-pager-host-theme] .banner-crop-preview {
+  color-scheme: inherit;
+}
+
+:root[data-pager-host-theme] .album-dialog {
+  border-color: var(--pager-management-border);
+}
+
+:root[data-pager-host-theme='light'] .album-dialog::backdrop {
+  background: rgb(0 0 0 / 30%);
+}
+
+:root[data-pager-host-theme='dark'] .album-dialog::backdrop {
+  background: rgb(0 0 0 / 70%);
+}
+
+:root[data-pager-host-theme] .review {
+  color: var(--pager-management-text);
+}
+
+:root[data-pager-host-theme] .review p,
+:root[data-pager-host-theme] .review ul,
+:root[data-pager-host-theme] .review li span,
+:root[data-pager-host-theme] .hint,
+:root[data-pager-host-theme] .preset-card span,
+:root[data-pager-host-theme] .album-sort,
+:root[data-pager-host-theme] .picker-help,
+:root[data-pager-host-theme] .bulk-row p,
+:root[data-pager-host-theme] .range-control output,
+:root[data-pager-host-theme] .order-year h3,
+:root[data-pager-host-theme] details summary,
+:root[data-pager-host-theme] .draft-status,
+:root[data-pager-host-theme] .draft-status small,
+:root[data-pager-host-theme] .preview-note,
+:root[data-pager-host-theme] .result-count,
+:root[data-pager-host-theme] .page-meta {
+  color: var(--pager-management-text-secondary);
+}
+
+:root[data-pager-host-theme] .live {
+  color: var(--pager-management-success);
+}
+
+:root[data-pager-host-theme] .attention,
+:root[data-pager-host-theme] #css-feedback.error,
+:root[data-pager-host-theme] .appearance-file #appearance-file-status.error {
+  color: var(--pager-management-danger);
+}
+
+:root[data-pager-host-theme] .updating,
+:root[data-pager-host-theme] .limit-notice {
+  color: var(--pager-management-warning);
+}
+
+:root[data-pager-host-theme] .page-title:hover h2,
+:root[data-pager-host-theme] .add-albums:hover,
+:root[data-pager-host-theme] .add-albums > span:first-child,
+:root[data-pager-host-theme] .css-actions a {
+  color: var(--pager-management-accent);
+}
+
+:root[data-pager-host-theme] .banner-crop-preview {
+  color: var(--pager-management-text);
+}
+
+:root[data-pager-host-theme] .crop-guides {
+  background-image:
+    linear-gradient(
+      to right,
+      transparent calc(33.333% - 0.5px),
+      color-mix(in oklab, var(--pager-management-text) 58%, transparent) 33.333%,
+      transparent calc(33.333% + 0.5px),
+      transparent calc(66.666% - 0.5px),
+      color-mix(in oklab, var(--pager-management-text) 58%, transparent) 66.666%,
+      transparent calc(66.666% + 0.5px)
+    ),
+    linear-gradient(
+      to bottom,
+      transparent calc(33.333% - 0.5px),
+      color-mix(in oklab, var(--pager-management-text) 58%, transparent) 33.333%,
+      transparent calc(33.333% + 0.5px),
+      transparent calc(66.666% - 0.5px),
+      color-mix(in oklab, var(--pager-management-text) 58%, transparent) 66.666%,
+      transparent calc(66.666% + 0.5px)
+    );
+}
+
+:root[data-pager-host-theme] .range-control input,
+:root[data-pager-host-theme] .pick-cover input {
+  accent-color: var(--pager-management-accent);
+}
+
+:root[data-pager-host-theme] .included-badge,
+:root[data-pager-host-theme] .check {
+  background: var(--pager-management-accent);
+  color: var(--pager-management-accent-text);
+}
+
+:root[data-pager-host-theme] .preview-toolbar {
+  background: var(--pager-management-surface);
+  color: var(--pager-management-text);
+}
+
+:root[data-pager-host-theme] .responsive-preview {
+  background: var(--pager-management-background);
+}
+
+:root[data-pager-host-theme] .preview-sizes,
+:root[data-pager-host-theme] .preview-stage iframe {
+  border-color: var(--pager-management-border);
+}
+
+:root[data-pager-host-theme] .preview-sizes button[aria-pressed='true'] {
+  background: var(--pager-management-surface-raised);
+  color: var(--pager-management-text);
+}
+
+:root[data-pager-host-theme] .preview-stage iframe {
+  background: var(--pager-management-background);
+}
+
+:root[data-pager-host-theme] .segments {
+  background: var(--pager-management-surface-quiet);
+}
+
+:root[data-pager-host-theme] .segments button[aria-pressed='true'] {
+  background: var(--pager-management-surface-raised);
+  color: var(--pager-management-text);
+}
+
+:root[data-pager-host-theme] .remove-album {
+  color: #fff;
+}
