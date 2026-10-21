@@ -94,6 +94,14 @@ test('management actions stay compact and work by touch and keyboard', async ({
 
     await draftMenu.focus();
     await page.keyboard.press('Enter');
+    await page.keyboard.press('Escape');
+    await expect(duplicateItem).toHaveCount(0);
+    await expect(draftMenu).toBeFocused();
+    await page.waitForTimeout(100);
+    await expect(draftMenu).toBeFocused();
+
+    await draftMenu.focus();
+    await page.keyboard.press('Enter');
     await expect(duplicateItem).toBeVisible();
     await expect(duplicateItem).toBeFocused();
     await page.keyboard.press('ArrowDown');
@@ -105,6 +113,105 @@ test('management actions stay compact and work by touch and keyboard', async ({
     await page.keyboard.press('Escape');
     await expect(duplicateItem).toHaveCount(0);
     await expect(draftMenu).toBeFocused();
+
+    await page.keyboard.press('Tab');
+    const focusAfterTab = await page.evaluate(() => {
+      const focused = document.activeElement;
+      return {
+        tag: focused?.tagName,
+        ariaLabel: focused?.getAttribute('aria-label'),
+        text: focused?.textContent?.trim(),
+      };
+    });
+    await page.waitForTimeout(100);
+    expect(
+      await page.evaluate(() => {
+        const focused = document.activeElement;
+        return {
+          tag: focused?.tagName,
+          ariaLabel: focused?.getAttribute('aria-label'),
+          text: focused?.textContent?.trim(),
+        };
+      }),
+    ).toEqual(focusAfterTab);
+    await expect(page.locator('[role="menuitem"]:focus')).toHaveCount(0);
+
+    await draftMenu.focus();
+    await page.keyboard.press('Space');
+    await expect(duplicateItem).toBeVisible();
+    await expect(duplicateItem).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(duplicateItem).toHaveCount(0);
+    await expect(draftMenu).toBeFocused();
+
+    const optionsUrl = new RegExp(`/page/manage/${draft.id}\\?options=1$`);
+    await page.evaluate(async (pageId) => {
+      const row = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          '[data-testid="management-page-row"]',
+        ),
+      ).find((candidate) =>
+        candidate.querySelector(`a[href="/page/manage/${pageId}"]`),
+      );
+      const trigger = row?.querySelector<HTMLButtonElement>(
+        '[data-testid="management-actions-menu-trigger"]',
+      );
+      if (!trigger) throw new Error('Missing management action trigger');
+      trigger.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+      );
+      await new Promise<void>((resolve) => {
+        const findOptions = () =>
+          Array.from(
+            document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+          ).find((item) => item.textContent?.includes('Options'));
+        const observer = new MutationObserver(() => {
+          if (findOptions()) {
+            observer.disconnect();
+            resolve();
+          }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+        trigger.click();
+        if (findOptions()) {
+          observer.disconnect();
+          resolve();
+        }
+      });
+      const optionsItem = Array.from(
+        document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+      ).find((item) => item.textContent?.includes('Options'));
+      if (!optionsItem) throw new Error('Options menu item did not mount');
+      optionsItem.click();
+    }, draft.id);
+    await expect(page).toHaveURL(optionsUrl);
+    const optionsDialog = page.getByRole('dialog', {
+      name: 'Options',
+      exact: true,
+    });
+    await expect(optionsDialog).toBeVisible();
+    const dialogFocus = await page.evaluate(() => {
+      const focused = document.activeElement;
+      return {
+        tag: focused?.tagName,
+        ariaLabel: focused?.getAttribute('aria-label'),
+        text: focused?.textContent?.trim(),
+      };
+    });
+    await page.waitForTimeout(100);
+    await expect(page.locator('[role="menuitem"]:focus')).toHaveCount(0);
+    expect(
+      await page.evaluate(() => {
+        const focused = document.activeElement;
+        return {
+          tag: focused?.tagName,
+          ariaLabel: focused?.getAttribute('aria-label'),
+          text: focused?.textContent?.trim(),
+        };
+      }),
+    ).toEqual(dialogFocus);
+    await optionsDialog.getByRole('button', { name: 'Done' }).click();
+    await page.goto(`${origin}/page/manage`);
 
     await draftMenu.tap();
     await page.getByRole('menuitem', { name: 'Options', exact: true }).tap();

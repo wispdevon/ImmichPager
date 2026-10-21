@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { onDestroy } from 'svelte';
   import {
     Button,
     ContextMenuButton,
@@ -34,6 +35,15 @@
       'All pages',
   );
   const hasFilters = $derived(Boolean(search) || filter !== 'all');
+
+  type MobileMenuFocusHandoff = {
+    trigger: HTMLElement;
+    existingMenus: Set<HTMLElement>;
+    observer?: MutationObserver;
+    cancelled: boolean;
+  };
+
+  let pendingMobileMenuFocus: MobileMenuFocusHandoff | undefined;
 
   async function duplicateDesign(id: string) {
     if (duplicating) return;
@@ -106,21 +116,93 @@
     return actions;
   }
 
-  function focusFirstMobileAction(event: KeyboardEvent) {
-    const activationKey = event.key === 'Enter' && event.type === 'keydown';
-    const spaceKey = event.key === ' ' && event.type === 'keyup';
-    if (!activationKey && !spaceKey) return;
-    window.setTimeout(() => {
-      // ContextMenuButton mounts its menu portal as part of the activation event.
-      const menus = document.querySelectorAll<HTMLElement>('[role="menu"]');
-      const lastMenu = menus.item(menus.length - 1);
-      lastMenu
-        ?.querySelector<HTMLElement>(
-          '[role="menuitem"]:not([aria-disabled="true"])',
-        )
-        ?.focus({ preventScroll: true });
-    }, 50);
+  function cancelMobileMenuFocus(handoff = pendingMobileMenuFocus) {
+    if (!handoff) return;
+    handoff.cancelled = true;
+    handoff.observer?.disconnect();
+    if (pendingMobileMenuFocus === handoff) pendingMobileMenuFocus = undefined;
   }
+
+  function prepareMobileMenuFocus(event: KeyboardEvent) {
+    if (event.key === 'Escape' || event.key === 'Tab') {
+      cancelMobileMenuFocus();
+      return;
+    }
+
+    if ((event.key !== 'Enter' && event.key !== ' ') || event.repeat) return;
+
+    cancelMobileMenuFocus();
+    const handoff: MobileMenuFocusHandoff = {
+      trigger: event.currentTarget as HTMLElement,
+      existingMenus: new Set(
+        document.querySelectorAll<HTMLElement>('[role="menu"]'),
+      ),
+      cancelled: false,
+    };
+    pendingMobileMenuFocus = handoff;
+
+    let observedMenu: HTMLElement | undefined;
+    const observer = new MutationObserver(() => {
+      if (
+        handoff.cancelled ||
+        pendingMobileMenuFocus !== handoff ||
+        !handoff.trigger.isConnected
+      ) {
+        cancelMobileMenuFocus(handoff);
+        return;
+      }
+
+      if (
+        observedMenu &&
+        (!observedMenu.isConnected || observedMenu.dataset.state === 'closed')
+      ) {
+        cancelMobileMenuFocus(handoff);
+        return;
+      }
+
+      const ownedMenu = Array.from(
+        document.querySelectorAll<HTMLElement>('[role="menu"]'),
+      ).find((menu) => !handoff.existingMenus.has(menu));
+      if (!ownedMenu) {
+        if (document.activeElement !== handoff.trigger) {
+          cancelMobileMenuFocus(handoff);
+        }
+        return;
+      }
+      observedMenu = ownedMenu;
+
+      const firstAction = ownedMenu.querySelector<HTMLElement>(
+        '[role="menuitem"]:not([aria-disabled="true"])',
+      );
+      if (!firstAction) return;
+
+      const activeElement = document.activeElement;
+      const focusIsInOwnedMenu =
+        activeElement === ownedMenu || ownedMenu.contains(activeElement);
+      if (document.activeElement !== handoff.trigger && !focusIsInOwnedMenu) {
+        cancelMobileMenuFocus(handoff);
+        return;
+      }
+
+      observer.disconnect();
+      if (pendingMobileMenuFocus === handoff) {
+        pendingMobileMenuFocus = undefined;
+      }
+      if (activeElement === ownedMenu || activeElement === handoff.trigger) {
+        firstAction.focus({ preventScroll: true });
+      }
+    });
+
+    handoff.observer = observer;
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['role', 'data-state'],
+    });
+  }
+
+  onDestroy(() => cancelMobileMenuFocus());
 </script>
 
 <svelte:head><title>Pages · ImmichPager</title></svelte:head>
@@ -233,8 +315,7 @@
               aria-busy={duplicating === page.id}
               data-testid="management-actions-menu-trigger"
               class="management-actions-menu-trigger"
-              onkeydown={focusFirstMobileAction}
-              onkeyup={focusFirstMobileAction}
+              onkeydown={prepareMobileMenuFocus}
             />
           </div>
         </div>
