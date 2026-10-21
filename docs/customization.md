@@ -4,6 +4,10 @@ Open **Pages → your page → Options**. All appearance settings belong to this
 
 This feature is being developed on the **dev branch**. The current main release and live deployment remain unchanged.
 
+## Check what clients see
+
+After publishing, choose **Open published page** in the editor to open the actual published URL in a new tab. It shows the published version while your working edits remain private. The editor explains whether the published version has a password, independently of any pending password changes in Options. A previously unlocked browser may skip the page prompt; use a private window to check a first visit. Immich can ask for the password again in its native album viewer. Private Preview still shows draft changes.
+
 ## Colors and accent
 
 Choose Dark, Light, or System under Appearance. Expand **Custom colors** to override background, text, and accent colors. The default accent is Immich blue (`#accbfa`). Currently, accent changes **album-title text on hover**; it does not recolor the page title, banner, management buttons, or native Immich album viewer. CSS can use the same accent for other gallery elements.
