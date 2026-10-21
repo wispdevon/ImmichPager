@@ -66,34 +66,35 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
     (await anonymous.request.get('/page/banner-composition')).status(),
   ).toBe(404);
   await page.getByRole('button', { name: 'Preview', exact: true }).click();
-  await expect(page.locator('.ip-title')).toHaveCSS(
+  const gallery = page.frameLocator('[data-testid="responsive-preview-frame"]');
+  await expect(gallery.locator('.ip-title')).toHaveCSS(
     'color',
     'rgb(240, 182, 127)',
   );
-  await expect(page.locator('.ip-gallery')).toHaveClass(/overlay/);
-  await expect(page.locator('.ip-header')).toHaveClass(/centered/);
-  await expect(page.locator('.ip-logo')).toBeVisible();
-  await expect(page.locator('.ip-description')).toHaveText(
+  await expect(gallery.locator('.ip-gallery')).toHaveClass(/overlay/);
+  await expect(gallery.locator('.ip-header')).toHaveClass(/centered/);
+  await expect(gallery.locator('.ip-logo')).toBeVisible();
+  await expect(gallery.locator('.ip-description')).toHaveText(
     'Monthly photography Made for our client.',
   );
   await page.screenshot({
     path: 'test-results/banner-overlay.png',
     fullPage: false,
   });
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator('.ip-title')).toHaveCSS('font-size', '38px');
+  await page.getByRole('button', { name: 'Phone preview' }).click();
+  await expect(gallery.locator('.ip-title')).toHaveCSS('font-size', '38px');
   const boxes = await Promise.all([
-    page.locator('.ip-hero').boundingBox(),
-    page.locator('.ip-header').boundingBox(),
+    gallery.locator('.ip-hero').boundingBox(),
+    gallery.locator('.ip-header').boundingBox(),
   ]);
   expect(boxes[1]!.y).toBeGreaterThanOrEqual(boxes[0]!.y);
   expect(boxes[1]!.y + boxes[1]!.height).toBeLessThanOrEqual(
     boxes[0]!.y + boxes[0]!.height + 1,
   );
   expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
+    await gallery
+      .locator('html')
+      .evaluate((documentRoot) => documentRoot.scrollWidth <= innerWidth),
   ).toBe(true);
   await page.screenshot({
     path: 'test-results/banner-overlay-mobile.png',
@@ -170,8 +171,9 @@ test('CSS cannot style editor siblings, escape paint containment, or inject HTML
   await expect(
     page.getByRole('button', { name: 'Back to editor' }),
   ).toBeVisible();
-  await expect(page.locator('.ip-gallery')).not.toHaveClass(/overlay/);
-  expect(await page.locator('img[src="x"]').count()).toBe(0);
+  const gallery = page.frameLocator('[data-testid="responsive-preview-frame"]');
+  await expect(gallery.locator('.ip-gallery')).not.toHaveClass(/overlay/);
+  expect(await gallery.locator('img[src="x"]').count()).toBe(0);
   const button = page.getByRole('button', { name: 'Back to editor' });
   const rect = await button.boundingBox();
   expect(

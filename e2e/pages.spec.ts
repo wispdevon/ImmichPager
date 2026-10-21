@@ -150,8 +150,9 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
   await page.screenshot({ path: 'test-results/options.png', fullPage: true });
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await page.getByRole('button', { name: 'Preview', exact: true }).click();
+  const gallery = page.frameLocator('[data-testid="responsive-preview-frame"]');
   await expect(
-    page.getByRole('heading', { name: 'Acme monthly photography' }),
+    gallery.getByRole('heading', { name: 'Acme monthly photography' }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Back to editor' }).click();
   await page.getByRole('button', { name: 'Publish page', exact: true }).click();
