@@ -2,6 +2,17 @@ import http from 'node:http';
 import { randomUUID, createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
+const albumCreatedAt = [
+  '2026-08-15T12:00:00.000Z',
+  '2026-10-20T12:00:00.000Z',
+  '2026-09-02T12:00:00.000Z',
+  '2026-05-01T12:00:00.000Z',
+  '2026-06-22T12:00:00.000Z',
+  '2026-03-08T12:00:00.000Z',
+  '2026-02-05T12:00:00.000Z',
+  '2026-01-01T12:00:00.000Z',
+  '2025-12-01T12:00:00.000Z',
+];
 export const albums = [
   ['Liberty Family Camp ’26', '2026-05-01', '2026-05-31', 552, 'earthrise'],
   ['Captured by Me', '2026-08-01', '2026-10-01', 374, 'astronaut'],
@@ -15,6 +26,7 @@ export const albums = [
 ].map(([albumName, startDate, endDate, assetCount, photo], i) => ({
   id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
   albumName,
+  createdAt: albumCreatedAt[i],
   startDate,
   endDate,
   assetCount,

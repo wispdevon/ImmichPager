@@ -8,6 +8,7 @@ export const reservedSlugs = new Set([
   'health',
   'ready',
 ]);
+export const MAX_PAGE_ALBUMS = 500;
 const color = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, 'Use a six-digit hex color');
@@ -36,7 +37,7 @@ export const pageInputSchema = z
     bannerPosition: z.number().int().min(0).max(100).default(50),
     albumIds: z
       .array(z.string().min(1).max(100))
-      .max(500)
+      .max(MAX_PAGE_ALBUMS)
       .default([])
       .refine((a) => new Set(a).size === a.length, 'Albums must be unique'),
     order: z.enum(['newest', 'manual']).default('newest'),
@@ -74,6 +75,7 @@ export type Album = {
   albumName: string;
   ownerId: string;
   assetCount: number;
+  createdAt?: string;
   startDate?: string;
   endDate?: string;
   albumThumbnailAssetId?: string | null;
