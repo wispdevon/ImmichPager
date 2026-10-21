@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DEFAULT_PAGE_ACCENT } from './gallery';
 
 export const reservedSlugs = new Set([
   'manage',
@@ -25,7 +26,7 @@ export const pageInputSchema = z
     theme: z.enum(['dark', 'light', 'system']).default('dark'),
     background: color.nullable().default(null),
     foreground: color.nullable().default(null),
-    accent: color.default('#accbfa'),
+    accent: color.default(DEFAULT_PAGE_ACCENT),
     alignment: z.enum(['left', 'center']).default('left'),
     headerLayout: z.enum(['below', 'overlay']).default('below'),
     headerSize: z.enum(['compact', 'standard', 'tall']).default('standard'),

@@ -31,7 +31,7 @@ These real-use screenshots were supplied by the project maintainer for publicati
 
 <p align="center">
   <img src="docs/screenshots/gallery-desktop.png" width="75%" alt="ImmichPager desktop client page with an Immich-style album grid and year headings" />
-  <img src="docs/screenshots/gallery-mobile.png" width="23%" alt="The same client page in a responsive two-column mobile layout" />
+  <img src="docs/screenshots/gallery-mobile.png" width="23%" alt="The same client page in a single-column phone layout" />
 </p>
 
 Screenshots use attributed [NASA Apollo photographs](fixtures/photos/README.md) and illustrative album data, not a live client library.
