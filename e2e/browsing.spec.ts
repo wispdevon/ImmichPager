@@ -248,6 +248,49 @@ test('public gallery browsing, responsive layout, and year navigation work', asy
   expect(errors).toEqual([]);
 });
 
+test('single-album browse summaries use singular labels before and after filtering', async ({
+  page,
+}) => {
+  await page.goto('/dev-login/alice');
+  const headers = { origin: 'http://127.0.0.1:3200' };
+  const albums = await (await page.request.get('/page/api/albums')).json();
+  const slug = `single-album-summary-${Date.now()}`;
+  let pageId: string | undefined;
+
+  try {
+    const created = await page.request.post('/page/api/pages', {
+      headers,
+      data: {
+        title: 'Single album summary check',
+        slug,
+        albumIds: [albums[0].id],
+      },
+    });
+    expect(created.ok()).toBe(true);
+    const draft = await created.json();
+    pageId = draft.id;
+    const published = await page.request.post(
+      `/page/api/pages/${pageId}/publish`,
+      { headers, data: { expectedDraftRevision: draft.draftRevision } },
+    );
+    expect(published.ok()).toBe(true);
+
+    await page.goto(`/page/${slug}`);
+    const summary = page.locator('.browse-summary');
+    await expect(summary).toHaveText('1 album');
+
+    await page.getByLabel('Album name').fill(albums[0].albumName);
+    await expect(summary).toHaveText('1 of 1 album');
+
+    await page.getByLabel('Album name').fill('no matching album');
+    await expect(summary).toHaveText('0 of 1 album');
+  } finally {
+    await page.goto('/dev-login/alice');
+    if (pageId)
+      await page.request.delete(`/page/api/pages/${pageId}`, { headers });
+  }
+});
+
 test('light client galleries retain the same responsive album presentation', async ({
   page,
 }) => {

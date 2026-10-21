@@ -44,6 +44,9 @@
   const visibleAlbumCount = $derived(
     visibleGroups.reduce((count, [, albums]) => count + albums.length, 0),
   );
+  const totalAlbumLabel = $derived(
+    `${page.albums.length} ${page.albums.length === 1 ? 'album' : 'albums'}`,
+  );
   const hasActiveFilters = $derived(
     searchTerm.trim().length > 0 || selectedMonth !== '',
   );
@@ -340,9 +343,9 @@
           <div class="browse-summary">
             <p>
               {#if hasActiveFilters}
-                {visibleAlbumCount} of {page.albums.length} albums
+                {visibleAlbumCount} of {totalAlbumLabel}
               {:else}
-                {page.albums.length} albums
+                {totalAlbumLabel}
               {/if}
             </p>
           </div>
