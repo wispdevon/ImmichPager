@@ -6,7 +6,7 @@
 - TypeScript/Svelte checks with zero application errors or warnings.
 - ESLint and Prettier checks.
 - 74 domain/integration tests across ownership, slug validation, salted password hashing, interrupted creates/deletes, native slug preservation, public credential isolation, SQLite restart recovery, grouping, proxy streaming, and WebSocket upgrades.
-- Nine production-browser scenarios covering desktop/mobile grids, year collapse, native viewer navigation, branded protected publishing, owner isolation, sidebar embedding, same-origin writes, monthly additions, password rotation/session invalidation, rejected SVG uploads, and unpublish revocation.
+- Ten production-browser scenarios covering desktop/mobile grids, year collapse, native viewer navigation, branded protected publishing, owner isolation, sidebar embedding, same-origin writes, monthly additions, password rotation/session invalidation, rejected SVG uploads, unpublish revocation, and gallery customization.
 - Production build and runtime dependency audit with no known advisories at implementation time.
 
 ## Visual comparison
@@ -51,4 +51,4 @@ Deployed to the existing instance with a stopped-volume backup before the schema
 
 ## Dev branch: banner composition and custom CSS
 
-The dev branch adds header overlays and per-page CSS without changing main or the live instance. Browser coverage verifies desktop/mobile overlays, centered whole-header composition, missing-banner fallback, private autosave, explicit publication, clearing CSS, and rejection of invalid CSS without altering live styling. Security cases cover resource/attribute functions, escaped URLs, imports, unsupported nesting/at-rules, selector escape attempts, fixed-position containment and style-closing HTML strings. Screenshots use public NASA fixtures. No live deployment was performed for this increment.
+The dev branch adds header overlays and per-page CSS without changing main or the live instance. Browser coverage verifies desktop/mobile overlays, centered whole-header composition, missing-banner fallback, private autosave, explicit publication, clearing CSS, and rejection of invalid CSS without altering live styling. Release-readiness checks also cover a 160-character title, a 2,000-character unbroken description, absent branding, a failed album-cover fallback, dark and light appearance, and keyboard-only theme and preview controls. The CSS containment check verifies that a keyboard user can still reach and activate the preview toolbar. Security cases cover resource/attribute functions, escaped URLs, imports, unsupported nesting/at-rules, selector escape attempts, fixed-position containment and style-closing HTML strings. Screenshots use public NASA fixtures. This increment was verified against the local fixture only; no release or live deployment was performed.

@@ -177,9 +177,95 @@ test('CSS cannot style editor siblings, escape paint containment, or inject HTML
       { x: rect!.x + 12, y: rect!.y + 12 },
     ),
   ).toBe(true);
-  await button.click();
+  await page.keyboard.press('Tab');
+  await expect(button).toBeFocused();
+  await page.keyboard.press('Enter');
   await expect(page.getByLabel('Title', { exact: true })).toHaveValue(
     'CSS containment',
   );
+  expect(errors).toEqual([]);
+});
+
+test('long header text, missing images, themes, and keyboard controls stay usable', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/dev-login/alice');
+  const headers = { origin: 'http://127.0.0.1:3200' };
+  const albums = await (await page.request.get('/page/api/albums')).json();
+  const title = 'T'.repeat(160);
+  const description = 'D'.repeat(2000);
+  const created = await page.request.post('/page/api/pages', {
+    headers,
+    data: {
+      title,
+      slug: 'customization-release-check',
+      description,
+      albumIds: [albums[0].id],
+      headerLayout: 'overlay',
+      theme: 'dark',
+    },
+  });
+  expect(created.ok()).toBe(true);
+  const record = await created.json();
+  await page.route(`**/page/api/albums/${albums[0].id}/cover`, (route) =>
+    route.fulfill({ status: 404, body: 'Cover unavailable' }),
+  );
+  await page.goto(`/page/manage/${record.id}`);
+
+  await page.getByRole('button', { name: 'Preview', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  const gallery = page.locator('.ip-gallery');
+  await expect(gallery).toBeVisible();
+  await expect(gallery).not.toHaveClass(/overlay/);
+  await expect(gallery).toHaveCSS('background-color', 'rgb(0, 0, 0)');
+  await expect(gallery).toHaveCSS('color', 'rgb(245, 245, 245)');
+  await expect(page.locator('.ip-title')).toHaveText(title);
+  await expect(page.locator('.ip-description')).toHaveText(description);
+  await expect(page.locator('.ip-logo, .ip-banner img')).toHaveCount(0);
+  await expect(page.locator('.ip-cover .placeholder')).toBeVisible();
+  expect(
+    await page
+      .locator('.ip-description')
+      .evaluate((element) => element.scrollWidth <= element.clientWidth),
+  ).toBe(true);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+
+  await page.keyboard.press('Tab');
+  const back = page.getByRole('button', { name: 'Back to editor' });
+  await expect(back).toBeFocused();
+  await page.keyboard.press('Enter');
+  const options = page.getByRole('button', { name: 'Options', exact: true });
+  await options.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog', { name: 'Options' })).toBeVisible();
+  const appearance = page.getByLabel('Appearance');
+  await appearance.press('Enter');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Options' })).toHaveCount(0);
+  await expect(options).toBeFocused();
+  await page.keyboard.press('Tab');
+  const preview = page.getByRole('button', { name: 'Preview', exact: true });
+  await expect(preview).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(gallery).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(gallery).toHaveCSS('color', 'rgb(25, 25, 25)');
+  await page.screenshot({
+    path: 'test-results/customization-release-mobile.png',
+    fullPage: true,
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
   expect(errors).toEqual([]);
 });

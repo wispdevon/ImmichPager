@@ -212,6 +212,7 @@
     opacity: 0.72;
     max-width: 720px;
     white-space: pre-line;
+    overflow-wrap: anywhere;
     line-height: 1.6;
     margin-block: 16px 0;
   }
