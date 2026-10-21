@@ -113,11 +113,14 @@
     class:header-editor={editorHeader}
     data-pager-gallery={page.id}
     class:overlay
+    class:header-compact={page.headerSize === 'compact'}
+    class:header-tall={page.headerSize === 'tall'}
     class:light={page.theme === 'light'}
     class:system={page.theme === 'system'}
     style:--custom-bg={page.background || undefined}
     style:--custom-fg={page.foreground || undefined}
     style:--accent={page.accent}
+    style:--logo-size={`${page.logoSize}px`}
   >
     <div class="hero ip-hero">
       {#if page.banner}<div class="banner ip-banner">
@@ -133,8 +136,8 @@
             class="logo ip-logo"
             src={page.logo}
             alt=""
-            width="80"
-            height="80"
+            width={page.logoSize}
+            height={page.logoSize}
           />{/if}
         {#if editorHeader && editing === 'title'}<Textarea
             bind:ref={titleInput}
@@ -423,6 +426,12 @@
     min-height: clamp(260px, 32vw, 460px);
     margin-block-end: 32px;
   }
+  .overlay.header-compact .hero {
+    min-height: clamp(220px, 22vw, 320px);
+  }
+  .overlay.header-tall .hero {
+    min-height: clamp(360px, 42vw, 560px);
+  }
   .overlay .banner {
     position: absolute;
     inset: 0;
@@ -453,6 +462,12 @@
     height: 100%;
     object-fit: cover;
   }
+  .header-compact:not(.overlay) .banner {
+    height: clamp(140px, 18vw, 240px);
+  }
+  .header-tall:not(.overlay) .banner {
+    height: clamp(240px, 35vw, 480px);
+  }
   header {
     padding: 52px 40px 40px;
     max-width: 1600px;
@@ -462,6 +477,8 @@
     text-align: center;
   }
   .logo {
+    width: var(--logo-size);
+    height: var(--logo-size);
     object-fit: contain;
     margin-block-end: 20px;
     display: inline-block;

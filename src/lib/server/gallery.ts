@@ -45,6 +45,8 @@ export async function gallery(
     alignment,
     bannerPosition,
     headerLayout,
+    headerSize,
+    logoSize,
     customCss,
     order,
   } = page;
@@ -60,6 +62,8 @@ export async function gallery(
     alignment,
     bannerPosition,
     headerLayout,
+    headerSize,
+    logoSize,
     customCss,
     order,
     logo: page.logo ? `/page/media/${id}/branding/logo${suffix}` : null,

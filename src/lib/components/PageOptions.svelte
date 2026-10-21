@@ -221,6 +221,36 @@
             ]}
           /></Field
         >
+        <Field label="Header size"
+          ><Select
+            bind:value={fields.headerSize}
+            options={[
+              { value: 'compact', label: 'Compact' },
+              { value: 'standard', label: 'Standard' },
+              { value: 'tall', label: 'Tall' },
+            ]}
+          /></Field
+        >
+        {#if !saved?.banner}<p class="hint">
+            Banner height applies when you add a banner.
+          </p>{/if}
+        <label class="range-setting"
+          >Logo size
+          <div class="range-control">
+            <input
+              type="range"
+              min="48"
+              max="160"
+              step="8"
+              aria-label="Logo size"
+              bind:value={fields.logoSize}
+            />
+            <output>{fields.logoSize}px</output>
+          </div>
+        </label>
+        {#if !saved?.logo}<p class="hint">
+            Logo size applies when you add a logo.
+          </p>{/if}
         {#if fields.headerLayout === 'overlay' && !saved?.banner}<p
             class="hint"
           >
@@ -647,6 +677,23 @@
         rgb(255 255 255 / 58%) 66.666%,
         transparent calc(66.666% + 0.5px)
       );
+  }
+  .range-control {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 4.5rem;
+    align-items: center;
+    gap: 12px;
+  }
+  .range-control input {
+    width: 100%;
+    min-height: 32px;
+    accent-color: #accbfa;
+  }
+  .range-control output {
+    color: #9aa0a6;
+    font-size: 12px;
+    text-align: end;
+    font-variant-numeric: tabular-nums;
   }
   .colors {
     display: grid;
