@@ -187,6 +187,9 @@ it('defaults older JSON records and publishes appearance changes only explicitly
     import('../src/lib/contracts').DraftRecord
   >;
   delete old.headerLayout;
+  delete old.titleSize;
+  delete old.descriptionSize;
+  delete old.headerSpacing;
   delete old.customCss;
   delete old.headerSize;
   delete old.logoSize;
@@ -195,6 +198,9 @@ it('defaults older JSON records and publishes appearance changes only explicitly
     .run(JSON.stringify(old), d.id);
   expect(store.draft(d.id, 'alice')).toMatchObject({
     headerLayout: 'below',
+    titleSize: 3,
+    descriptionSize: 1.125,
+    headerSpacing: 2.5,
     customCss: '',
     headerSize: 'standard',
     logoSize: 80,
@@ -214,6 +220,9 @@ it('defaults older JSON records and publishes appearance changes only explicitly
     import('../src/lib/contracts').PageRecord
   >;
   delete oldLive.headerLayout;
+  delete oldLive.titleSize;
+  delete oldLive.descriptionSize;
+  delete oldLive.headerSpacing;
   delete oldLive.customCss;
   delete oldLive.headerSize;
   delete oldLive.logoSize;
@@ -222,6 +231,9 @@ it('defaults older JSON records and publishes appearance changes only explicitly
     .run(JSON.stringify(oldLive), d.id);
   expect(store.publicPage('client')).toMatchObject({
     headerLayout: 'below',
+    titleSize: 3,
+    descriptionSize: 1.125,
+    headerSpacing: 2.5,
     customCss: '',
     headerSize: 'standard',
     logoSize: 80,
@@ -262,7 +274,7 @@ it('defaults older JSON records and publishes appearance changes only explicitly
   expect(store.publicPage('client')?.customCss).toBe('');
 });
 
-it('keeps header size and logo sizing private until the page is published', async () => {
+it('keeps header composition, sizing, and typography private until the page is published', async () => {
   const { store, drafts } = setup();
   let d = await drafts.save('alice', null, values);
   d = await drafts.publish('alice', d.id, {
@@ -275,16 +287,25 @@ it('keeps header size and logo sizing private until the page is published', asyn
     ...values,
     headerSize: 'tall',
     logoSize: 112,
+    titleSize: 3.5,
+    descriptionSize: 1.25,
+    headerSpacing: 3.5,
     expectedDraftRevision: d.draftRevision,
   });
 
   expect(store.draft(d.id, 'alice')).toMatchObject({
     headerSize: 'tall',
     logoSize: 112,
+    titleSize: 3.5,
+    descriptionSize: 1.25,
+    headerSpacing: 3.5,
   });
   expect(store.publicPage('client')).toMatchObject({
     headerSize: 'standard',
     logoSize: 80,
+    titleSize: 3,
+    descriptionSize: 1.125,
+    headerSpacing: 2.5,
   });
 
   d = await drafts.publish('alice', d.id, {
@@ -295,6 +316,9 @@ it('keeps header size and logo sizing private until the page is published', asyn
   expect(store.publicPage('client')).toMatchObject({
     headerSize: 'tall',
     logoSize: 112,
+    titleSize: 3.5,
+    descriptionSize: 1.25,
+    headerSpacing: 3.5,
   });
   expect(d.hasUnpublishedChanges).toBe(false);
 });
@@ -305,6 +329,12 @@ it('rejects header settings outside their supported ranges', async () => {
     { headerSize: 'extra-wide' },
     { logoSize: 47 },
     { logoSize: 161 },
+    { titleSize: 1.4 },
+    { titleSize: 4.1 },
+    { descriptionSize: 0.8 },
+    { descriptionSize: 1.6 },
+    { headerSpacing: 1.4 },
+    { headerSpacing: 5.1 },
   ];
 
   for (const appearance of invalidSettings) {

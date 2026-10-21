@@ -126,6 +126,48 @@
         {#if !saved?.logo}<p class="hint">
             Logo size applies when you add a logo.
           </p>{/if}
+        <label class="range-setting"
+          >Title size
+          <div class="range-control">
+            <input
+              type="range"
+              min="1.5"
+              max="4"
+              step="0.125"
+              aria-label="Title size"
+              bind:value={fields.titleSize}
+            />
+            <output>{fields.titleSize}rem</output>
+          </div>
+        </label>
+        <label class="range-setting"
+          >Description size
+          <div class="range-control">
+            <input
+              type="range"
+              min="0.875"
+              max="1.5"
+              step="0.0625"
+              aria-label="Description size"
+              bind:value={fields.descriptionSize}
+            />
+            <output>{fields.descriptionSize}rem</output>
+          </div>
+        </label>
+        <label class="range-setting"
+          >Header spacing
+          <div class="range-control">
+            <input
+              type="range"
+              min="1.5"
+              max="5"
+              step="0.25"
+              aria-label="Header spacing"
+              bind:value={fields.headerSpacing}
+            />
+            <output>{fields.headerSpacing}rem</output>
+          </div>
+        </label>
         {#if fields.headerLayout === 'overlay' && !saved?.banner}<p
             class="hint"
           >
@@ -423,6 +465,11 @@
     font-size: 12px;
     color: #9aa0a6;
     line-height: 1.6;
+  }
+  .range-setting {
+    display: grid;
+    gap: 6px;
+    margin-block: 12px;
   }
   .range-control {
     display: grid;
