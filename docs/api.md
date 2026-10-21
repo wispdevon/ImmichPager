@@ -7,6 +7,7 @@ All Pager routes use `/page/`. Management routes require a verified Immich sessi
 | GET          | `/page/api/pages`                    | Owner's working copies, publication state, and live URL                       |
 | POST         | `/page/api/pages`                    | Create an incomplete private draft                                            |
 | GET, PUT     | `/page/api/pages/:id`                | Read or replace working settings                                              |
+| POST         | `/page/api/pages/:id/duplicate`      | Copy owned appearance and branding into a new empty private draft             |
 | DELETE       | `/page/api/pages/:id`                | Revoke dedicated links and delete draft/live data                             |
 | POST         | `/page/api/pages/:id/publish`        | Validate and publish the expected draft revision                              |
 | POST         | `/page/api/pages/:id/unpublish`      | Hide page and revoke links                                                    |
@@ -29,6 +30,8 @@ Responses include `draftRevision`, `publishedRevision` (nullable), `publishedSlu
 Publishing requires `{ "expectedDraftRevision": 3, "passwordMode": "keep", "password": "" }`. `passwordMode` is `keep`, `set`, or `remove`. The password is transient and supplied only when changing protection or synchronizing protected album links; it is not saved with the draft. Header/order-only updates with unchanged membership/protection reuse existing links. Publication applies strict title/slug validation and requires at least one owned album. System slugs `manage`, `api`, `assets`, `media`, `health`, and `ready` remain reserved; a live slug collision returns 409.
 
 Autosaving never changes the public version or its sessions. Publication commits the working branding and matching settings together. Failed native synchronization remains hidden until retry succeeds. Retry/unpublish bodies accept `{ "password": "…" }` when needed. For an uncertain native outcome, retry adopts deterministic native links rather than creating duplicates. Draft creation itself is not idempotent; after an unreadable success response, check the page list before repeating creation.
+
+`POST /page/api/pages/:id/duplicate` checks ownership of the source draft, then creates a new private draft with its appearance settings and processed logo/banner copies. It starts with a blank title, description, URL, and album list, with default album ordering; no live page, password, or native share capabilities are copied. This creation is not idempotent, so inspect the page list before retrying after an unreadable response.
 
 ## Appearance settings (dev)
 

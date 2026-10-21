@@ -265,6 +265,133 @@ test('ownership, same-origin writes, reserved slugs and sidebar integration', as
   await bob.close();
 });
 
+test('duplicates only appearance and branding into a private draft', async ({
+  page,
+  browser,
+}) => {
+  await page.goto('/dev-login/alice');
+  const origin = 'http://127.0.0.1:3200';
+  let sourceResponse = await page.request.post('/page/api/pages', {
+    headers: { origin },
+    data: {
+      title: 'A source design for Acme',
+      slug: 'source-design-for-acme',
+      description: 'A description that belongs only to the source page.',
+      albumIds: ['00000000-0000-4000-8000-000000000001'],
+      theme: 'light',
+      background: '#112233',
+      foreground: '#ddeeff',
+      accent: '#abcdef',
+      alignment: 'center',
+      headerLayout: 'overlay',
+      customCss: ':scope { --pager-accent: #abcdef; }',
+      bannerPosition: 28,
+      order: 'manual',
+    },
+  });
+  expect(sourceResponse.ok()).toBe(true);
+  let source = await sourceResponse.json();
+  for (const kind of ['logo', 'banner']) {
+    sourceResponse = await page.request.post(
+      `/page/api/pages/${source.id}/branding/${kind}`,
+      {
+        headers: { origin },
+        data: {
+          assetId: '10000000-0000-4000-8000-000000000001',
+          expectedDraftRevision: source.draftRevision,
+        },
+      },
+    );
+    expect(sourceResponse.ok()).toBe(true);
+    source = await sourceResponse.json();
+  }
+  sourceResponse = await page.request.post(
+    `/page/api/pages/${source.id}/publish`,
+    {
+      headers: { origin },
+      data: {
+        password: 'source-pin',
+        passwordMode: 'set',
+        expectedDraftRevision: source.draftRevision,
+      },
+    },
+  );
+  expect(sourceResponse.ok()).toBe(true);
+  source = await sourceResponse.json();
+  expect(source.publishedSlug).toBe('source-design-for-acme');
+  expect(source.hasPassword).toBe(true);
+
+  const sharesBefore = await (
+    await page.request.get('/api/shared-links')
+  ).json();
+  await page.goto('/page/manage');
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  const sourceRow = page.getByRole('article').filter({
+    has: page.getByRole('heading', { name: 'A source design for Acme' }),
+  });
+  await sourceRow
+    .getByRole('button', {
+      name: 'Duplicate design for A source design for Acme',
+    })
+    .click();
+  await expect(page).toHaveURL(/\/page\/manage\/[0-9a-f-]+$/);
+  const duplicateId = page.url().split('/').pop()!;
+  await expect(page.getByLabel('Title', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('Description', { exact: true })).toHaveValue('');
+  await expect(page.getByAltText('Logo preview')).toBeVisible();
+  await expect(page.getByAltText('Banner preview')).toBeVisible();
+  const duplicateResponse = await page.request.get(
+    `/page/api/pages/${duplicateId}`,
+  );
+  expect(duplicateResponse.ok()).toBe(true);
+  const duplicate = await duplicateResponse.json();
+  expect(duplicate).toMatchObject({
+    title: '',
+    description: '',
+    slug: '',
+    albumIds: [],
+    order: 'newest',
+    theme: 'light',
+    background: '#112233',
+    foreground: '#ddeeff',
+    accent: '#abcdef',
+    alignment: 'center',
+    headerLayout: 'overlay',
+    customCss: ':scope { --pager-accent: #abcdef; }',
+    bannerPosition: 28,
+    logo: true,
+    banner: true,
+    status: 'draft',
+    publishedSlug: null,
+    publishedRevision: null,
+    hasPassword: false,
+  });
+  expect(duplicate).not.toHaveProperty('passwordHash');
+  expect(duplicate).not.toHaveProperty('key');
+  expect(duplicate).not.toHaveProperty('password');
+  expect(await (await page.request.get('/api/shared-links')).json()).toEqual(
+    sharesBefore,
+  );
+  expect(
+    (await page.request.get('/page/source-design-for-acme')).status(),
+  ).toBe(200);
+
+  const bob = await browser.newContext();
+  await bob.request.get('/dev-login/bob');
+  const denied = await bob.request.post(
+    `/page/api/pages/${source.id}/duplicate`,
+    { headers: { origin }, data: {} },
+  );
+  expect(denied.status()).toBe(404);
+  expect(await (await bob.request.get('/page/api/pages')).json()).toEqual([]);
+  await bob.close();
+});
+
 test('autosave recovers from an empty proxy error and rejects oversized branding before upload', async ({
   page,
 }) => {

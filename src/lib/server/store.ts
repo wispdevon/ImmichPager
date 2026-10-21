@@ -104,6 +104,38 @@ export class Store {
       )
       .run(page.id, page.ownerId, JSON.stringify(page));
   }
+  copyDraftDesign(sourceId: string, ownerId: string, draft: DraftRecord) {
+    if (draft.ownerId !== ownerId) throw new AppError(404, 'Page not found');
+    this.db.exec('BEGIN');
+    try {
+      this.draft(sourceId, ownerId);
+      if (
+        this.db
+          .prepare(
+            'SELECT 1 FROM pages WHERE id=? UNION SELECT 1 FROM drafts WHERE id=?',
+          )
+          .get(draft.id, draft.id)
+      )
+        throw new AppError(409, 'Could not create a new page draft');
+      const branding = this.db
+        .prepare('SELECT kind FROM draft_branding WHERE page_id=?')
+        .all(sourceId) as { kind: string }[];
+      draft.logo = branding.some(({ kind }) => kind === 'logo');
+      draft.banner = branding.some(({ kind }) => kind === 'banner');
+      this.db
+        .prepare('INSERT INTO drafts VALUES (?,?,?)')
+        .run(draft.id, ownerId, JSON.stringify(draft));
+      this.db
+        .prepare(
+          'INSERT INTO draft_branding (page_id,kind,image) SELECT ?,kind,image FROM draft_branding WHERE page_id=?',
+        )
+        .run(draft.id, sourceId);
+      this.db.exec('COMMIT');
+    } catch (cause) {
+      this.db.exec('ROLLBACK');
+      throw cause;
+    }
+  }
   editor(id: string, ownerId: string): DraftEditorPage {
     const draft = this.draft(id, ownerId),
       live = this.get(id);

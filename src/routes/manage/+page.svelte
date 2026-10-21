@@ -1,14 +1,57 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { Button, Input } from '@immich/ui';
   import CopyLink from '$lib/components/CopyLink.svelte';
   import type { PageData } from './$types';
   let { data }: { data: PageData } = $props();
   let search = $state('');
+  let duplicating = $state<string | null>(null);
+  let actionError = $state('');
   const visible = $derived(
     data.pages.filter((p) =>
       `${p.title} ${p.slug}`.toLowerCase().includes(search.toLowerCase()),
     ),
   );
+
+  async function duplicateDesign(id: string) {
+    if (duplicating) return;
+    duplicating = id;
+    actionError = '';
+    let receivedResponse = false;
+    let createdId: string | null = null;
+    try {
+      const response = await fetch(`/page/api/pages/${id}/duplicate`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{}',
+      });
+      receivedResponse = true;
+      const result = await response.json().catch(() => null);
+      if (!response.ok)
+        throw new Error(result?.message || 'Could not duplicate this design.');
+      if (typeof result?.id !== 'string' || !result.id) {
+        actionError =
+          'The result is unknown. Check your Pages list before trying again.';
+        return;
+      }
+      createdId = result.id;
+      await goto(`/page/manage/${createdId}`);
+    } catch (cause) {
+      if (createdId)
+        actionError =
+          'The draft was created, but could not be opened. Return to Pages and open it there.';
+      else if (!receivedResponse)
+        actionError =
+          'The result is unknown. Check your Pages list before trying again.';
+      else
+        actionError =
+          cause instanceof Error
+            ? cause.message
+            : 'Could not duplicate this design.';
+    } finally {
+      duplicating = null;
+    }
+  }
 </script>
 
 <svelte:head><title>Pages · ImmichPager</title></svelte:head>
@@ -25,6 +68,7 @@
     </div>
     <Button shape="round" href="/page/manage/new">＋ Create page</Button>
   </header>
+  {#if actionError}<p class="action-error" role="alert">{actionError}</p>{/if}
   {#each visible as page (page.id)}<article class="page-row">
       <a class="page-title" href={`/page/manage/${page.id}`}
         ><h2>{page.title || 'Untitled page'}</h2>
@@ -49,7 +93,18 @@
         </div></a
       >
       <div class="row-actions">
-        <CopyLink slug={page.publishedSlug} />{#if page.publishedSlug}<Button
+        <CopyLink slug={page.publishedSlug} /><Button
+          variant="ghost"
+          color="secondary"
+          disabled={duplicating !== null}
+          aria-busy={duplicating === page.id}
+          onclick={() => void duplicateDesign(page.id)}
+          >{duplicating === page.id ? 'Creating…' : 'Duplicate design'}<span
+            class="sr-only"
+          >
+            for {page.title || 'Untitled page'}</span
+          ></Button
+        >{#if page.publishedSlug}<Button
             variant="ghost"
             color="secondary"
             href={`/page/${page.publishedSlug}`}
@@ -110,6 +165,10 @@
     border-bottom: 1px solid #292a2d;
     padding-block: 26px;
     min-width: 0;
+  }
+  .action-error {
+    color: #ffb4ab;
+    margin: 18px 0 0;
   }
   .page-title {
     min-width: 0;
@@ -185,6 +244,10 @@
     }
     .row-actions {
       margin-left: auto;
+      max-width: 100%;
+      flex-shrink: 1;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
     footer {
       flex-direction: column;
