@@ -8,6 +8,7 @@
   import PhotoPicker from '$lib/components/PhotoPicker.svelte';
   import PageOptions from '$lib/components/PageOptions.svelte';
   import CopyLink from '$lib/components/CopyLink.svelte';
+  import PublishedView from '$lib/components/PublishedView.svelte';
   import { readApiResponse } from '$lib/api-response';
   import type { DraftEditorPage, GalleryPage, PageInput } from '$lib/contracts';
   import type { PageData } from './$types';
@@ -358,6 +359,12 @@
         >
       </div>
     </header>
+    {#if saved?.status === 'published' && saved.publishedSlug}
+      <PublishedView
+        slug={saved.publishedSlug}
+        hasPassword={saved.hasPassword}
+      />
+    {/if}
     {#if message && !optionsOpen && !photoKind}<div
         class="notice error"
         role="alert"
