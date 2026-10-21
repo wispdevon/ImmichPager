@@ -7,6 +7,7 @@ const production = process.argv.includes('--production');
 const port = Number(process.env.DEMO_PORT || 3000),
   fixturePort = port + 1,
   vitePort = port + 2;
+const host = process.env.DEMO_HOST || '127.0.0.1';
 const origin = `http://127.0.0.1:${port}`;
 process.env.IMMICH_URL = `http://127.0.0.1:${fixturePort}`;
 process.env.ORIGIN = origin;
@@ -33,7 +34,7 @@ const server = createGateway({
   handler,
   appUrl: `http://127.0.0.1:${vitePort}`,
 });
-await new Promise((resolve) => server.listen(port, '127.0.0.1', resolve));
+await new Promise((resolve) => server.listen(port, host, resolve));
 for (const signal of ['SIGTERM', 'SIGINT'])
   process.on(signal, () => {
     vite?.kill(signal);
