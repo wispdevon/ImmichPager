@@ -1,5 +1,8 @@
 import type { GalleryAlbum, GalleryPage } from './contracts';
 import { albumYear } from './album-order';
+
+export const DEFAULT_PAGE_ACCENT = '#accbfa';
+
 export function albumGroups(page: GalleryPage) {
   const groups = new Map<string, GalleryAlbum[]>();
   const albums = [...page.albums];
@@ -78,4 +81,8 @@ export function dateRange(start?: string, end?: string) {
   if (a.getUTCFullYear() === b.getUTCFullYear())
     return `${new Intl.DateTimeFormat('en', { month: 'short', timeZone: 'UTC' }).format(a)} – ${format.format(b)}`;
   return `${format.format(a)} – ${format.format(b)}`;
+}
+
+export function itemCountLabel(count: number) {
+  return `${count.toLocaleString('en')} ${count === 1 ? 'item' : 'items'}`;
 }

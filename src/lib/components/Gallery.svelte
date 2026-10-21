@@ -3,7 +3,13 @@
   import { Textarea } from '@immich/ui';
   import { compileCustomCss, stylesheetMarkup } from '$lib/custom-css';
   import type { GalleryPage } from '$lib/contracts';
-  import { albumGroups, dateRange, filterAlbumGroups } from '$lib/gallery';
+  import {
+    albumGroups,
+    DEFAULT_PAGE_ACCENT,
+    dateRange,
+    filterAlbumGroups,
+    itemCountLabel,
+  } from '$lib/gallery';
   let {
     page,
     preview = false,
@@ -140,6 +146,10 @@
     style:--custom-bg={page.background || undefined}
     style:--custom-fg={page.foreground || undefined}
     style:--accent={page.accent}
+    style:--gallery-hover-accent={page.accent.toLowerCase() ===
+    DEFAULT_PAGE_ACCENT
+      ? undefined
+      : page.accent}
     style:--logo-size={`${page.logoSize}px`}
     style:--title-min-size={`${page.titleSize * 0.625}rem`}
     style:--title-fluid-size={`${(3.4 / 3) * page.titleSize}vw`}
@@ -378,7 +388,7 @@
                               </p>{/if}
                             <p>
                               {album.available
-                                ? `${album.count.toLocaleString('en')} items`
+                                ? itemCountLabel(album.count)
                                 : 'Currently unavailable'}{#if album.available}<span
                                   class="shared"
                                 >
@@ -440,12 +450,14 @@
   .gallery.light {
     --base-bg: #fff;
     --base-fg: #191919;
+    --gallery-hover-accent: #4250af;
     color-scheme: light;
   }
   @media (prefers-color-scheme: light) {
     .gallery.system {
       --base-bg: #fff;
       --base-fg: #191919;
+      --gallery-hover-accent: #4250af;
       color-scheme: light;
     }
   }
@@ -621,7 +633,8 @@
     margin-block: 16px 0;
   }
   @media (prefers-reduced-motion: reduce) {
-    .edit-hint {
+    .edit-hint,
+    .album {
       transition: none;
     }
   }
@@ -643,26 +656,34 @@
     gap: 8px;
     margin: 0;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
+    opacity: 0.78;
   }
   .browse-controls input,
   .browse-controls select {
     width: 100%;
     min-width: 0;
-    min-height: 48px;
-    padding: 0 12px;
-    border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
-    border-radius: 8px;
-    background: color-mix(in srgb, currentColor 6%, transparent);
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: color-mix(in srgb, currentColor 8%, transparent);
     color: inherit;
-    font-size: 16px;
+    font-size: 14px;
+  }
+  .browse-controls input:focus-visible,
+  .browse-controls select:focus-visible,
+  .clear-filters:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
   }
   .clear-filters {
-    min-height: 48px;
+    min-height: 44px;
     padding: 0 16px;
-    border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
-    border-radius: 8px;
-    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: color-mix(in srgb, currentColor 8%, transparent);
     color: inherit;
     font-weight: 600;
     cursor: pointer;
@@ -707,25 +728,27 @@
   }
   summary {
     display: flex;
-    align-items: baseline;
-    gap: 12px;
+    align-items: center;
+    gap: 8px;
     list-style: none;
     border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent);
-    padding: 16px 8px 12px;
+    margin-block-start: 8px;
+    padding: 8px;
+    cursor: pointer;
   }
   summary::-webkit-details-marker {
     display: none;
   }
   .chevron {
     display: inline-block;
-    font-size: 34px;
+    font-size: 24px;
     line-height: 1;
   }
   .year-title {
-    font-size: 42px;
-    line-height: 1.1;
+    font-size: 30px;
+    line-height: 1.2;
     font-weight: 700;
-    letter-spacing: -0.8px;
+    letter-spacing: -0.5px;
   }
   details[open] .chevron {
     transform: rotate(90deg);
@@ -738,16 +761,16 @@
     letter-spacing: -0.8px;
   }
   .group-count {
-    font-size: 24px;
+    font-size: 16px;
     opacity: 0.85;
   }
   .album-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-    column-gap: 24px;
-    row-gap: 46px;
-    padding: 30px 0 42px;
-    margin: 0;
+    grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr));
+    column-gap: 0;
+    row-gap: 16px;
+    padding: 0 0 16px;
+    margin: 16px 0 0;
     list-style: none;
   }
   .album-list-item {
@@ -757,16 +780,25 @@
     display: block;
     min-width: 0;
     text-decoration: none;
-    padding: 12px;
+    padding: 20px;
     border: 1px solid transparent;
-    border-radius: 18px;
+    border-radius: 16px;
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease;
   }
-  .album:hover {
+  .album:hover,
+  .album:focus-visible {
     background: color-mix(in srgb, currentColor 5%, transparent);
     border-color: color-mix(in srgb, currentColor 12%, transparent);
   }
-  .album:hover h3 {
-    color: var(--pager-accent, var(--accent));
+  .album:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+  .album:hover h3,
+  .album:focus-visible h3 {
+    color: var(--pager-accent, var(--gallery-hover-accent, var(--accent)));
   }
   .cover {
     width: 100%;
@@ -787,11 +819,11 @@
     opacity: 0.35;
   }
   .album-info {
-    margin-block-start: 18px;
+    margin-block-start: 16px;
   }
   h3 {
-    font-size: 26px;
-    line-height: 1.28;
+    font-size: 18px;
+    line-height: 24px;
     font-weight: 600;
     margin: 0 0 4px;
     display: -webkit-box;
@@ -802,7 +834,7 @@
     overflow-wrap: anywhere;
   }
   .album-info p {
-    font-size: 20px;
+    font-size: 14px;
     line-height: 1.4;
     opacity: 0.86;
     margin: 0;
@@ -839,38 +871,8 @@
     .browse-summary {
       padding-inline: 8px;
     }
-    .album-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 24px 2px;
-      padding-top: 18px;
-    }
-    .album {
-      padding: 8px;
-      border-radius: 12px;
-    }
-    .cover {
-      border-radius: 12px;
-    }
-    h3 {
-      font-size: 17px;
-    }
-    .album-info p {
-      font-size: 13px;
-    }
-    .album-info {
-      margin-top: 12px;
-    }
     h2 {
       font-size: 28px;
-    }
-    .year-title {
-      font-size: 28px;
-    }
-    .group-count {
-      font-size: 16px;
-    }
-    .shared {
-      display: none;
     }
     footer {
       padding: 24px;

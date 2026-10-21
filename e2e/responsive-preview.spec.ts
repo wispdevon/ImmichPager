@@ -55,7 +55,7 @@ test('private preview uses desktop, tablet, and phone gallery viewports', async 
   await page.keyboard.press('Enter');
   await expect(phone).toHaveAttribute('aria-pressed', 'true');
   await expect.poll(viewportWidth).toBe(390);
-  await expect(gallery.locator('.shared')).toBeHidden();
+  await expect(gallery.locator('.shared')).toBeVisible();
   await page.screenshot({ path: 'test-results/responsive-preview-phone.png' });
   expect(
     await gallery

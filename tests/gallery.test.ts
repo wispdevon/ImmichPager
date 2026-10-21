@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { albumGroups, dateRange, filterAlbumGroups } from '../src/lib/gallery';
+import {
+  albumGroups,
+  dateRange,
+  filterAlbumGroups,
+  itemCountLabel,
+} from '../src/lib/gallery';
 import type { GalleryAlbum, GalleryPage } from '../src/lib/contracts';
 describe('Immich-style album grouping', () => {
   it('groups newest years first and preserves manual order within years', () => {
@@ -31,6 +36,11 @@ describe('Immich-style album grouping', () => {
     expect(dateRange('2026-08-01', '2026-10-01')).toBe('Aug – Oct 2026');
     expect(dateRange('2025-12-01', '2026-01-01')).toBe('Dec 2025 – Jan 2026');
     expect(dateRange()).toBe('');
+  });
+  it('uses singular copy for one item and localized grouping for larger counts', () => {
+    expect(itemCountLabel(1)).toBe('1 item');
+    expect(itemCountLabel(2)).toBe('2 items');
+    expect(itemCountLabel(1200)).toBe('1,200 items');
   });
 });
 
