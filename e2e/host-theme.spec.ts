@@ -122,8 +122,11 @@ test('management iframe follows Immich themes while page themes stay independent
   });
 
   await page.setViewportSize({ width: 1440, height: 900 });
+  await page.emulateMedia({ colorScheme: 'light' });
   await page.goto('/dev-login/alice');
-  await setHostTheme(page, 'dark');
+  const hostRoot = page.locator('html');
+  await expect(hostRoot).toHaveClass(/\bdark\b/);
+  await expect(hostRoot).not.toHaveClass(/\blight\b/);
 
   const albums = await (await page.request.get('/page/api/albums')).json();
   expect(albums.length).toBeGreaterThan(0);

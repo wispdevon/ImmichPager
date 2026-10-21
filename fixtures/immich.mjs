@@ -315,7 +315,7 @@ export function createFixture() {
       res.setHeader('content-type', 'text/html');
       const sidebar = renderSidebar(url.pathname);
       res.end(
-        '<!doctype html><html><head><meta charset="utf-8"><title>Immich fixture</title><style>' +
+        '<!doctype html><html class="dark"><head><meta charset="utf-8"><title>Immich fixture</title><style>' +
           'body{margin:0;background:#111;color:#eee;font:15px system-ui}' +
           'header{padding:24px;border-bottom:1px solid #333}' +
           '#sidebar{width:220px;float:left;padding:20px;box-sizing:border-box;background:#111}' +
