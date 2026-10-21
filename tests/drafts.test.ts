@@ -188,12 +188,16 @@ it('defaults older JSON records and publishes appearance changes only explicitly
   >;
   delete old.headerLayout;
   delete old.customCss;
+  delete old.headerSize;
+  delete old.logoSize;
   store.db
     .prepare('UPDATE drafts SET document=? WHERE id=?')
     .run(JSON.stringify(old), d.id);
   expect(store.draft(d.id, 'alice')).toMatchObject({
     headerLayout: 'below',
     customCss: '',
+    headerSize: 'standard',
+    logoSize: 80,
   });
   d = await drafts.publish('alice', d.id, {
     password: '',
@@ -211,12 +215,16 @@ it('defaults older JSON records and publishes appearance changes only explicitly
   >;
   delete oldLive.headerLayout;
   delete oldLive.customCss;
+  delete oldLive.headerSize;
+  delete oldLive.logoSize;
   store.db
     .prepare('UPDATE pages SET document=? WHERE id=?')
     .run(JSON.stringify(oldLive), d.id);
   expect(store.publicPage('client')).toMatchObject({
     headerLayout: 'below',
     customCss: '',
+    headerSize: 'standard',
+    logoSize: 80,
   });
   d = await drafts.publish('alice', d.id, {
     password: '',
@@ -252,4 +260,61 @@ it('defaults older JSON records and publishes appearance changes only explicitly
     expectedDraftRevision: d.draftRevision,
   });
   expect(store.publicPage('client')?.customCss).toBe('');
+});
+
+it('keeps header size and logo sizing private until the page is published', async () => {
+  const { store, drafts } = setup();
+  let d = await drafts.save('alice', null, values);
+  d = await drafts.publish('alice', d.id, {
+    password: '',
+    passwordMode: 'keep',
+    expectedDraftRevision: d.draftRevision,
+  });
+
+  d = await drafts.save('alice', d.id, {
+    ...values,
+    headerSize: 'tall',
+    logoSize: 112,
+    expectedDraftRevision: d.draftRevision,
+  });
+
+  expect(store.draft(d.id, 'alice')).toMatchObject({
+    headerSize: 'tall',
+    logoSize: 112,
+  });
+  expect(store.publicPage('client')).toMatchObject({
+    headerSize: 'standard',
+    logoSize: 80,
+  });
+
+  d = await drafts.publish('alice', d.id, {
+    password: '',
+    passwordMode: 'keep',
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(store.publicPage('client')).toMatchObject({
+    headerSize: 'tall',
+    logoSize: 112,
+  });
+  expect(d.hasUnpublishedChanges).toBe(false);
+});
+
+it('rejects header settings outside their supported ranges', async () => {
+  const { drafts } = setup();
+  const invalidSettings = [
+    { headerSize: 'extra-wide' },
+    { logoSize: 47 },
+    { logoSize: 161 },
+  ];
+
+  for (const appearance of invalidSettings) {
+    await expect(
+      drafts.save('alice', null, {
+        title: '',
+        slug: '',
+        albumIds: [],
+        ...appearance,
+      }),
+    ).rejects.toThrow();
+  }
 });

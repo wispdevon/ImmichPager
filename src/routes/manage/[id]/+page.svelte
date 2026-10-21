@@ -25,6 +25,8 @@
     alignment: initial?.alignment ?? 'left',
     bannerPosition: initial?.bannerPosition ?? 50,
     headerLayout: initial?.headerLayout ?? 'below',
+    headerSize: initial?.headerSize ?? 'standard',
+    logoSize: initial?.logoSize ?? 80,
     customCss: initial?.customCss ?? '',
     albumIds: [...(initial?.albumIds ?? [])],
     order: initial?.order ?? 'newest',
