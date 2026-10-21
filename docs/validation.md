@@ -33,6 +33,8 @@ Independently, an oversized request reproduced the same parser failure with an e
 
 ## Compatibility limits
 
+See [Immich compatibility](compatibility.md) for the version evidence table, repeatable fixture checks, and the result template for future upstream reviews.
+
 Immich v3.3.1 DTOs, shared-link controller/service, album presentation, and sidebar/main layout were reviewed from the local Immicull checkout. The v3.3.3 shared-link contracts were also checked before deployment. Album ownership now follows the v3 `albumUsers` DTO, with a regression test covering owner/collaborator separation and older `ownerId` responses. A regression fixture reproduces Immich's wrapped sidebar flex rows and verifies that Pages occupies its own full-width row.
 
 The precompiled runtime image was built successfully for ARM64 and deployed alongside an existing Immicull/Immich **v3.3.3** server, Immichinko gateway, and RAW/JPEG integration. Public HTTPS smoke checks verified health/readiness JSON, native version passthrough, all three integration scripts, anonymous editor/API denial, and unknown-page 404 responses. The containers reported healthy. The native Immich image, database, and photo library were not changed.
