@@ -1,13 +1,78 @@
 <script lang="ts">
   import { compileCustomCss, stylesheetMarkup } from '$lib/custom-css';
   import type { GalleryPage } from '$lib/contracts';
-  import { albumGroups, dateRange } from '$lib/gallery';
+  import { albumGroups, dateRange, filterAlbumGroups } from '$lib/gallery';
   let { page, preview = false }: { page: GalleryPage; preview?: boolean } =
     $props();
   let failed = $state<string[]>([]);
+  let searchTerm = $state('');
+  let selectedMonth = $state('');
+  let selectedYear = $state('');
+  let hasInteracted = $state(false);
+  let resultsAnnouncement = $state('');
   const groups = $derived(albumGroups(page));
+  const visibleGroups = $derived(
+    filterAlbumGroups(groups, searchTerm, selectedMonth),
+  );
+  const visibleAlbumCount = $derived(
+    visibleGroups.reduce((count, [, albums]) => count + albums.length, 0),
+  );
+  const hasActiveFilters = $derived(
+    searchTerm.trim().length > 0 || selectedMonth !== '',
+  );
+  const resultsId = $derived(`ip-album-results-${page.id}`);
+  const months = Array.from({ length: 12 }, (_, index) => ({
+    value: String(index + 1),
+    label: new Intl.DateTimeFormat('en', {
+      month: 'long',
+      timeZone: 'UTC',
+    }).format(new Date(Date.UTC(2020, index, 1))),
+  }));
   const styling = $derived(compileCustomCss(page.customCss ?? '', page.id));
   const overlay = $derived(page.headerLayout === 'overlay' && !!page.banner);
+
+  function updateSearch(event: Event) {
+    searchTerm = (event.currentTarget as HTMLInputElement).value;
+    selectedYear = '';
+    hasInteracted = true;
+  }
+
+  function updateMonth(event: Event) {
+    selectedMonth = (event.currentTarget as HTMLSelectElement).value;
+    selectedYear = '';
+    hasInteracted = true;
+  }
+
+  function updateYear(event: Event) {
+    selectedYear = (event.currentTarget as HTMLSelectElement).value;
+    const target = document.getElementById(`ip-year-${selectedYear}`);
+    if (!(target instanceof HTMLDetailsElement)) return;
+    target.open = true;
+    target.querySelector('summary')?.focus({ preventScroll: true });
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)')
+      .matches
+      ? 'auto'
+      : 'smooth';
+    target.scrollIntoView({ behavior, block: 'start' });
+  }
+
+  function clearFilters() {
+    searchTerm = '';
+    selectedMonth = '';
+    selectedYear = '';
+    hasInteracted = true;
+  }
+
+  $effect(() => {
+    if (!hasInteracted) return;
+    const count = visibleAlbumCount;
+    const query = searchTerm.trim();
+    const month = months.find(({ value }) => value === selectedMonth)?.label;
+    const timeout = window.setTimeout(() => {
+      resultsAnnouncement = `${count} ${count === 1 ? 'album' : 'albums'} shown${query ? ` for ${query}` : ''}${month ? ` in ${month}` : ''}`;
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  });
 </script>
 
 <div class="gallery-boundary">
@@ -46,65 +111,153 @@
       </header>
     </div>
     <main class="albums ip-albums" aria-label="Albums">
-      {#each groups as [year, albums], groupIndex (year)}
-        <details class="ip-year-group" open>
-          <summary class="ip-year-heading"
-            ><span class="chevron" aria-hidden="true">›</span>
-            <h2>{year}</h2>
-            <span class="group-count"
-              >({albums.length}
-              {albums.length === 1 ? 'Album' : 'Albums'})</span
-            ></summary
-          >
-          <div class="album-grid ip-album-grid">
-            {#each albums as album, index (album.id)}
-              <a
-                class="album ip-album"
-                href={preview ? undefined : album.href || undefined}
-                aria-disabled={!album.available || preview}
-                tabindex={preview || !album.available ? -1 : 0}
-              >
-                <div class="cover ip-cover">
-                  {#if album.cover && !failed.includes(album.id)}
-                    <img
-                      src={album.cover}
-                      alt=""
-                      width="400"
-                      height="400"
-                      loading={groupIndex === 0 && index < 4 ? 'eager' : 'lazy'}
-                      fetchpriority={!page.banner &&
-                      groupIndex === 0 &&
-                      index === 0
-                        ? 'high'
-                        : undefined}
-                      onerror={() => (failed = [...failed, album.id])}
-                    />
-                  {:else}<span class="placeholder" aria-hidden="true">▧</span
-                    >{/if}
-                </div>
-                <div class="album-info ip-album-info">
-                  <h3 title={album.name}>{album.name}</h3>
-                  {#if dateRange(album.startDate, album.endDate)}<p>
-                      {dateRange(album.startDate, album.endDate)}
-                    </p>{/if}
-                  <p>
-                    {album.available
-                      ? `${album.count.toLocaleString('en')} items`
-                      : 'Currently unavailable'}{#if album.available}<span
-                        class="shared"
-                      >
-                        · Shared</span
-                      >{/if}
-                  </p>
-                </div>
-              </a>
-            {/each}
-          </div>
-        </details>
-      {:else}<div class="empty">
+      {#if page.albums.length === 0}<div class="empty">
           <h2>No albums yet</h2>
           <p>The next chapter is on its way.</p>
-        </div>{/each}
+        </div>
+      {:else}
+        <div
+          class="browse-controls ip-browse-controls"
+          role="search"
+          aria-label="Filter albums and jump to a year"
+          aria-controls={resultsId}
+        >
+          <label class="search-control" for={`ip-album-search-${page.id}`}>
+            Album name
+            <input
+              id={`ip-album-search-${page.id}`}
+              type="search"
+              autocomplete="off"
+              value={searchTerm}
+              oninput={updateSearch}
+            />
+          </label>
+          <label for={`ip-album-month-${page.id}`}>
+            Month
+            <select
+              id={`ip-album-month-${page.id}`}
+              value={selectedMonth}
+              onchange={updateMonth}
+            >
+              <option value="">All months</option>
+              {#each months as month (month.value)}
+                <option value={month.value}>{month.label}</option>
+              {/each}
+            </select>
+          </label>
+          {#if visibleGroups.length > 1}
+            <label for={`ip-album-year-${page.id}`}>
+              Jump to year
+              <select
+                id={`ip-album-year-${page.id}`}
+                value={selectedYear}
+                onchange={updateYear}
+              >
+                <option value="">Choose</option>
+                {#each visibleGroups as [year] (year)}
+                  <option value={year.toLowerCase()}>{year}</option>
+                {/each}
+              </select>
+            </label>
+          {/if}
+          {#if hasActiveFilters && visibleAlbumCount > 0}
+            <button class="clear-filters" type="button" onclick={clearFilters}
+              >Clear filters</button
+            >
+          {/if}
+        </div>
+        <div class="browse-summary">
+          <p>
+            {#if hasActiveFilters}
+              {visibleAlbumCount} of {page.albums.length} albums
+            {:else}
+              {page.albums.length} albums
+            {/if}
+          </p>
+        </div>
+        <div id={resultsId} class="album-results">
+          {#if visibleGroups.length === 0}
+            <div class="empty filter-empty">
+              <h2>No matching albums</h2>
+              <p>Try a different album name or month.</p>
+              <button class="clear-filters" type="button" onclick={clearFilters}
+                >Clear filters</button
+              >
+            </div>
+          {:else}
+            {#each visibleGroups as [year, albums], groupIndex (year)}
+              <details
+                id={`ip-year-${year.toLowerCase()}`}
+                class="ip-year-group"
+                open
+              >
+                <summary class="ip-year-heading">
+                  <span class="chevron" aria-hidden="true">›</span>
+                  <span class="year-title">{year}</span>
+                  <span class="group-count"
+                    >({albums.length}
+                    {albums.length === 1 ? 'Album' : 'Albums'})</span
+                  >
+                </summary>
+                <ul
+                  class="album-grid ip-album-grid"
+                  aria-label={`${year} albums`}
+                  role="list"
+                >
+                  {#each albums as album, index (album.id)}
+                    <li class="album-list-item">
+                      <a
+                        class="album ip-album"
+                        href={preview ? undefined : album.href || undefined}
+                        aria-disabled={!album.available || preview}
+                        tabindex={preview || !album.available ? -1 : 0}
+                      >
+                        <div class="cover ip-cover">
+                          {#if album.cover && !failed.includes(album.id)}
+                            <img
+                              src={album.cover}
+                              alt=""
+                              width="400"
+                              height="400"
+                              loading={groupIndex === 0 && index < 4
+                                ? 'eager'
+                                : 'lazy'}
+                              fetchpriority={!page.banner &&
+                              groupIndex === 0 &&
+                              index === 0
+                                ? 'high'
+                                : undefined}
+                              onerror={() => (failed = [...failed, album.id])}
+                            />
+                          {:else}<span class="placeholder" aria-hidden="true"
+                              >▧</span
+                            >{/if}
+                        </div>
+                        <div class="album-info ip-album-info">
+                          <h3 title={album.name}>{album.name}</h3>
+                          {#if dateRange(album.startDate, album.endDate)}<p>
+                              {dateRange(album.startDate, album.endDate)}
+                            </p>{/if}
+                          <p>
+                            {album.available
+                              ? `${album.count.toLocaleString('en')} items`
+                              : 'Currently unavailable'}{#if album.available}<span
+                                class="shared"
+                              >
+                                · Shared</span
+                              >{/if}
+                          </p>
+                        </div>
+                      </a>
+                    </li>
+                  {/each}
+                </ul>
+              </details>
+            {/each}
+          {/if}
+        </div>
+        <span class="visually-hidden" role="status">{resultsAnnouncement}</span>
+      {/if}
     </main>
     <footer class="ip-footer">
       <a
@@ -223,6 +376,81 @@
     max-width: 1600px;
     margin-inline: auto;
   }
+  .browse-controls {
+    display: grid;
+    grid-template-columns:
+      minmax(180px, 1.5fr) minmax(135px, 0.75fr) minmax(150px, 0.85fr)
+      auto;
+    align-items: end;
+    gap: 16px;
+    padding: 0 8px 8px;
+  }
+  .browse-controls label {
+    gap: 8px;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .browse-controls input,
+  .browse-controls select {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 12px;
+    border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, currentColor 6%, transparent);
+    color: inherit;
+    font-size: 16px;
+  }
+  .clear-filters {
+    min-height: 48px;
+    padding: 0 16px;
+    border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .clear-filters:hover {
+    background: color-mix(in srgb, currentColor 8%, transparent);
+  }
+  .browse-summary {
+    padding: 0 8px 8px;
+    font-size: 14px;
+    opacity: 0.72;
+  }
+  .browse-summary p {
+    margin: 0;
+  }
+  .visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+  .filter-empty {
+    padding: 48px 24px;
+  }
+  .filter-empty .clear-filters {
+    margin-block-start: 20px;
+  }
+  @media (max-width: 760px) {
+    .browse-controls {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .browse-controls .search-control,
+    .browse-controls > .clear-filters {
+      grid-column: 1 / -1;
+    }
+  }
   summary {
     display: flex;
     align-items: baseline;
@@ -238,6 +466,12 @@
     display: inline-block;
     font-size: 34px;
     line-height: 1;
+  }
+  .year-title {
+    font-size: 42px;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.8px;
   }
   details[open] .chevron {
     transform: rotate(90deg);
@@ -259,6 +493,11 @@
     column-gap: 24px;
     row-gap: 46px;
     padding: 30px 0 42px;
+    margin: 0;
+    list-style: none;
+  }
+  .album-list-item {
+    min-width: 0;
   }
   .album {
     display: block;
@@ -330,6 +569,19 @@
     .albums {
       padding-inline: 8px;
     }
+    .browse-controls {
+      padding-inline: 8px;
+    }
+    .browse-controls label {
+      font-size: 13px;
+    }
+    .browse-controls input,
+    .browse-controls select {
+      padding-inline: 10px;
+    }
+    .browse-summary {
+      padding-inline: 8px;
+    }
     .album-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 24px 2px;
@@ -352,6 +604,9 @@
       margin-top: 12px;
     }
     h2 {
+      font-size: 28px;
+    }
+    .year-title {
       font-size: 28px;
     }
     .group-count {

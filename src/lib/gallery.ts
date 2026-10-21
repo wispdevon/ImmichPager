@@ -16,6 +16,52 @@ export function albumGroups(page: GalleryPage) {
     a === 'Undated' ? 1 : b === 'Undated' ? -1 : Number(b) - Number(a),
   );
 }
+
+function parsedDate(value?: string) {
+  if (!value) return undefined;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? new Date(timestamp) : undefined;
+}
+
+function albumMatchesMonth(album: GalleryAlbum, month: string) {
+  if (!month) return true;
+  const monthNumber = Number(month);
+  if (!Number.isInteger(monthNumber) || monthNumber < 1 || monthNumber > 12)
+    return false;
+
+  const start = parsedDate(album.startDate) ?? parsedDate(album.endDate);
+  const end = parsedDate(album.endDate) ?? parsedDate(album.startDate);
+  if (!start || !end) return false;
+
+  const first = start <= end ? start : end;
+  const last = start <= end ? end : start;
+  const firstYear = first.getUTCFullYear();
+  const lastYear = last.getUTCFullYear();
+  const firstMonth = first.getUTCMonth() + 1;
+  const lastMonth = last.getUTCMonth() + 1;
+
+  if (firstYear === lastYear)
+    return monthNumber >= firstMonth && monthNumber <= lastMonth;
+  if (lastYear - firstYear > 1) return true;
+  return monthNumber >= firstMonth || monthNumber <= lastMonth;
+}
+
+export function filterAlbumGroups(
+  groups: [string, GalleryAlbum[]][],
+  search: string,
+  month: string,
+) {
+  const query = search.trim().toLowerCase();
+  return groups.flatMap(([year, albums]) => {
+    const matches = albums.filter(
+      (album) =>
+        album.name.toLowerCase().includes(query) &&
+        albumMatchesMonth(album, month),
+    );
+    return matches.length ? [[year, matches] as [string, GalleryAlbum[]]] : [];
+  });
+}
+
 export function dateRange(start?: string, end?: string) {
   if (!start || !end) return '';
   const a = new Date(start),

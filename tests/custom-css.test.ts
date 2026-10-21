@@ -3,11 +3,12 @@ import { compileCustomCss, stylesheetMarkup } from '../src/lib/custom-css';
 
 it('compiles root variables, selector lists, pseudo-elements and responsive rules with guarded targets', () => {
   const result = compileCustomCss(
-    ':scope { --pager-accent: #abc; } @media (max-width:600px) { .ip-title, h1::before { color: var(--pager-accent); } } @supports (display:grid) { .ip-album-grid { gap: 20px; } } @container (width > 400px) { h1 { font-size: clamp(2rem,4vw,4rem); } }',
+    ':scope { --pager-accent: #abc; } @media (max-width:600px) { .ip-title, h1::before { color: var(--pager-accent); } } @supports (display:grid) { .ip-album-grid, .ip-browse-controls input { gap: 20px; } } @container (width > 400px) { h1 { font-size: clamp(2rem,4vw,4rem); } }',
     'test',
   );
   expect(result.error).toBeNull();
   expect(result.css).toContain('[data-pager-gallery="test"]');
+  expect(result.css).toContain('.ip-browse-controls input');
   expect(result.css).toContain('::before');
   expect(result.css).toContain('@container');
 });
