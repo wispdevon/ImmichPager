@@ -35,6 +35,12 @@ export function summarizePublicationChanges(
   const previousAlbumIds = published?.albumIds ?? [];
   const draftAlbumIds = new Set(draft.albumIds);
   const publishedAlbumIds = new Set(previousAlbumIds);
+  const retainedDraftAlbumIds = draft.albumIds.filter((id) =>
+    publishedAlbumIds.has(id),
+  );
+  const retainedPublishedAlbumIds = previousAlbumIds.filter((id) =>
+    draftAlbumIds.has(id),
+  );
   const appearanceChanges: PublicationAppearanceChange[] = [];
 
   if (published) {
@@ -61,7 +67,9 @@ export function summarizePublicationChanges(
       draft.order !== published.order ||
       (draft.order === 'manual' &&
         published.order === 'manual' &&
-        draft.albumIds.some((id, index) => id !== published.albumIds[index]))
+        retainedDraftAlbumIds.some(
+          (id, index) => id !== retainedPublishedAlbumIds[index],
+        ))
     )
       appearanceChanges.push('albumOrder');
     if (draft.logo !== published.logo || changedBranding.logo)

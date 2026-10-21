@@ -127,3 +127,24 @@ it('reports a manual album reorder only when manual order is active', () => {
 
   expect(summary.appearanceChanges).toEqual(['albumOrder']);
 });
+
+it('does not report a manual reorder when membership changes preserve retained order', () => {
+  const summary = summarizePublicationChanges(
+    draft({ albumIds: ['album-a', 'album-c', 'album-b'], order: 'manual' }),
+    published({ albumIds: ['album-a', 'album-b'], order: 'manual' }),
+  );
+
+  expect(summary.addedAlbumIds).toEqual(['album-c']);
+  expect(summary.removedAlbumIds).toEqual([]);
+  expect(summary.appearanceChanges).toEqual([]);
+});
+
+it('reports when the retained albums really change relative order alongside membership changes', () => {
+  const summary = summarizePublicationChanges(
+    draft({ albumIds: ['album-b', 'album-c', 'album-a'], order: 'manual' }),
+    published({ albumIds: ['album-a', 'album-b'], order: 'manual' }),
+  );
+
+  expect(summary.addedAlbumIds).toEqual(['album-c']);
+  expect(summary.appearanceChanges).toEqual(['albumOrder']);
+});
