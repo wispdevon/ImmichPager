@@ -2,14 +2,13 @@
   import { goto, replaceState, beforeNavigate } from '$app/navigation';
   import { untrack, onMount } from 'svelte';
   import { Button, Textarea } from '@immich/ui';
-  import Gallery from '$lib/components/Gallery.svelte';
   import AlbumPicker from '$lib/components/AlbumPicker.svelte';
   import BrandingSlot from '$lib/components/BrandingSlot.svelte';
   import PhotoPicker from '$lib/components/PhotoPicker.svelte';
   import PageOptions from '$lib/components/PageOptions.svelte';
   import CopyLink from '$lib/components/CopyLink.svelte';
   import { readApiResponse } from '$lib/api-response';
-  import type { DraftEditorPage, GalleryPage, PageInput } from '$lib/contracts';
+  import type { DraftEditorPage, PageInput } from '$lib/contracts';
   import type { PageData } from './$types';
   let { data }: { data: PageData } = $props();
   const initial = untrack(() => data.page);
@@ -36,6 +35,7 @@
     message = $state(''),
     success = $state(''),
     preview = $state(false),
+    previewSize = $state<'desktop' | 'tablet' | 'phone'>('desktop'),
     optionsOpen = $state(false),
     albumsOpen = $state(false),
     photoKind = $state<'logo' | 'banner' | null>(null),
@@ -66,23 +66,9 @@
       ? `/page/media/${saved.id}/branding/banner?preview=1&v=${brandingVersion}`
       : null,
   );
-  const previewPage = $derived<GalleryPage>({
-    ...fields,
-    id: saved?.id ?? 'preview',
-    title: fields.title || 'Your client page',
-    logo,
-    banner,
-    albums: selected.map((a) => ({
-      id: a.id,
-      name: a.albumName,
-      count: a.assetCount,
-      startDate: a.startDate,
-      endDate: a.endDate,
-      cover: a.albumThumbnailAssetId ? `/page/api/albums/${a.id}/cover` : null,
-      href: null,
-      available: true,
-    })),
-  });
+  const previewUrl = $derived(
+    saved ? `/page/manage/${saved.id}/preview` : null,
+  );
   let queue: Promise<unknown> = Promise.resolve();
   function enqueue<T>(work: () => Promise<T>): Promise<T> {
     const next = queue.catch(() => {}).then(work);
@@ -184,6 +170,15 @@
       await goto('/page/manage');
     } catch {
       /* Keep unsaved edits visible. */
+    }
+  }
+  async function openPreview() {
+    try {
+      await flush(true);
+      previewSize = 'desktop';
+      preview = true;
+    } catch {
+      /* Keep the editor open when the private draft cannot be saved. */
     }
   }
   function select(id: string) {
@@ -297,12 +292,50 @@
 <svelte:head
   ><title>{fields.title || 'New page'} · ImmichPager</title></svelte:head
 >
-{#if preview}<div class="preview-toolbar">
-    <Button variant="ghost" onclick={() => (preview = false)}
-      >← Back to editor</Button
-    ><span>Private preview · includes your draft changes</span>
-  </div>
-  <Gallery page={previewPage} preview />
+{#if preview && previewUrl}<main class="responsive-preview">
+    <header class="preview-toolbar">
+      <Button variant="ghost" onclick={() => (preview = false)}
+        >← Back to editor</Button
+      >
+      <p class="preview-note">Private preview · includes your draft changes</p>
+      <div class="preview-sizes" role="group" aria-label="Preview size">
+        <Button
+          variant="ghost"
+          color="secondary"
+          aria-label="Desktop preview"
+          aria-pressed={previewSize === 'desktop'}
+          onclick={() => (previewSize = 'desktop')}>Desktop</Button
+        >
+        <Button
+          variant="ghost"
+          color="secondary"
+          aria-label="Tablet preview"
+          aria-pressed={previewSize === 'tablet'}
+          onclick={() => (previewSize = 'tablet')}>Tablet</Button
+        >
+        <Button
+          variant="ghost"
+          color="secondary"
+          aria-label="Phone preview"
+          aria-pressed={previewSize === 'phone'}
+          onclick={() => (previewSize = 'phone')}>Phone</Button
+        >
+      </div>
+    </header>
+    <div
+      class="preview-stage"
+      class:tablet={previewSize === 'tablet'}
+      class:phone={previewSize === 'phone'}
+    >
+      <iframe
+        data-testid="responsive-preview-frame"
+        class:tablet={previewSize === 'tablet'}
+        class:phone={previewSize === 'phone'}
+        title={`${previewSize[0].toUpperCase()}${previewSize.slice(1)} preview of ${fields.title || 'your client page'}`}
+        src={previewUrl}
+      ></iframe>
+    </div>
+  </main>
 {:else}
   <main class="editor">
     <h1 class="sr-only">{fields.title || 'New client page'}</h1>
@@ -342,10 +375,8 @@
           variant="ghost"
           color="secondary"
           onclick={() => (optionsOpen = true)}>Options</Button
-        ><Button
-          variant="ghost"
-          color="secondary"
-          onclick={() => (preview = true)}>Preview</Button
+        ><Button variant="ghost" color="secondary" onclick={openPreview}
+          >Preview</Button
         ><Button
           shape="round"
           disabled={busy || conflict || saved?.status === 'error'}
@@ -645,6 +676,13 @@
     font-size: 14px;
     margin-top: 4px;
   }
+  .responsive-preview {
+    block-size: 100dvh;
+    min-block-size: 360px;
+    display: flex;
+    flex-direction: column;
+    background: #191b20;
+  }
   .preview-toolbar {
     padding: 12px 24px;
     display: flex;
@@ -652,10 +690,67 @@
     justify-content: space-between;
     gap: 16px;
     background: #101114;
-    position: sticky;
-    top: 0;
-    z-index: 2;
     font-size: 13px;
+  }
+  .preview-note {
+    margin: 0 auto;
+    color: #d4d7de;
+    text-align: center;
+  }
+  .preview-sizes {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    padding: 3px;
+    border: 1px solid #41434b;
+    border-radius: 8px;
+  }
+  .preview-sizes :global(button[aria-pressed='true']) {
+    background: #343741;
+    color: #fff;
+  }
+  .preview-stage {
+    display: flex;
+    flex: 1 1 auto;
+    min-block-size: 0;
+    justify-content: center;
+    padding: 16px;
+    overflow: auto;
+  }
+  .preview-stage iframe {
+    display: block;
+    flex: 0 1 auto;
+    box-sizing: content-box;
+    inline-size: calc(100% - 2px);
+    min-inline-size: 0;
+    block-size: 100%;
+    min-block-size: 320px;
+    border: 1px solid #4b4d55;
+    border-radius: 8px;
+    background: #000;
+    transition: inline-size 150ms ease;
+  }
+  .preview-stage iframe.tablet {
+    inline-size: min(768px, 100%);
+  }
+  .preview-stage iframe.phone {
+    inline-size: min(390px, 100%);
+  }
+  .preview-stage.tablet,
+  .preview-stage.phone {
+    padding: 0;
+  }
+  .preview-stage.tablet iframe,
+  .preview-stage.phone iframe {
+    border: 0;
+    outline: 1px solid #4b4d55;
+    outline-offset: -1px;
+    border-radius: 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .preview-stage iframe {
+      transition: none;
+    }
   }
   @media (max-width: 900px) {
     .editor-toolbar {
@@ -698,6 +793,18 @@
     }
     .preview-toolbar {
       flex-wrap: wrap;
+      justify-content: center;
+      padding: 12px 16px;
+    }
+    .preview-note {
+      order: 1;
+      flex-basis: 100%;
+    }
+    .preview-sizes {
+      margin-inline-start: auto;
+    }
+    .preview-stage {
+      padding: 8px;
     }
   }
 </style>

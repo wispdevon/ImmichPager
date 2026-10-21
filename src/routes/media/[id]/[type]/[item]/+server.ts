@@ -25,6 +25,35 @@ export const GET: RequestHandler = async (event) => {
       },
     });
   }
+  if (
+    event.url.searchParams.get('preview') === '1' &&
+    event.params.type === 'album'
+  ) {
+    let owner: string;
+    let albumIds: string[];
+    try {
+      owner = (await upstream(event.request).user()).id;
+      albumIds = database().draft(event.params.id, owner).albumIds;
+    } catch {
+      error(404, 'Cover not found');
+    }
+    if (!albumIds.includes(event.params.item)) error(404, 'Cover not found');
+    try {
+      const client = upstream(event.request);
+      const album = await client.album(event.params.item);
+      if (album.ownerId !== owner || !album.albumThumbnailAssetId)
+        error(404, 'Cover not found');
+      const response = await client.thumbnail(album.albumThumbnailAssetId);
+      return new Response(response.body, {
+        headers: {
+          'content-type': response.headers.get('content-type') || 'image/jpeg',
+          'cache-control': 'private, no-store',
+        },
+      });
+    } catch {
+      error(404, 'Cover unavailable');
+    }
+  }
   const page = database().get(event.params.id);
   if (!page) error(404, 'Image not found');
   const access = await pageAccess(event, page);
