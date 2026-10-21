@@ -40,3 +40,17 @@ The user explicitly requested a further goal: make ImmichPager match Immich's UI
 Capture versioned reference evidence for Immich's albums, page/album creation and inline editing, selection, ordering, options, sharing/password controls, navigation, empty/error/loading states, keyboard behavior, and responsive layouts. Compare equivalent Pager states, record visible differences and interaction findings, then implement the relevant changes in reviewable branches/PRs to `dev`. Preserve per-page customization, private drafts, explicit publishing, owner checks, `/page/` isolation, and native Immich viewer behavior. Use fixture/synthetic content for committed evidence; never commit client photos or credentials. Keep `main` and the live deployment unchanged pending approval.
 
 The desired result is measured against captured Immich screens and flows, rather than a generic redesign. Validate the changes with source-backed design decisions, before/after screenshots, browser interaction checks, and the repository's required gates.
+
+### Evidence and implementation slices
+
+Official Immich v3.3.3 is the source baseline. The public demo reported v3.3.4 during read-only screenshot capture; the five album toolbar/list/group/card/cover source files are identical between those tags. Reference photographs remain outside the repository. Pager screenshots and interaction tests use synthetic fixtures and attributed NASA assets.
+
+- **Native link-button contrast:** remove the CSS cascade conflict that overrides Immich's primary anchor-button foreground; verify both themes and keyboard focus.
+- **Album presentation and browsing:** match native square covers, responsive density, hover/focus treatment, year hierarchy, and toolbar rhythm while retaining client search/month/year controls and per-page branding.
+- **Compact page actions:** preserve frequent desktop actions and provide a native, accessible phone overflow pattern with reliable focus and dismissal.
+- **Host theme inheritance:** match the surrounding Immich light/dark preference in management, including dialogs and pickers, without changing the client page's own theme.
+- **Remaining interaction audit:** inspect editor, pickers, options, publication feedback, loading/error/empty states, mobile and keyboard behavior; implement material findings rather than assuming existing component reuse proves parity.
+
+Each slice gets an isolated branch and PR targeting `dev`, with its dependency on integration draft #19 disclosed. After independent review, combine the slices in a disposable candidate, run all required gates and browser checks, and update the local preview. Do not merge the candidate into `dev` automatically.
+
+Completion requires a committed comparison matrix with versioned source references and intentional product differences, before/after screenshot evidence, tests covering the changed interactions and security boundaries, passing combined gates, and reviewable PRs. Similar-looking screenshots alone do not prove interaction parity.
