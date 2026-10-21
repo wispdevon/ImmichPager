@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { confirmPublication } from './publication-helper';
 
 test('edits the gallery header in place, autosaves privately, and publishes explicitly', async ({
   page,
@@ -86,7 +87,7 @@ test('edits the gallery header in place, autosaves privately, and publishes expl
     (await visitor.request.get('/page/jane-doe-photography')).status(),
   ).toBe(404);
 
-  await page.getByRole('button', { name: 'Publish page', exact: true }).click();
+  await confirmPublication(page, 'Publish page');
   await expect(page.getByRole('status')).toContainText('Page published');
   const client = await visitor.newPage();
   await client.goto('/page/jane-doe-photography');

@@ -23,6 +23,11 @@ test('appearance files round-trip between private drafts without copying page da
       alignment: 'center',
       bannerPosition: 24,
       headerLayout: 'overlay',
+      headerSize: 'tall',
+      logoSize: 112,
+      titleSize: 3.5,
+      descriptionSize: 1.25,
+      headerSpacing: 3.5,
       customCss: '.ip-title { color: #d26c42 !important; }',
     },
   });
@@ -50,6 +55,11 @@ test('appearance files round-trip between private drafts without copying page da
       alignment: 'center',
       bannerPosition: 24,
       headerLayout: 'overlay',
+      headerSize: 'tall',
+      logoSize: 112,
+      titleSize: 3.5,
+      descriptionSize: 1.25,
+      headerSpacing: 3.5,
       customCss: '.ip-title { color: #d26c42 !important; }',
     },
   });
@@ -79,7 +89,7 @@ test('appearance files round-trip between private drafts without copying page da
     mimeType: 'application/json',
     buffer: Buffer.from(exportedText),
   });
-  await expect(page.getByRole('status')).toContainText(
+  await expect(page.locator('#appearance-file-status')).toContainText(
     'Appearance imported into this private draft',
   );
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
@@ -100,6 +110,11 @@ test('appearance files round-trip between private drafts without copying page da
     alignment: 'center',
     bannerPosition: 24,
     headerLayout: 'overlay',
+    headerSize: 'tall',
+    logoSize: 112,
+    titleSize: 3.5,
+    descriptionSize: 1.25,
+    headerSpacing: 3.5,
     customCss: '.ip-title { color: #d26c42 !important; }',
     status: 'draft',
     publishedSlug: null,
@@ -107,5 +122,40 @@ test('appearance files round-trip between private drafts without copying page da
   expect(
     (await page.request.get('/page/appearance-destination')).status(),
   ).toBe(404);
+
+  const legacyAppearance = { ...exported.appearance };
+  delete legacyAppearance.headerSize;
+  delete legacyAppearance.logoSize;
+  delete legacyAppearance.titleSize;
+  delete legacyAppearance.descriptionSize;
+  delete legacyAppearance.headerSpacing;
+  await page.getByLabel('Import appearance JSON').setInputFiles({
+    name: 'immichpager-appearance-v1.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify({
+        format: 'immichpager-appearance',
+        version: 1,
+        appearance: legacyAppearance,
+      }),
+    ),
+  });
+  await expect(page.locator('#appearance-file-status')).toContainText(
+    'Appearance imported into this private draft',
+  );
+  await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
+  const legacyUpdated = await (
+    await page.request.get(`/page/api/pages/${target.id}`)
+  ).json();
+  expect(legacyUpdated).toMatchObject({
+    headerSize: 'standard',
+    logoSize: 80,
+    titleSize: 3,
+    descriptionSize: 1.125,
+    headerSpacing: 2.5,
+    title: 'Destination page',
+    description: 'Keep this description',
+    albumIds: [albums[1].id, albums[2].id],
+  });
   expect(errors).toEqual([]);
 });

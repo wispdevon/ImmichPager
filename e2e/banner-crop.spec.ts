@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { confirmPublication } from './publication-helper';
 
 async function createBannerDraft(page: Page, slug: string) {
   await page.goto('/dev-login/alice');
@@ -33,7 +34,7 @@ test('banner crop preview supports drag and touch while the slider remains keybo
   await createBannerDraft(page, slug);
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
-  await page.getByRole('button', { name: 'Publish page', exact: true }).click();
+  await confirmPublication(page, 'Publish page');
   await expect(page.getByRole('status')).toContainText('Page published');
 
   const visitorContext = await browser.newContext();
@@ -89,9 +90,7 @@ test('banner crop preview supports drag and touch while the slider remains keybo
     page.getByRole('slider', { name: 'Banner crop position' }),
   ).toHaveValue(savedPosition!);
   await page.getByRole('button', { name: 'Done', exact: true }).click();
-  await page
-    .getByRole('button', { name: 'Update live page', exact: true })
-    .click();
+  await confirmPublication(page, 'Update live page');
   await expect(page.getByRole('status')).toContainText('Page published');
   await visitor.reload();
   await expect(visitor.locator('.ip-banner img')).toHaveCSS(
@@ -115,8 +114,21 @@ test('banner crop preview supports drag and touch while the slider remains keybo
       name: 'Banner crop position',
     });
     await expect(touchCrop).toBeVisible();
+    await expect
+      .poll(() =>
+        touchCrop
+          .locator('img')
+          .evaluate((image) => image.complete && image.naturalWidth > 0),
+      )
+      .toBe(true);
+    await touchCrop.scrollIntoViewIfNeeded();
     const touchBox = await touchCrop.boundingBox();
     expect(touchBox).not.toBeNull();
+    expect(touchBox!.x).toBeGreaterThanOrEqual(0);
+    expect(touchBox!.y).toBeGreaterThanOrEqual(0);
+    expect(touchBox!.y + touchBox!.height).toBeLessThanOrEqual(
+      await touchPage.evaluate(() => innerHeight),
+    );
     const x = touchBox!.x + touchBox!.width / 2;
     const y = touchBox!.y + touchBox!.height / 2;
     const cdp = await touchContext.newCDPSession(touchPage);

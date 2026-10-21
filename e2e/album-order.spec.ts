@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { confirmPublication } from './publication-helper';
 
 async function createManualDraft(page: Page, slug: string) {
   await page.goto('/dev-login/alice');
@@ -142,15 +143,14 @@ test('manual album order supports drag and keyboard without crossing years and p
     'The year begins',
   ]);
   await page.getByRole('button', { name: 'Done', exact: true }).click();
-  await page.getByRole('button', { name: 'Publish page', exact: true }).click();
+  await confirmPublication(page, 'Publish page');
   await expect(page.getByRole('status')).toContainText('Page published');
 
   await anonymous.goto(`/page/${slug}`);
   const publicGroups = anonymous.locator('.ip-year-group');
-  await expect(publicGroups.locator('.ip-year-heading h2')).toHaveText([
-    '2026',
-    '2025',
-  ]);
+  await expect(publicGroups.locator('.ip-year-heading .year-title')).toHaveText(
+    ['2026', '2025'],
+  );
   await expect(
     publicGroups.nth(0).locator('.ip-album-info h3').first(),
   ).toHaveText('Captured by Me');

@@ -44,7 +44,31 @@ test('reviews album and appearance changes before they replace the live page', a
     })
     .check();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
-  await page.getByLabel('Title', { exact: true }).fill('Acme autumn season');
+  await page
+    .getByRole('button', {
+      name: 'Edit title, Acme current season',
+      exact: true,
+    })
+    .click();
+  const title = page.getByLabel('Title', { exact: true });
+  await title.fill('Acme autumn season');
+  await title.press('Tab');
+  await page.getByRole('button', { name: 'Options', exact: true }).click();
+  await page.getByRole('button', { name: 'Header size', exact: true }).click();
+  await page.getByRole('option', { name: 'Tall', exact: true }).click();
+  for (let step = 0; step < 4; step++)
+    await page.getByRole('slider', { name: 'Logo size' }).press('ArrowRight');
+  for (let step = 0; step < 4; step++)
+    await page.getByRole('slider', { name: 'Title size' }).press('ArrowRight');
+  for (let step = 0; step < 2; step++)
+    await page
+      .getByRole('slider', { name: 'Description size' })
+      .press('ArrowRight');
+  for (let step = 0; step < 4; step++)
+    await page
+      .getByRole('slider', { name: 'Header spacing' })
+      .press('ArrowRight');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
 
   await page
@@ -63,6 +87,11 @@ test('reviews album and appearance changes before they replace the live page', a
   await expect(review).toContainText(addedAlbum.albumName);
   await expect(review).toContainText(removedAlbum.albumName);
   await expect(review).toContainText('Page title');
+  await expect(review).toContainText('Banner size');
+  await expect(review).toContainText('Logo size');
+  await expect(review).toContainText('Title size');
+  await expect(review).toContainText('Description size');
+  await expect(review).toContainText('Header spacing');
   await review.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(review).toHaveCount(0);
 

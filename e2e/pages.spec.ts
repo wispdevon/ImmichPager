@@ -1,15 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { setHeaderText } from './header-editor';
-
-async function confirmPublication(page: Page, label: string) {
-  await page.getByRole('button', { name: label, exact: true }).click();
-  const review = page.getByRole('dialog', {
-    name: 'Review publication',
-    exact: true,
-  });
-  await expect(review).toBeVisible();
-  await review.getByRole('button', { name: label, exact: true }).click();
-}
+import { confirmPublication } from './publication-helper';
 
 test('client album grid, year collapse, native viewer and mobile layout', async ({
   page,
@@ -403,8 +394,15 @@ test('duplicates only appearance and branding into a private draft', async ({
     .click();
   await expect(page).toHaveURL(/\/page\/manage\/[0-9a-f-]+$/);
   const duplicateId = page.url().split('/').pop()!;
-  await expect(page.getByLabel('Title', { exact: true })).toHaveValue('');
-  await expect(page.getByLabel('Description', { exact: true })).toHaveValue('');
+  await expect(
+    page.getByRole('button', { name: 'Edit title, Add a title', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', {
+      name: 'Edit description, Add a description',
+      exact: true,
+    }),
+  ).toBeVisible();
   await expect(page.getByAltText('Logo preview')).toBeVisible();
   await expect(page.getByAltText('Banner preview')).toBeVisible();
   const duplicateResponse = await page.request.get(

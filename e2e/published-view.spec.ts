@@ -41,7 +41,15 @@ test('opens the published revision with password guidance while drafts remain pr
   await expect(
     page.getByText('Password protected', { exact: false }),
   ).toBeVisible();
-  await page.getByLabel('Title', { exact: true }).fill('Private changed title');
+  await page
+    .getByRole('button', {
+      name: 'Edit title, Published client version',
+      exact: true,
+    })
+    .click();
+  const title = page.getByLabel('Title', { exact: true });
+  await title.fill('Private changed title');
+  await title.press('Tab');
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await link.focus();
   const popupPromise = page.waitForEvent('popup');
