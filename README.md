@@ -117,6 +117,8 @@ pnpm dev:demo
 
 Open `http://127.0.0.1:3000/page/acme` for the sample page. Visit `/dev-login/alice` on that local demo to open the editor with a fixture account. If the ports are occupied, use `DEMO_PORT=3300 pnpm dev:demo`.
 
+To run the fixture demo in Docker without installing Node or connecting to Immich, use `docker compose -f compose.dev.yaml up --build`. See [development setup](docs/development.md#fixture-only-docker-compose-demo) for port selection, reset, and validation steps.
+
 ```sh
 pnpm check
 pnpm lint

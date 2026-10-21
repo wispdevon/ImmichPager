@@ -1,0 +1,94 @@
+services:
+  demo:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    init: true
+    environment:
+      DATA_DIR: /app/.demo
+      DEMO_HOST: 0.0.0.0
+      DEMO_PORT: ${PAGER_DEV_PORT:-3000}
+    ports:
+      - '127.0.0.1:${PAGER_DEV_PORT:-3000}:${PAGER_DEV_PORT:-3000}'
+    volumes:
+      - type: bind
+        source: ./src
+        target: /app/src
+        read_only: true
+      - type: bind
+        source: ./server
+        target: /app/server
+        read_only: true
+      - type: bind
+        source: ./scripts
+        target: /app/scripts
+        read_only: true
+      - type: bind
+        source: ./fixtures
+        target: /app/fixtures
+        read_only: true
+      - type: bind
+        source: ./static
+        target: /app/static
+        read_only: true
+      - type: bind
+        source: ./tests
+        target: /app/tests
+        read_only: true
+      - type: bind
+        source: ./e2e
+        target: /app/e2e
+        read_only: true
+      - type: bind
+        source: ./package.json
+        target: /app/package.json
+        read_only: true
+      - type: bind
+        source: ./pnpm-lock.yaml
+        target: /app/pnpm-lock.yaml
+        read_only: true
+      - type: bind
+        source: ./pnpm-workspace.yaml
+        target: /app/pnpm-workspace.yaml
+        read_only: true
+      - type: bind
+        source: ./vite.config.ts
+        target: /app/vite.config.ts
+        read_only: true
+      - type: bind
+        source: ./svelte.config.js
+        target: /app/svelte.config.js
+        read_only: true
+      - type: bind
+        source: ./tsconfig.json
+        target: /app/tsconfig.json
+        read_only: true
+      - type: bind
+        source: ./eslint.config.js
+        target: /app/eslint.config.js
+        read_only: true
+      - type: bind
+        source: ./playwright.config.ts
+        target: /app/playwright.config.ts
+        read_only: true
+      - demo_node_modules:/app/node_modules
+      - demo_svelte_kit:/app/.svelte-kit
+      - demo_build:/app/build
+      - demo_data:/app/.demo
+      - demo_test_results:/app/test-results
+      - demo_playwright_report:/app/playwright-report
+    tmpfs:
+      - /tmp:size=64m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    stop_grace_period: 15s
+
+volumes:
+  demo_node_modules:
+  demo_svelte_kit:
+  demo_build:
+  demo_data:
+  demo_test_results:
+  demo_playwright_report:
