@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setHeaderText } from './header-editor';
 
 test('client album grid, year collapse, native viewer and mobile layout', async ({
   page,
@@ -61,9 +62,7 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
     path: 'test-results/editor-empty.png',
     fullPage: true,
   });
-  await page
-    .getByLabel('Title', { exact: true })
-    .fill('Acme monthly photography');
+  await setHeaderText(page, 'Title', 'Acme monthly photography');
   await expect(page).not.toHaveURL(/\/manage\/new$/);
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await page.getByRole('button', { name: 'Options', exact: true }).click();
@@ -99,9 +98,7 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
     .check();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page
-    .getByLabel('Description', { exact: true })
-    .fill('Our work over the months.');
+  await setHeaderText(page, 'Description', 'Our work over the months.');
   await page
     .getByRole('button', { name: 'Choose logo from Immich', exact: true })
     .click();
@@ -174,7 +171,7 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
   await visitor.getByPlaceholder('Password', { exact: true }).fill('2468');
   await visitor.getByRole('button', { name: 'View albums' }).click();
   await expect(visitor.locator('.banner img')).toBeVisible();
-  await page.getByLabel('Title', { exact: true }).fill('Changed privately');
+  await setHeaderText(page, 'Title', 'Changed privately');
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await visitor.reload();
   await expect(
@@ -275,13 +272,11 @@ test('autosave recovers from an empty proxy error and rejects oversized branding
       ? route.fulfill({ status: 502, body: '' })
       : route.continue(),
   );
-  await page
-    .getByLabel('Title', { exact: true })
-    .fill('Test response recovery');
+  await setHeaderText(page, 'Title', 'Test response recovery');
   await expect(page.getByRole('alert')).toContainText('HTTP 502');
-  await expect(page.getByLabel('Title', { exact: true })).toHaveValue(
-    'Test response recovery',
-  );
+  await expect(
+    page.getByRole('button', { name: 'Edit title, Test response recovery' }),
+  ).toBeVisible();
   await page.unroute('**/page/api/pages');
   await page.getByRole('button', { name: 'Retry save' }).click();
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
@@ -326,7 +321,7 @@ test('dropped branding creates an untitled draft, Options work on mobile, and st
     .dispatchEvent('drop', { dataTransfer: transfer });
   await expect(page.getByAltText('Logo preview')).toBeVisible();
   await expect(page).not.toHaveURL(/\/manage\/new$/);
-  await page.getByLabel('Title', { exact: true }).fill('Drop and configure');
+  await setHeaderText(page, 'Title', 'Drop and configure');
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('button', { name: 'Options', exact: true }).click();
@@ -347,15 +342,15 @@ test('dropped branding creates an untitled draft, Options work on mobile, and st
   await expect(page.getByAltText('Logo preview')).toBeVisible();
   const other = await context.newPage();
   await other.goto(page.url());
-  await page.getByLabel('Title', { exact: true }).fill('First tab saved');
+  await setHeaderText(page, 'Title', 'First tab saved');
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
-  await other
-    .getByLabel('Title', { exact: true })
-    .fill('Second tab conflicting');
+  await setHeaderText(other, 'Title', 'Second tab conflicting');
   await expect(other.getByRole('alert')).toContainText('another tab');
-  await expect(other.getByLabel('Title', { exact: true })).toHaveValue(
-    'Second tab conflicting',
-  );
+  await expect(
+    other.getByRole('button', {
+      name: 'Edit title, Second tab conflicting',
+    }),
+  ).toBeVisible();
   const id = page.url().split('/').pop();
   expect(
     (await (await page.request.get(`/page/api/pages/${id}`)).json()).title,

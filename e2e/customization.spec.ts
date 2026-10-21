@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { setHeaderText } from './header-editor';
 
 test('banner composition and scoped CSS autosave privately, preview and publish', async ({
   page,
@@ -140,7 +141,7 @@ test('CSS cannot style editor siblings, escape paint containment, or inject HTML
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/dev-login/alice');
   await page.goto('/page/manage/new');
-  await page.getByLabel('Title', { exact: true }).fill('CSS containment');
+  await setHeaderText(page, 'Title', 'CSS containment');
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await page.getByRole('button', { name: 'Options', exact: true }).click();
   await page
@@ -178,8 +179,8 @@ test('CSS cannot style editor siblings, escape paint containment, or inject HTML
     ),
   ).toBe(true);
   await button.click();
-  await expect(page.getByLabel('Title', { exact: true })).toHaveValue(
-    'CSS containment',
-  );
+  await expect(
+    page.getByRole('button', { name: 'Edit title, CSS containment' }),
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });
