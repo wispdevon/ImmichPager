@@ -33,9 +33,9 @@ The user selected <https://gitlab.com/wispd/ImmichPager>. Prepare GitLab CI and 
 
 All roadmap items are tracked in `TODO.md`; PR links and final verification evidence will be added to a separate review index as agents finish. External service limitations or inaccessible live Immich verification must be recorded explicitly.
 
-## Active goal: Immich UI and UX parity
+## Immich UI and UX parity goal
 
-The user explicitly requested a further goal: make ImmichPager match Immich's UI and UX as closely as practical, study Immich's actual interface, take screenshots, and apply the findings. The roadmap PR-preparation goal is complete: 18 feature PRs and verified draft integration PR #19 are ready for review. This UI/UX goal is now active; source and screenshot research began during the final integration checks.
+The user explicitly requested a further goal: make ImmichPager match Immich's UI and UX as closely as practical, study Immich's actual interface, take screenshots, and apply the findings. The roadmap PR-preparation goal is complete: 18 feature PRs and verified draft integration PR #19 are ready for review. The UI/UX implementation and evidence are prepared in six follow-up PRs (#20–#25) and combined draft #26; approval and release remain separate steps.
 
 Capture versioned reference evidence for Immich's albums, page/album creation and inline editing, selection, ordering, options, sharing/password controls, navigation, empty/error/loading states, keyboard behavior, and responsive layouts. Compare equivalent Pager states, record visible differences and interaction findings, then implement the relevant changes in reviewable branches/PRs to `dev`. Preserve per-page customization, private drafts, explicit publishing, owner checks, `/page/` isolation, and native Immich viewer behavior. Use fixture/synthetic content for committed evidence; never commit client photos or credentials. Keep `main` and the live deployment unchanged pending approval.
 
@@ -56,3 +56,7 @@ Official Immich v3.3.3 is the source baseline. The public demo reported v3.3.4 d
 Each slice gets an isolated branch and PR targeting `dev`, with its dependency on integration draft #19 disclosed. After independent review, combine the slices in a disposable candidate, run all required gates and browser checks, and update the local preview. Do not merge the candidate into `dev` automatically.
 
 Completion requires a committed comparison matrix with versioned source references and intentional product differences, before/after screenshot evidence, tests covering the changed interactions and security boundaries, passing combined gates, and reviewable PRs. Similar-looking screenshots alone do not prove interaction parity.
+
+### Review handoff
+
+The evidence and implementation goal is complete for review in [draft #26](https://github.com/wispdevon/ImmichPager/pull/26). All six final parity PR heads are included. The comparison matrix records the source/screenshot study, applied findings, remaining interaction audit, and intentional differences. Final combined gates passed: 127 unit tests, 34 Chromium scenarios, 33 compatibility tests plus two compatibility browser checks, type checking, lint, formatting, audit, and build. The fresh fixture preview matches the runtime candidate. See [the review index](review.md) for individual PRs, preview links, and runtime limitations. Approval, merge, release, deployment, and GitLab cutover remain pending.

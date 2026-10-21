@@ -35,7 +35,7 @@ Combined verification passed with Node 22.23.3 and pnpm 11.28.5: zero type/Svelt
 
 The integration also ensures all five header controls survive design duplication and appearance export/import and appear in publication reviews. Older v1 appearance files receive defaults. Browser tests cover inline editing with responsive iframe previews, combined page-list actions, actual password-protected published views, and missing-cover fallback before hydration.
 
-An isolated fixture-only preview runs on the review workstation: [client gallery](http://127.0.0.1:4300/page/acme) and [fixture editor login](http://127.0.0.1:4300/dev-login/alice). It does not connect to a real library. The active Immich UI/UX parity goal is recorded in the [implementation plan](plan.md); its gallery and contrast changes are also available in this preview.
+The earlier roadmap-only fixture preview remains available on the review workstation: [client gallery](http://127.0.0.1:4300/page/acme) and [fixture editor login](http://127.0.0.1:4300/dev-login/alice). It does not connect to a real library. Use the fresh combined preview below to review all six Immich UI/UX follow-ups.
 
 ## Immich UI and UX parity review
 
@@ -50,7 +50,11 @@ These six follow-up PRs use official Immich v3.3.3 source and v3.3.4 public-demo
 | [#24](https://github.com/wispdevon/ImmichPager/pull/24) | Keeps Copy link visible on phones while putting secondary page actions in Immich's native menu; desktop actions stay visible.  |
 | [#25](https://github.com/wispdevon/ImmichPager/pull/25) | Follows Immich's light/dark preference in the editor and dialogs while preserving each client page's independent theme.        |
 
-Feature checks are recorded in each PR. Combined verification and the final parity candidate are still in progress. The committed comparison matrix and synthetic before/after screenshots are included in #24. Official public-demo photographs remain outside source control.
+[Draft PR #26](https://github.com/wispdevon/ImmichPager/pull/26) combines #19 and all six final parity PR heads for approval. The committed [comparison matrix](https://github.com/wispdevon/ImmichPager/blob/qa/immich-ui-parity/docs/immich-ui-parity.md) records official source references, screenshot findings, the remaining interaction audit, and intentional product differences. Official public-demo photographs remain outside source control; committed images use synthetic or attributed NASA fixtures.
+
+The fresh fixture-only preview runs at [client gallery](http://127.0.0.1:4400/page/acme) and [editor login](http://127.0.0.1:4400/dev-login/alice). Its runtime files match the combined candidate; it does not connect to a real library. Mobile menus, host theme changes, gallery layouts, and keyboard flows were browser-checked.
+
+Final combined verification passed after the last count-label correction: 127 unit tests, 34 Chromium scenarios, 33 compatibility tests plus two compatibility browser checks, zero type/Svelte errors or warnings, lint, formatting, moderate-level dependency audit, and production build. No tests were disabled. Desktop/mobile screenshots were visually reviewed. No feature has been merged into `dev`.
 
 ## Verification and limits
 
