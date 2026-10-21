@@ -16,6 +16,11 @@ export const appearanceSettingsSchema = z
     alignment: z.enum(['left', 'center']),
     bannerPosition: z.number().int().min(0).max(100),
     headerLayout: z.enum(['below', 'overlay']),
+    headerSize: z.enum(['compact', 'standard', 'tall']).default('standard'),
+    logoSize: z.number().int().min(48).max(160).default(80),
+    titleSize: z.number().min(1.5).max(4).default(3),
+    descriptionSize: z.number().min(0.875).max(1.5).default(1.125),
+    headerSpacing: z.number().min(1.5).max(5).default(2.5),
     customCss: z.string().max(20_000),
   })
   .strict();

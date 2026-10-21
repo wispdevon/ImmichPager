@@ -14,6 +14,11 @@ const appearance: AppearanceSettings = {
   alignment: 'center',
   bannerPosition: 28,
   headerLayout: 'overlay',
+  headerSize: 'tall',
+  logoSize: 112,
+  titleSize: 3.5,
+  descriptionSize: 1.25,
+  headerSpacing: 3.5,
   customCss: '.ip-title { color: #abc123 !important; }',
 };
 
@@ -26,6 +31,32 @@ it('round-trips only versioned appearance settings', () => {
     appearance,
   });
   expect(parseAppearanceFile(exported)).toEqual(appearance);
+});
+
+it('imports existing version 1 files with the current header defaults', () => {
+  const legacyAppearance = { ...appearance };
+  delete (legacyAppearance as Partial<AppearanceSettings>).headerSize;
+  delete (legacyAppearance as Partial<AppearanceSettings>).logoSize;
+  delete (legacyAppearance as Partial<AppearanceSettings>).titleSize;
+  delete (legacyAppearance as Partial<AppearanceSettings>).descriptionSize;
+  delete (legacyAppearance as Partial<AppearanceSettings>).headerSpacing;
+
+  expect(
+    parseAppearanceFile(
+      JSON.stringify({
+        format: 'immichpager-appearance',
+        version: 1,
+        appearance: legacyAppearance,
+      }),
+    ),
+  ).toEqual({
+    ...legacyAppearance,
+    headerSize: 'standard',
+    logoSize: 80,
+    titleSize: 3,
+    descriptionSize: 1.125,
+    headerSpacing: 2.5,
+  });
 });
 
 it.each(['albumIds', 'title', 'slug', 'password', 'shareToken', 'ownerId'])(

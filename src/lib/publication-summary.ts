@@ -8,6 +8,11 @@ export type PublicationAppearanceChange =
   | 'colors'
   | 'headerAlignment'
   | 'headerLayout'
+  | 'headerSize'
+  | 'logoSize'
+  | 'titleSize'
+  | 'descriptionSize'
+  | 'headerSpacing'
   | 'bannerPosition'
   | 'customCss'
   | 'albumOrder'
@@ -59,6 +64,16 @@ export function summarizePublicationChanges(
       appearanceChanges.push('headerAlignment');
     if (draft.headerLayout !== published.headerLayout)
       appearanceChanges.push('headerLayout');
+    if (draft.headerSize !== published.headerSize)
+      appearanceChanges.push('headerSize');
+    if (draft.logoSize !== published.logoSize)
+      appearanceChanges.push('logoSize');
+    if (draft.titleSize !== published.titleSize)
+      appearanceChanges.push('titleSize');
+    if (draft.descriptionSize !== published.descriptionSize)
+      appearanceChanges.push('descriptionSize');
+    if (draft.headerSpacing !== published.headerSpacing)
+      appearanceChanges.push('headerSpacing');
     if (draft.bannerPosition !== published.bannerPosition)
       appearanceChanges.push('bannerPosition');
     if (draft.customCss !== published.customCss)

@@ -16,8 +16,11 @@ Choose Dark, Light, or System under Appearance. Expand **Custom colors** to over
 
 In **Options → Import or export appearance**, download the current visual settings
 as `immichpager-appearance.json` or choose a file to import. The version 1 file
-contains the theme, custom colors, header alignment and layout, banner crop
-position, and custom CSS. It does not contain the page title or description,
+contains the theme, custom colors, header alignment and layout, banner and logo
+size, title and description sizes, header spacing, banner crop position, and
+custom CSS. Older version 1 files that omit these five header settings import
+with the current defaults: Standard, 80 px, 3 rem, 1.125 rem, and 2.5 rem. It
+does not contain the page title or description,
 URL, album names or identifiers, album order, passwords, share links, or logo
 and banner images. Choose branding separately on each page.
 
@@ -43,6 +46,11 @@ The file is a plain JSON object with a strict, versioned shape:
     "alignment": "left",
     "bannerPosition": 50,
     "headerLayout": "below",
+    "headerSize": "standard",
+    "logoSize": 80,
+    "titleSize": 3,
+    "descriptionSize": 1.125,
+    "headerSpacing": 2.5,
     "customCss": ""
   }
 }

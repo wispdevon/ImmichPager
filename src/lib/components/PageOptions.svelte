@@ -216,6 +216,11 @@
       alignment: fields.alignment,
       bannerPosition: fields.bannerPosition,
       headerLayout: fields.headerLayout,
+      headerSize: fields.headerSize,
+      logoSize: fields.logoSize,
+      titleSize: fields.titleSize,
+      descriptionSize: fields.descriptionSize,
+      headerSpacing: fields.headerSpacing,
       customCss: fields.customCss,
     };
   }
@@ -470,9 +475,9 @@
         <details class="appearance-file">
           <summary>Import or export appearance</summary>
           <p class="hint">
-            Move visual settings between pages. Files contain colors, layout,
-            banner crop, and custom CSS; they do not contain page content or
-            branding images.
+            Move visual settings between pages. Files contain colors, header
+            composition, sizing, typography, spacing, banner crop, and custom
+            CSS; they do not contain page content or branding images.
           </p>
           <Button variant="ghost" onclick={exportAppearance} disabled={busy}
             >Export appearance JSON</Button

@@ -18,7 +18,7 @@ All Pager routes use `/page/`. Management routes require a verified Immich sessi
 | GET          | `/page/api/photos/:id/thumbnail`         | Owner-checked library thumbnail                                               |
 | GET          | `/page/api/albums`                       | Owned albums                                                                  |
 | GET          | `/page/api/albums/:id/cover`             | Owner-authorized cover                                                        |
-| GET, POST    | `/page/:slug`                             | Published overview / password form                                            |
+| GET, POST    | `/page/:slug`                            | Published overview / password form                                            |
 | GET          | `/page/media/:id/album/:albumId`         | Authorized published album cover                                              |
 | GET          | `/page/media/:id/branding/:kind`         | Authorized published branding; `?preview=1` reads owner-only working branding |
 
