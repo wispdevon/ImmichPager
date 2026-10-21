@@ -91,6 +91,33 @@ test('public gallery browsing, responsive layout, and year navigation work', asy
     'font-size',
     '14px',
   );
+  const metadata = firstAlbum.locator('.album-metadata');
+  await expect(metadata.locator('.item-count')).toHaveText(/\d+ items?/);
+  await expect(metadata.locator('.shared-separator')).toHaveText('•');
+  await expect(metadata.locator('.shared').locator('span').last()).toHaveText(
+    'Shared',
+  );
+  const metadataGaps = await metadata.evaluate((element) => {
+    const count = element.querySelector('.item-count')!.getBoundingClientRect();
+    const shared = element.querySelector('.shared')!;
+    const sharedBounds = shared.getBoundingClientRect();
+    const separator = shared
+      .querySelector('.shared-separator')!
+      .getBoundingClientRect();
+    const label = shared.lastElementChild!.getBoundingClientRect();
+    return {
+      countToShared: sharedBounds.left - count.right,
+      bulletToLabel: label.left - separator.right,
+      metadataColumnGap: getComputedStyle(element).columnGap,
+      sharedGap: getComputedStyle(shared).columnGap,
+    };
+  });
+  expect(metadataGaps).toEqual({
+    countToShared: 2,
+    bulletToLabel: 2,
+    metadataColumnGap: '2px',
+    sharedGap: '2px',
+  });
   const cover = firstAlbum.locator('.cover');
   const coverBox = await cover.boundingBox();
   expect(coverBox).not.toBeNull();

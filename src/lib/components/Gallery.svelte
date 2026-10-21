@@ -386,15 +386,20 @@
                             {#if dateRange(album.startDate, album.endDate)}<p>
                                 {dateRange(album.startDate, album.endDate)}
                               </p>{/if}
-                            <p>
-                              {album.available
-                                ? itemCountLabel(album.count)
-                                : 'Currently unavailable'}{#if album.available}<span
-                                  class="shared"
+                            {#if album.available}<p class="album-metadata">
+                                <span class="item-count"
+                                  >{itemCountLabel(album.count)}</span
                                 >
-                                  · Shared</span
-                                >{/if}
-                            </p>
+                                <span class="shared">
+                                  <span
+                                    class="shared-separator"
+                                    aria-hidden="true">•</span
+                                  >
+                                  <span>Shared</span>
+                                </span>
+                              </p>{:else}<p class="album-metadata">
+                                Currently unavailable
+                              </p>{/if}
                           </div>
                         </a>
                       </li>
@@ -838,6 +843,18 @@
     line-height: 1.4;
     opacity: 0.86;
     margin: 0;
+  }
+  .album-info .album-metadata {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 2px;
+    row-gap: 2px;
+  }
+  .shared {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 2px;
   }
   .empty {
     padding: 70px 24px;
