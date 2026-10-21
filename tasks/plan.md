@@ -49,6 +49,8 @@ Official Immich v3.3.3 is the source baseline. The public demo reported v3.3.4 d
 - **Album presentation and browsing:** match native square covers, responsive density, hover/focus treatment, year hierarchy, and toolbar rhythm while retaining client search/month/year controls and per-page branding.
 - **Compact page actions:** preserve frequent desktop actions and provide a native, accessible phone overflow pattern with reliable focus and dismissal.
 - **Host theme inheritance:** match the surrounding Immich light/dark preference in management, including dialogs and pickers, without changing the client page's own theme.
+- **Sidebar navigation state:** give Pages the native active indicator while its editor is open, restore native navigation state on close, and verify keyboard and history behavior.
+- **Inline editing shortcuts:** support Immich's description Ctrl+Enter shortcut and restore focus after keyboard commit/cancel without interrupting normal Tab traversal.
 - **Remaining interaction audit:** inspect editor, pickers, options, publication feedback, loading/error/empty states, mobile and keyboard behavior; implement material findings rather than assuming existing component reuse proves parity.
 
 Each slice gets an isolated branch and PR targeting `dev`, with its dependency on integration draft #19 disclosed. After independent review, combine the slices in a disposable candidate, run all required gates and browser checks, and update the local preview. Do not merge the candidate into `dev` automatically.
