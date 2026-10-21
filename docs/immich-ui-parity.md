@@ -61,6 +61,7 @@ The public-demo screenshots are evidence only; they are not copied into the proj
 
 - Client pages retain their per-page branding, custom CSS, and independent theme, and omit Immich's authenticated sidebar and management actions. Album links open Immich's native shared viewer.
 - Header edits autosave to private drafts; explicit publication and its review remain required before changing client-visible content. Escape exits editing while keeping those private edits.
+- Pager creates client pages from existing albums; it does not create Immich albums. The native create-album dialog is outside this comparison, and no screenshot or interaction verification of that dialog is claimed.
 - Selection includes only albums owned by the photographer. Design duplication and appearance files exclude albums, passwords, credentials, and share capabilities.
 - Persistent client URLs and password-state guidance follow Pager's publication contract, rather than reproducing Immich collaborators, expiring links, or upload/download settings.
 
