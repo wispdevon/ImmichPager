@@ -16,6 +16,15 @@ async function setHostTheme(page: Page, theme: 'light' | 'dark') {
   }, theme);
 }
 
+async function closeMobileMenu(page: Page) {
+  const menu = page.getByRole('button', { name: 'Main menu', exact: true });
+  if (!(await menu.isVisible())) return;
+  if ((await menu.getAttribute('aria-expanded')) === 'true') await menu.click();
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('#sidebar')).toHaveAttribute('inert', '');
+  await expect(page.locator('#sidebar')).toHaveCSS('width', '0px');
+}
+
 async function setPageTheme(
   management: FrameLocator,
   theme: 'light' | 'dark' | 'system',
@@ -142,7 +151,9 @@ test('management iframe follows Immich themes while page themes stay independent
   expect(initializer.ok()).toBe(true);
   await expect(page.locator('[data-pager-link]')).toBeVisible();
   await page.locator('[data-pager-link]').click();
+  const embeddedFrame = page.locator('iframe[title="Client pages"]');
   const management = page.frameLocator('iframe[title="Client pages"]');
+  await expect(embeddedFrame).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   const managementRoot = management.locator('html');
   await expect(managementRoot).toHaveAttribute('data-pager-host-theme', 'dark');
   await expect(managementRoot).toHaveClass(/\bdark\b/);
@@ -273,12 +284,14 @@ test('management iframe follows Immich themes while page themes stay independent
     'light',
   );
   await page.setViewportSize({ width: 390, height: 844 });
+  await closeMobileMenu(page);
   await page.screenshot({
     path: 'test-results/host-theme-light-mobile.png',
     fullPage: true,
   });
   await setHostTheme(page, 'dark');
   await expect(managementRoot).toHaveAttribute('data-pager-host-theme', 'dark');
+  await closeMobileMenu(page);
   await page.screenshot({
     path: 'test-results/host-theme-dark-mobile.png',
     fullPage: true,
@@ -334,6 +347,7 @@ test('management iframe follows Immich themes while page themes stay independent
   await page.unroute('**/page/api/photos**');
 
   await page.setViewportSize({ width: 390, height: 844 });
+  await closeMobileMenu(page);
   await management
     .getByRole('button', { name: '＋ Add albums', exact: true })
     .click();
@@ -474,6 +488,7 @@ test('management iframe follows Immich themes while page themes stay independent
   expect(darkFocus.outlineWidth).toBe('2px');
   await setHostTheme(page, 'light');
   await page.setViewportSize({ width: 390, height: 844 });
+  await closeMobileMenu(page);
   await page.screenshot({
     path: 'test-results/host-theme-empty-editor-light-mobile.png',
     fullPage: true,

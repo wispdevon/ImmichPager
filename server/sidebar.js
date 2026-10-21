@@ -97,7 +97,7 @@
     frame.src = '/page/manage';
     frame.title = 'Client pages';
     frame.style.cssText =
-      'width:100%;height:calc(100dvh - 80px);border:0;display:block;background:#000;';
+      'width:100%;height:calc(100dvh - 80px);border:0;display:block;background:transparent;';
     frame.tabIndex = 0;
     const currentFrame = frame;
     const shouldFocus = focus;
