@@ -44,6 +44,7 @@ Screenshots use attributed [NASA Apollo photographs](fixtures/photos/README.md) 
 - **Immich-style albums:** square covers, dates, item counts, collapsible years, and manual or chronological ordering.
 - **Per-page branding:** choose a logo/banner from Immich Photos, drop an image, or upload; adjust crop, alignment, and colors.
 - **Private autosaved drafts:** edit freely without changing the live page; publish updates explicitly.
+- **Publication review (dev):** see albums being added or removed and page appearance changes before updating the live page.
 - **Easy sharing:** Copy link on each published page, with an Immich-style Options panel for configuration.
 - **Password protection:** optional page password/PIN applied to dedicated Immich album shares too. The native viewer may prompt again.
 - **Inside Immich:** a Pages sidebar entry and existing session authentication; each photographer manages their own pages.

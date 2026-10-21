@@ -1,4 +1,14 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+async function confirmPublication(page: Page, label: string) {
+  await page.getByRole('button', { name: label, exact: true }).click();
+  const review = page.getByRole('dialog', {
+    name: 'Review publication',
+    exact: true,
+  });
+  await expect(review).toBeVisible();
+  await review.getByRole('button', { name: label, exact: true }).click();
+}
 
 test('banner composition and scoped CSS autosave privately, preview and publish', async ({
   page,
@@ -89,7 +99,7 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
     fullPage: false,
   });
   await page.getByRole('button', { name: 'Back to editor' }).click();
-  await page.getByRole('button', { name: 'Publish page', exact: true }).click();
+  await confirmPublication(page, 'Publish page');
   await expect(page.getByRole('status')).toContainText('Page published');
   const client = await anonymous.newPage();
   await client.goto('/page/banner-composition');
@@ -107,9 +117,7 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
   await expect(page.locator('#css-feedback')).toContainText('Only @media');
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
-  await page
-    .getByRole('button', { name: 'Update live page', exact: true })
-    .click();
+  await confirmPublication(page, 'Update live page');
   await expect(page.getByRole('alert')).toContainText('Custom CSS');
   await client.reload();
   await expect(client.locator('.ip-title')).toHaveCSS(
@@ -120,9 +128,7 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
   await page.getByText('Advanced · Custom CSS', { exact: true }).click();
   await page.getByRole('button', { name: 'Clear custom CSS' }).click();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
-  await page
-    .getByRole('button', { name: 'Update live page', exact: true })
-    .click();
+  await confirmPublication(page, 'Update live page');
   await expect(page.getByRole('status')).toContainText('Page published');
   await client.reload();
   await expect(client.locator('.ip-title')).toHaveCSS(

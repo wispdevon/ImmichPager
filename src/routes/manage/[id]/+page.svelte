@@ -7,9 +7,11 @@
   import BrandingSlot from '$lib/components/BrandingSlot.svelte';
   import PhotoPicker from '$lib/components/PhotoPicker.svelte';
   import PageOptions from '$lib/components/PageOptions.svelte';
+  import PublicationReview from '$lib/components/PublicationReview.svelte';
   import CopyLink from '$lib/components/CopyLink.svelte';
   import { readApiResponse } from '$lib/api-response';
   import type { DraftEditorPage, GalleryPage, PageInput } from '$lib/contracts';
+  import type { PublicationSummary } from '$lib/publication-summary';
   import type { PageData } from './$types';
   let { data }: { data: PageData } = $props();
   const initial = untrack(() => data.page);
@@ -40,6 +42,7 @@
     albumsOpen = $state(false),
     photoKind = $state<'logo' | 'banner' | null>(null),
     brandingVersion = $state(0),
+    publicationReview = $state<PublicationSummary | null>(null),
     slugLocked = $state(!!initial?.slug),
     conflict = $state(false),
     failedSnapshot = $state<string | null>(null);
@@ -191,7 +194,76 @@
       ? fields.albumIds.filter((x) => x !== id)
       : [...fields.albumIds, id];
   }
+  async function reviewPublication() {
+    if (busy) return;
+    busy = true;
+    message = '';
+    success = '';
+    publicationReview = null;
+    optionsOpen = false;
+    albumsOpen = false;
+    photoKind = null;
+    try {
+      await flush(true);
+      if (!saved) throw Error('Save the draft before publishing');
+      publicationReview = await api<PublicationSummary>(
+        `/page/api/pages/${saved.id}/publication-review?expectedDraftRevision=${saved.draftRevision}`,
+        'GET',
+      );
+    } catch (cause) {
+      message =
+        cause instanceof Error
+          ? cause.message
+          : 'Could not prepare the publication review';
+    } finally {
+      if (!publicationReview) busy = false;
+    }
+  }
+  async function publishReviewed() {
+    const review = publicationReview;
+    if (!review || !saved) return;
+    const id = saved.id;
+    publicationReview = null;
+    message = '';
+    success = '';
+    try {
+      saved = await enqueue(() =>
+        api<DraftEditorPage>(`/page/api/pages/${id}/publish`, 'POST', {
+          password: fields.password,
+          passwordMode: fields.passwordMode,
+          expectedDraftRevision: review.draftRevision,
+          expectedPublishedRevision: review.expectedPublishedRevision,
+        }),
+      );
+      fields.password = '';
+      fields.passwordMode = 'keep';
+      success = 'Page published. Your client link is ready.';
+    } catch (cause) {
+      message =
+        cause instanceof Error
+          ? cause.message
+          : 'Could not complete this operation';
+      if (saved) {
+        try {
+          saved = await api(`/page/api/pages/${saved.id}`, 'GET');
+        } catch {
+          /* Preserve the last known draft. */
+        }
+      }
+      if (message.toLowerCase().includes('password')) optionsOpen = true;
+    } finally {
+      busy = false;
+    }
+  }
+  function cancelPublicationReview() {
+    publicationReview = null;
+    busy = false;
+  }
   async function perform(action: 'publish' | 'retry' | 'unpublish' | 'delete') {
+    if (action === 'publish') {
+      await reviewPublication();
+      return;
+    }
     if (
       action === 'delete' &&
       !confirm('Delete this page and revoke its dedicated album links?')
@@ -206,8 +278,7 @@
     message = '';
     success = '';
     try {
-      if (action === 'publish') await flush(true);
-      else await queue.catch(() => {});
+      await queue.catch(() => {});
       if (!saved) return;
       const result = await enqueue(() =>
         api<DraftEditorPage | { deleted: true }>(
@@ -225,16 +296,14 @@
         return;
       }
       saved = result;
-      if (action === 'publish' || action === 'retry') {
+      if (action === 'retry') {
         fields.password = '';
         fields.passwordMode = 'keep';
       }
       success =
-        action === 'publish'
-          ? 'Page published. Your client link is ready.'
-          : action === 'unpublish'
-            ? 'Page unpublished and album links revoked.'
-            : 'Synchronization complete.';
+        action === 'unpublish'
+          ? 'Page unpublished and album links revoked.'
+          : 'Synchronization complete.';
     } catch (cause) {
       message =
         cause instanceof Error
@@ -493,6 +562,12 @@
         albums={data.albums}
         onClose={() => (photoKind = null)}
         onchoose={(id) => branding(photoKind!, id)}
+      />{/if}
+    {#if publicationReview}<PublicationReview
+        review={publicationReview}
+        albums={data.albums}
+        onClose={cancelPublicationReview}
+        onConfirm={publishReviewed}
       />{/if}
   </main>
 {/if}
