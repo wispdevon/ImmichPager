@@ -108,13 +108,13 @@
     </main>
     <footer class="ip-footer">
       <a
-        href="https://github.com/wispdevon/ImmichPager"
+        href="https://gitlab.com/wispd/ImmichPager"
         target="_blank"
         rel="noreferrer">ImmichPager</a
       >
       ·
       <a
-        href="https://github.com/wispdevon/ImmichPager/blob/main/LICENSE"
+        href="https://gitlab.com/wispd/ImmichPager/-/blob/main/LICENSE"
         target="_blank"
         rel="noreferrer">Source & license</a
       >

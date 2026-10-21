@@ -266,7 +266,7 @@
           </p>
           <div class="css-actions">
             <a
-              href="https://github.com/wispdevon/ImmichPager/blob/dev/docs/customization.md"
+              href="https://gitlab.com/wispd/ImmichPager/-/blob/dev/docs/customization.md"
               target="_blank"
               rel="noreferrer">CSS guide and examples ↗</a
             ><Button

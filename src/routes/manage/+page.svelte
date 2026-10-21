@@ -78,8 +78,7 @@
     </div>{/each}
   <footer>
     <span class="muted">Signed in as {data.user.name}</span><a
-      href="https://github.com/wispdevon/ImmichPager"
-      >Source & contributions ↗</a
+      href="https://gitlab.com/wispd/ImmichPager">Source & contributions ↗</a
     >
   </footer>
 </main>

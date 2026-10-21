@@ -1,0 +1,124 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS'
+      when: never
+    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_TAG'
+
+stages:
+  - verify
+  - image_test
+  - release
+
+verify:
+  stage: verify
+  image: node:22.23.3-bookworm-slim
+  cache:
+    key:
+      files:
+        - pnpm-lock.yaml
+      prefix: node-22.23.3-pnpm-11.28.5
+    paths:
+      - .pnpm-store/
+  before_script:
+    - apt-get update && apt-get install --yes --no-install-recommends util-linux
+    - command -v flock
+    - corepack enable
+    - corepack prepare pnpm@11.28.5 --activate
+    - test "$(node --version)" = "v22.23.3"
+    - test "$(pnpm --version)" = "11.28.5"
+    - pnpm install --frozen-lockfile --store-dir .pnpm-store
+  script:
+    - pnpm format:check
+    - pnpm lint
+    - pnpm check
+    - pnpm test
+    - pnpm audit --audit-level=moderate
+    - pnpm build
+    - pnpm exec playwright install --with-deps chromium
+    - flock /tmp/immichpager-e2e.lock pnpm test:e2e
+  artifacts:
+    when: on_failure
+    expire_in: 7 days
+    paths:
+      - test-results/
+
+docker_smoke:
+  stage: image_test
+  image: docker:27.5.1-cli
+  services:
+    - name: docker:27.5.1-dind
+      alias: docker
+      variables:
+        HEALTHCHECK_TCP_PORT: '2376'
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: /certs
+    DOCKER_TLS_VERIFY: '1'
+    DOCKER_CERT_PATH: '$DOCKER_TLS_CERTDIR/client'
+  before_script:
+    - apk add --no-cache curl
+    - docker info
+  script:
+    - docker build --tag immichpager:test .
+    - >-
+      docker run --detach --name pager --publish 3102:3000
+      --env IMMICH_URL=http://127.0.0.1:2283
+      --env ORIGIN=http://docker:3102 immichpager:test
+    - |
+      for attempt in $(seq 1 30); do
+        if curl --fail --silent http://docker:3102/page/health; then exit 0; fi
+        sleep 1
+      done
+      docker logs pager
+      exit 1
+  after_script:
+    - docker rm --force pager || true
+
+publish_image:
+  stage: release
+  image: docker:27.5.1-cli
+  services:
+    - name: docker:27.5.1-dind
+      alias: docker
+      variables:
+        HEALTHCHECK_TCP_PORT: '2376'
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: /certs
+    DOCKER_TLS_VERIFY: '1'
+    DOCKER_CERT_PATH: '$DOCKER_TLS_CERTDIR/client'
+  needs:
+    - verify
+    - docker_smoke
+  resource_group: container-registry-release
+  before_script:
+    - docker info
+    - >-
+      printf '%s' "$CI_REGISTRY_PASSWORD" |
+      docker login "$CI_REGISTRY" --username "$CI_REGISTRY_USER" --password-stdin
+    - docker run --privileged --rm tonistiigi/binfmt:qemu-v10.2.3 --install arm64
+    - docker buildx create --use --driver docker-container --name immichpager-builder
+    - docker buildx inspect --bootstrap
+  script:
+    - |
+      version="${CI_COMMIT_TAG#v}"
+      minor_tag="$(printf '%s\n' "$version" | awk -F. '{print $1 "." $2}')"
+      docker buildx build \
+        --platform linux/amd64,linux/arm64 \
+        --tag "$CI_REGISTRY_IMAGE:$version" \
+        --tag "$CI_REGISTRY_IMAGE:$minor_tag" \
+        --tag "$CI_REGISTRY_IMAGE:latest" \
+        --build-arg "VERSION=$version" \
+        --build-arg "REVISION=$CI_COMMIT_SHA" \
+        --cache-from "type=registry,ref=$CI_REGISTRY_IMAGE:buildcache" \
+        --cache-to "type=registry,ref=$CI_REGISTRY_IMAGE:buildcache,mode=max" \
+        --push .
+  after_script:
+    - docker buildx rm immichpager-builder || true
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/ && $CI_COMMIT_REF_PROTECTED == "true"'
+      when: manual
+      allow_failure: false
+    - when: never

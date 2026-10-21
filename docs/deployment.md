@@ -2,10 +2,10 @@
 
 ## Install beside Immich
 
-Build the stable version from source, or import the prebuilt ARM64 package below. GHCR images have not yet been published because GitHub Actions is disabled for the maintainer account. The image workflow is configured for publication after validation once Actions is available.
+Build the stable version from source, or import the prebuilt ARM64 package below. The GitLab registry target is `registry.gitlab.com/wispd/immichpager`; no image has been published there yet. Registry publishing is available only from a protected semantic-version tag after the checks pass and a maintainer manually starts the job. See the [GitLab distribution guide](gitlab-distribution.md) for the migration steps.
 
 ```sh
-git clone --branch v0.1.0 --depth 1 https://github.com/wispdevon/ImmichPager.git
+git clone --branch v0.1.0 --depth 1 https://gitlab.com/wispd/ImmichPager.git
 cd ImmichPager
 cp .env.example .env
 # Edit IMMICH_URL and ORIGIN, plus IMMICH_NETWORK if necessary.
@@ -37,7 +37,7 @@ curl --fail --location --remote-name https://github.com/wispdevon/ImmichPager/re
 curl --fail --location --remote-name https://github.com/wispdevon/ImmichPager/releases/download/v0.1.0/SHA256SUMS
 sha256sum --check --ignore-missing SHA256SUMS
 docker load --input immichpager-v0.1.0-linux-arm64-docker.tar.gz
-docker tag immichpager:0.1.0 ghcr.io/wispdevon/immichpager:0.1.0
+docker tag immichpager:0.1.0 registry.gitlab.com/wispd/immichpager:0.1.0
 ```
 
 The second tag matches the Compose image name locally; it does not require a registry download. Set `PAGER_TAG=0.1.0` in `.env`, then start with:
@@ -71,7 +71,7 @@ The release's `immichpager-v0.1.0-runtime.tar.gz` contains this compiled build c
 | `IMMICH_NETWORK` | `immich_default`  | Existing Docker network                                                                                              |
 | `BIND_ADDRESS`   | `127.0.0.1`       | Host bind interface                                                                                                  |
 | `PAGER_PORT`     | `3102`            | Host gateway port                                                                                                    |
-| `PAGER_TAG`      | `main`            | Image tag; prefer a published version for production                                                                 |
+| `PAGER_TAG`      | `latest`          | Image tag; set an exact version for production                                                                       |
 | `TRUST_PROXY`    | `false`           | Trust the first X-Forwarded-For value for password throttling; enable only behind a trusted proxy that overwrites it |
 | `DATA_DIR`       | `/data` in Docker | SQLite and branding storage                                                                                          |
 | `HOST`, `PORT`   | `0.0.0.0`, `3000` | In-container listener                                                                                                |

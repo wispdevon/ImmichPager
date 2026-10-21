@@ -5,7 +5,7 @@
   "private": true,
   "type": "module",
   "license": "AGPL-3.0-only",
-  "repository": "github:wispdevon/ImmichPager",
+  "repository": "git+https://gitlab.com/wispd/ImmichPager.git",
   "keywords": [
     "immich",
     "immich-extension",
@@ -57,7 +57,7 @@
     "tailwindcss": "4.1.17",
     "typescript": "5.9.3",
     "typescript-eslint": "8.71.2",
-    "vite": "7.3.5",
+    "vite": "7.3.7",
     "vitest": "4.1.11"
   }
 }
