@@ -91,6 +91,69 @@ it('rejects stale revisions and another owner', async () => {
     }),
   ).rejects.toThrow('another tab');
 });
+it('reviews changes only for the owner and the expected saved draft revision', async () => {
+  const { store, drafts } = setup();
+  let page = await drafts.save('alice', null, values);
+  store.changeDraftBranding(
+    store.draft(page.id, 'alice'),
+    'logo',
+    new Uint8Array([1]),
+  );
+  page = store.editor(page.id, 'alice');
+  page = await drafts.publish('alice', page.id, {
+    password: '',
+    passwordMode: 'keep',
+    expectedDraftRevision: page.draftRevision,
+  });
+  store.changeDraftBranding(
+    store.draft(page.id, 'alice'),
+    'logo',
+    new Uint8Array([2]),
+  );
+  page = store.editor(page.id, 'alice');
+  page = await drafts.save('alice', page.id, {
+    ...values,
+    title: 'Updated title',
+    albumIds: ['a', 'new-album'],
+    expectedDraftRevision: page.draftRevision,
+  });
+
+  const review = drafts.review('alice', page.id, page.draftRevision);
+  expect(review).toMatchObject({
+    currentlyPublished: true,
+    previousSlug: 'client',
+    addedAlbumIds: ['new-album'],
+    removedAlbumIds: [],
+    appearanceChanges: ['title', 'logo'],
+  });
+  expect(JSON.stringify(review)).not.toMatch(
+    /passwordHash|password|shareId|native-cookie/,
+  );
+  expect(() => drafts.review('bob', page.id, page.draftRevision)).toThrow(
+    'not found',
+  );
+  expect(() => drafts.review('alice', page.id, page.draftRevision - 1)).toThrow(
+    'another tab',
+  );
+  const publishInput = {
+    password: '',
+    passwordMode: 'keep' as const,
+    expectedDraftRevision: review.draftRevision,
+    expectedPublishedRevision: review.expectedPublishedRevision,
+  };
+  await drafts.publish('alice', page.id, publishInput);
+  await drafts.operation('alice', page.id, 'unpublish');
+  const unpublished = store.editor(page.id, 'alice');
+  await drafts.publish('alice', page.id, {
+    password: '',
+    passwordMode: 'keep',
+    expectedDraftRevision: unpublished.draftRevision,
+    expectedPublishedRevision: null,
+  });
+  await expect(drafts.publish('alice', page.id, publishInput)).rejects.toThrow(
+    'live page changed since this review',
+  );
+});
 it('never stores password values in a draft', async () => {
   const { store, drafts } = setup();
   const d = await drafts.save('alice', null, {

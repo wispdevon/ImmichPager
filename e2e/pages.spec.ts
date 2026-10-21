@@ -1,5 +1,15 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { setHeaderText } from './header-editor';
+
+async function confirmPublication(page: Page, label: string) {
+  await page.getByRole('button', { name: label, exact: true }).click();
+  const review = page.getByRole('dialog', {
+    name: 'Review publication',
+    exact: true,
+  });
+  await expect(review).toBeVisible();
+  await review.getByRole('button', { name: label, exact: true }).click();
+}
 
 test('client album grid, year collapse, native viewer and mobile layout', async ({
   page,
@@ -145,6 +155,18 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
   ).toBeVisible();
   await page.getByRole('button', { name: 'Back to editor' }).click();
   await page.getByRole('button', { name: 'Publish page', exact: true }).click();
+  const firstReview = page.getByRole('dialog', {
+    name: 'Review publication',
+    exact: true,
+  });
+  await expect(
+    firstReview.getByRole('heading', { name: 'Albums to publish' }),
+  ).toBeVisible();
+  await expect(firstReview).toContainText('Liberty Family Camp ’26');
+  expect(await firstReview.innerText()).not.toContain('2468');
+  await firstReview
+    .getByRole('button', { name: 'Publish page', exact: true })
+    .click();
   await expect(page.getByRole('status')).toContainText('Page published');
   await page.screenshot({ path: 'test-results/editor.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
@@ -180,6 +202,20 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
   await page
     .getByRole('button', { name: 'Update live page', exact: true })
     .click();
+  const updateReview = page.getByRole('dialog', {
+    name: 'Review publication',
+    exact: true,
+  });
+  await expect(updateReview).toContainText('Page title');
+  await updateReview
+    .getByRole('button', { name: 'Cancel', exact: true })
+    .click();
+  await expect(updateReview).toHaveCount(0);
+  await visitor.reload();
+  await expect(
+    visitor.getByRole('heading', { name: 'Acme monthly photography' }),
+  ).toBeVisible();
+  await confirmPublication(page, 'Update live page');
   await expect(page.getByRole('status')).toContainText('Page published');
   await visitor.reload();
   await visitor.getByPlaceholder('Password', { exact: true }).fill('2468');
@@ -235,9 +271,31 @@ test('ownership, same-origin writes, reserved slugs and sidebar integration', as
   const owner = await page.request.get('/page/api/pages');
   const pages = await owner.json();
   const id = pages[0].id;
+  const ownerDraft = await (
+    await page.request.get(`/page/api/pages/${id}`)
+  ).json();
+  const reviewUrl = `/page/api/pages/${id}/publication-review?expectedDraftRevision=${ownerDraft.draftRevision}`;
+  const reviewResponse = await page.request.get(reviewUrl);
+  expect(reviewResponse.ok()).toBe(true);
+  expect(JSON.stringify(await reviewResponse.json())).not.toMatch(
+    /passwordHash|native-cookie|shareId|"key"/i,
+  );
+  expect(
+    (
+      await page.request.get(`/page/api/pages/${id}/publication-review`)
+    ).status(),
+  ).toBe(400);
+  expect(
+    (
+      await page.request.get(
+        `/page/api/pages/${id}/publication-review?expectedDraftRevision=${ownerDraft.draftRevision - 1}`,
+      )
+    ).status(),
+  ).toBe(409);
   const bob = await browser.newContext();
   await bob.request.get('/dev-login/bob');
   expect((await bob.request.get(`/page/api/pages/${id}`)).status()).toBe(404);
+  expect((await bob.request.get(reviewUrl)).status()).toBe(404);
   expect(await (await bob.request.get('/page/api/pages')).json()).toEqual([]);
   const origin = 'http://127.0.0.1:3200';
   expect(
@@ -258,6 +316,7 @@ test('ownership, same-origin writes, reserved slugs and sidebar integration', as
   ).toBe(200);
   const anonymous = await browser.newContext();
   expect((await anonymous.request.get('/page/api/pages')).status()).toBe(401);
+  expect((await anonymous.request.get(reviewUrl)).status()).toBe(401);
   await anonymous.close();
   await bob.close();
 });

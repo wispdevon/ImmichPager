@@ -6,10 +6,24 @@ import {
   parsePageInput,
   type DraftRecord,
 } from '../contracts';
+import {
+  summarizePublicationChanges,
+  type PublicationSummary,
+} from '../publication-summary';
 import { Store } from './store';
 import { Immich } from './immich';
 import { PageService } from './pages';
 import { exclusive, verifyPassword } from './security';
+
+function sameImage(left: Uint8Array | null, right: Uint8Array | null) {
+  return (
+    left === right ||
+    (!!left &&
+      !!right &&
+      left.length === right.length &&
+      left.every((byte, index) => byte === right[index]))
+  );
+}
 
 export class DraftService {
   constructor(
@@ -30,6 +44,33 @@ export class DraftService {
         'Retry the pending publication before editing this page.',
       );
     return draft;
+  }
+  review(
+    owner: string,
+    id: string,
+    expectedDraftRevision: number,
+  ): PublicationSummary {
+    const draft = this.check(id, owner, expectedDraftRevision);
+    const live = this.store.get(id);
+    if (live && live.ownerId !== owner)
+      throw new AppError(404, 'Page not found');
+    const published = live?.status === 'published' ? live : null;
+    return summarizePublicationChanges(
+      draft,
+      live,
+      published
+        ? {
+            logo: !sameImage(
+              this.store.draftBranding(id, 'logo'),
+              this.store.branding(id, 'logo'),
+            ),
+            banner: !sameImage(
+              this.store.draftBranding(id, 'banner'),
+              this.store.branding(id, 'banner'),
+            ),
+          }
+        : {},
+    );
   }
   async save(owner: string, id: string | null, value: unknown) {
     const { expectedDraftRevision, ...settings } =
@@ -66,6 +107,7 @@ export class DraftService {
       password: string;
       passwordMode: 'keep' | 'set' | 'remove';
       expectedDraftRevision?: number;
+      expectedPublishedRevision?: number | null;
     },
   ) {
     return exclusive(`draft:${id}`, async () => {
@@ -78,6 +120,15 @@ export class DraftService {
       const live = this.store.get(id),
         svc = new PageService(this.store, this.immich, (page) =>
           this.store.commitPublication(page, draft),
+        );
+      if (
+        input.expectedPublishedRevision !== undefined &&
+        input.expectedPublishedRevision !==
+          (live?.status === 'published' ? live.revision : null)
+      )
+        throw new AppError(
+          409,
+          'The live page changed since this review. Review the changes again before publishing.',
         );
       if (
         live?.status === 'published' &&
