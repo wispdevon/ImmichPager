@@ -28,6 +28,7 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:compat": "node scripts/check-compatibility.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

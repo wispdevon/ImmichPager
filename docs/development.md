@@ -36,6 +36,10 @@ Before browser tests, run `pnpm build` and `pnpm exec playwright install chromiu
 
 Browser tests start their own production gateway at `127.0.0.1:3200`, fixture at 3201, and a disposable database in the operating system's temporary directory. Test screenshots/traces go into ignored `test-results/`. Never point test scripts at a real library.
 
+## Compatibility checks
+
+Run `pnpm test:compat` for a focused API, sharing, gateway, and production-browser integration check against the local fixture. See [Immich compatibility](compatibility.md) for the version evidence table and upgrade review procedure.
+
 ## Working against Immich
 
 Set `IMMICH_URL` to the internal server root without `/api`, and `ORIGIN` to the public HTTPS origin. Build and run the production gateway behind that origin's reverse proxy. Immich cookies remain scoped to the existing origin. A standalone localhost app cannot reuse cookies from a remote Immich domain.
