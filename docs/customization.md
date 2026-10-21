@@ -12,6 +12,42 @@ After publishing, choose **Open published page** in the editor to open the actua
 
 Choose Dark, Light, or System under Appearance. Expand **Custom colors** to override background, text, and accent colors. The default accent is Immich blue (`#accbfa`). Currently, accent changes **album-title text on hover**; it does not recolor the page title, banner, management buttons, or native Immich album viewer. CSS can use the same accent for other gallery elements.
 
+## Move a design between pages
+
+In **Options → Import or export appearance**, download the current visual settings
+as `immichpager-appearance.json` or choose a file to import. The version 1 file
+contains the theme, custom colors, header alignment and layout, banner crop
+position, and custom CSS. It does not contain the page title or description,
+URL, album names or identifiers, album order, passwords, share links, or logo
+and banner images. Choose branding separately on each page.
+
+Import applies only the visual settings to the current page's private draft.
+The page's content, URL, albums, and password remain unchanged, and clients see
+the design only after you publish. Files are limited to 96 KiB and must use the
+supported version 1 format. Unknown fields and invalid settings are rejected.
+Custom CSS goes through the same gallery compiler used by preview and
+publication, so imports cannot add external resources or styles outside the
+gallery.
+
+The file is a plain JSON object with a strict, versioned shape:
+
+```json
+{
+  "format": "immichpager-appearance",
+  "version": 1,
+  "appearance": {
+    "theme": "dark",
+    "background": null,
+    "foreground": null,
+    "accent": "#accbfa",
+    "alignment": "left",
+    "bannerPosition": 50,
+    "headerLayout": "below",
+    "customCss": ""
+  }
+}
+```
+
 ## Compose the header over a banner
 
 Add a banner using **Choose from Immich**, an upload, or a file drop. In Options → Appearance, change **Header layout** from **Below banner** to **Over banner**. Your logo, title, and description move together onto the image. Header alignment controls left or centered composition. Banner crop position controls the image's vertical focal point.

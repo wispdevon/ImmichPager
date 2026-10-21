@@ -1,5 +1,11 @@
 <script lang="ts">
   import { compileCustomCss, CUSTOM_CSS_LIMIT } from '$lib/custom-css';
+  import {
+    APPEARANCE_FILE_MAX_BYTES,
+    parseAppearanceFile,
+    serializeAppearanceFile,
+    type AppearanceSettings,
+  } from '$lib/appearance-file';
   import { labelDialog } from '$lib/actions/dialog-label';
   import {
     Modal,
@@ -38,6 +44,8 @@
     onSlugEdit: () => void;
   } = $props();
   let editUrl = $state(false);
+  let appearanceFileError = $state('');
+  let appearanceFileStatus = $state('');
   const cssValidation = $derived(
     compileCustomCss(fields.customCss, saved?.id ?? 'preview'),
   );
@@ -124,6 +132,59 @@
     const ids = [...fields.albumIds];
     [ids[index], ids[next]] = [ids[next], ids[index]];
     fields.albumIds = ids;
+  }
+  function currentAppearance(): AppearanceSettings {
+    return {
+      theme: fields.theme,
+      background: fields.background,
+      foreground: fields.foreground,
+      accent: fields.accent,
+      alignment: fields.alignment,
+      bannerPosition: fields.bannerPosition,
+      headerLayout: fields.headerLayout,
+      customCss: fields.customCss,
+    };
+  }
+  function exportAppearance() {
+    appearanceFileError = '';
+    appearanceFileStatus = '';
+    try {
+      const file = new Blob([serializeAppearanceFile(currentAppearance())], {
+        type: 'application/json;charset=utf-8',
+      });
+      const url = URL.createObjectURL(file);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'immichpager-appearance.json';
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      appearanceFileStatus = 'Appearance file downloaded.';
+    } catch (cause) {
+      appearanceFileError =
+        cause instanceof Error ? cause.message : 'Could not export appearance.';
+    }
+  }
+  async function importAppearance(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    appearanceFileError = '';
+    appearanceFileStatus = '';
+    try {
+      if (file.size > APPEARANCE_FILE_MAX_BYTES)
+        throw new Error('This appearance file is too large.');
+      const imported = parseAppearanceFile(await file.text());
+      Object.assign(fields, imported);
+      appearanceFileStatus =
+        'Appearance imported into this private draft. Publish when you are ready to share it.';
+    } catch (cause) {
+      appearanceFileError =
+        cause instanceof Error ? cause.message : 'Could not import appearance.';
+    } finally {
+      input.value = '';
+    }
   }
 </script>
 
@@ -230,6 +291,41 @@
               fields.foreground = null;
             }}>Reset colors</Button
           >
+        </details>
+        <details class="appearance-file">
+          <summary>Import or export appearance</summary>
+          <p class="hint">
+            Move visual settings between pages. Files contain colors, layout,
+            banner crop, and custom CSS; they do not contain page content or
+            branding images.
+          </p>
+          <Button variant="ghost" onclick={exportAppearance} disabled={busy}
+            >Export appearance JSON</Button
+          >
+          <label for="appearance-file">Import appearance JSON</label>
+          <input
+            id="appearance-file"
+            type="file"
+            accept="application/json,.json"
+            aria-describedby="appearance-file-help appearance-file-status"
+            onchange={importAppearance}
+            disabled={busy}
+          />
+          <small id="appearance-file-help">
+            Choose an ImmichPager appearance file up to 96 KiB. Imported
+            settings autosave privately; this does not publish the page.
+          </small>
+          <p
+            id="appearance-file-status"
+            class:error={!!appearanceFileError}
+            role={appearanceFileError
+              ? 'alert'
+              : appearanceFileStatus
+                ? 'status'
+                : undefined}
+          >
+            {appearanceFileError || appearanceFileStatus}
+          </p>
         </details>
       </section>
       <section>
@@ -421,6 +517,20 @@
 <style>
   .advanced-css summary {
     cursor: pointer;
+  }
+  .appearance-file[open] {
+    display: grid;
+    gap: 12px;
+  }
+  .appearance-file p {
+    margin: 0;
+  }
+  .appearance-file #appearance-file-status.error {
+    color: #ffb4ab;
+  }
+  .appearance-file input[type='file'] {
+    max-width: 100%;
+    font-size: 13px;
   }
   .css-editor {
     width: 100%;
