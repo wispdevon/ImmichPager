@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { Textarea } from '@immich/ui';
   import { compileCustomCss, stylesheetMarkup } from '$lib/custom-css';
   import type { GalleryPage } from '$lib/contracts';
@@ -19,6 +20,7 @@
     onDescriptionInput?: (value: string) => void;
   } = $props();
   let failed = $state<string[]>([]);
+  let galleryRoot = $state<HTMLDivElement | null>(null);
   let editing = $state<'title' | 'description' | null>(null);
   let titleInput = $state<HTMLTextAreaElement | null>(null);
   let descriptionInput = $state<HTMLTextAreaElement | null>(null);
@@ -49,6 +51,23 @@
     compileCustomCss(editorHeader ? '' : (page.customCss ?? ''), page.id),
   );
   const overlay = $derived(page.headerLayout === 'overlay' && !!page.banner);
+
+  function markCoverFailed(albumId: string) {
+    if (!failed.includes(albumId)) failed = [...failed, albumId];
+  }
+
+  onMount(() => {
+    const failedImageIds = Array.from(
+      galleryRoot?.querySelectorAll<HTMLImageElement>(
+        '.ip-album img[data-album-id]',
+      ) ?? [],
+    )
+      .filter((image) => image.complete && image.naturalWidth === 0)
+      .map((image) => image.dataset.albumId)
+      .filter((albumId): albumId is string => !!albumId);
+    if (failedImageIds.length)
+      failed = [...new Set([...failed, ...failedImageIds])];
+  });
 
   function editField(field: 'title' | 'description') {
     if (!editDisabled) editing = field;
@@ -110,6 +129,7 @@
   {@html stylesheetMarkup(styling.css)}
   <div
     class="gallery ip-gallery"
+    bind:this={galleryRoot}
     class:header-editor={editorHeader}
     data-pager-gallery={page.id}
     class:overlay
@@ -226,167 +246,172 @@
     </div>
     {#if !editorHeader}
       <main class="albums ip-albums" aria-label="Albums">
-      {#if page.albums.length === 0}<div class="empty">
-          <h2>No albums yet</h2>
-          <p>The next chapter is on its way.</p>
-        </div>
-      {:else}
-        <div
-          class="browse-controls ip-browse-controls"
-          role="search"
-          aria-label="Filter albums and jump to a year"
-          aria-controls={resultsId}
-        >
-          <label class="search-control" for={`ip-album-search-${page.id}`}>
-            Album name
-            <input
-              id={`ip-album-search-${page.id}`}
-              type="search"
-              autocomplete="off"
-              value={searchTerm}
-              oninput={updateSearch}
-            />
-          </label>
-          <label for={`ip-album-month-${page.id}`}>
-            Month
-            <select
-              id={`ip-album-month-${page.id}`}
-              value={selectedMonth}
-              onchange={updateMonth}
-            >
-              <option value="">All months</option>
-              {#each months as month (month.value)}
-                <option value={month.value}>{month.label}</option>
-              {/each}
-            </select>
-          </label>
-          {#if visibleGroups.length > 1}
-            <label for={`ip-album-year-${page.id}`}>
-              Jump to year
+        {#if page.albums.length === 0}<div class="empty">
+            <h2>No albums yet</h2>
+            <p>The next chapter is on its way.</p>
+          </div>
+        {:else}
+          <div
+            class="browse-controls ip-browse-controls"
+            role="search"
+            aria-label="Filter albums and jump to a year"
+            aria-controls={resultsId}
+          >
+            <label class="search-control" for={`ip-album-search-${page.id}`}>
+              Album name
+              <input
+                id={`ip-album-search-${page.id}`}
+                type="search"
+                autocomplete="off"
+                value={searchTerm}
+                oninput={updateSearch}
+              />
+            </label>
+            <label for={`ip-album-month-${page.id}`}>
+              Month
               <select
-                id={`ip-album-year-${page.id}`}
-                value={selectedYear}
-                onchange={updateYear}
+                id={`ip-album-month-${page.id}`}
+                value={selectedMonth}
+                onchange={updateMonth}
               >
-                <option value="">Choose</option>
-                {#each visibleGroups as [year] (year)}
-                  <option value={year.toLowerCase()}>{year}</option>
+                <option value="">All months</option>
+                {#each months as month (month.value)}
+                  <option value={month.value}>{month.label}</option>
                 {/each}
               </select>
             </label>
-          {/if}
-          {#if hasActiveFilters && visibleAlbumCount > 0}
-            <button class="clear-filters" type="button" onclick={clearFilters}
-              >Clear filters</button
-            >
-          {/if}
-        </div>
-        <div class="browse-summary">
-          <p>
-            {#if hasActiveFilters}
-              {visibleAlbumCount} of {page.albums.length} albums
-            {:else}
-              {page.albums.length} albums
+            {#if visibleGroups.length > 1}
+              <label for={`ip-album-year-${page.id}`}>
+                Jump to year
+                <select
+                  id={`ip-album-year-${page.id}`}
+                  value={selectedYear}
+                  onchange={updateYear}
+                >
+                  <option value="">Choose</option>
+                  {#each visibleGroups as [year] (year)}
+                    <option value={year.toLowerCase()}>{year}</option>
+                  {/each}
+                </select>
+              </label>
             {/if}
-          </p>
-        </div>
-        <div id={resultsId} class="album-results">
-          {#if visibleGroups.length === 0}
-            <div class="empty filter-empty">
-              <h2>No matching albums</h2>
-              <p>Try a different album name or month.</p>
+            {#if hasActiveFilters && visibleAlbumCount > 0}
               <button class="clear-filters" type="button" onclick={clearFilters}
                 >Clear filters</button
               >
-            </div>
-          {:else}
-            {#each visibleGroups as [year, albums], groupIndex (year)}
-              <details
-                id={`ip-year-${year.toLowerCase()}`}
-                class="ip-year-group"
-                open
-              >
-                <summary class="ip-year-heading">
-                  <span class="chevron" aria-hidden="true">›</span>
-                  <span class="year-title">{year}</span>
-                  <span class="group-count"
-                    >({albums.length}
-                    {albums.length === 1 ? 'Album' : 'Albums'})</span
-                  >
-                </summary>
-                <ul
-                  class="album-grid ip-album-grid"
-                  aria-label={`${year} albums`}
-                  role="list"
+            {/if}
+          </div>
+          <div class="browse-summary">
+            <p>
+              {#if hasActiveFilters}
+                {visibleAlbumCount} of {page.albums.length} albums
+              {:else}
+                {page.albums.length} albums
+              {/if}
+            </p>
+          </div>
+          <div id={resultsId} class="album-results">
+            {#if visibleGroups.length === 0}
+              <div class="empty filter-empty">
+                <h2>No matching albums</h2>
+                <p>Try a different album name or month.</p>
+                <button
+                  class="clear-filters"
+                  type="button"
+                  onclick={clearFilters}>Clear filters</button
                 >
-                  {#each albums as album, index (album.id)}
-                    <li class="album-list-item">
-                      <a
-                        class="album ip-album"
-                        href={preview ? undefined : album.href || undefined}
-                        aria-disabled={!album.available || preview}
-                        tabindex={preview || !album.available ? -1 : 0}
-                      >
-                        <div class="cover ip-cover">
-                          {#if album.cover && !failed.includes(album.id)}
-                            <img
-                              src={album.cover}
-                              alt=""
-                              width="400"
-                              height="400"
-                              loading={groupIndex === 0 && index < 4
-                                ? 'eager'
-                                : 'lazy'}
-                              fetchpriority={!page.banner &&
-                              groupIndex === 0 &&
-                              index === 0
-                                ? 'high'
-                                : undefined}
-                              onerror={() => (failed = [...failed, album.id])}
-                            />
-                          {:else}<span class="placeholder" aria-hidden="true"
-                              >▧</span
-                            >{/if}
-                        </div>
-                        <div class="album-info ip-album-info">
-                          <h3 title={album.name}>{album.name}</h3>
-                          {#if dateRange(album.startDate, album.endDate)}<p>
-                              {dateRange(album.startDate, album.endDate)}
-                            </p>{/if}
-                          <p>
-                            {album.available
-                              ? `${album.count.toLocaleString('en')} items`
-                              : 'Currently unavailable'}{#if album.available}<span
-                                class="shared"
-                              >
-                                · Shared</span
+              </div>
+            {:else}
+              {#each visibleGroups as [year, albums], groupIndex (year)}
+                <details
+                  id={`ip-year-${year.toLowerCase()}`}
+                  class="ip-year-group"
+                  open
+                >
+                  <summary class="ip-year-heading">
+                    <span class="chevron" aria-hidden="true">›</span>
+                    <span class="year-title">{year}</span>
+                    <span class="group-count"
+                      >({albums.length}
+                      {albums.length === 1 ? 'Album' : 'Albums'})</span
+                    >
+                  </summary>
+                  <ul
+                    class="album-grid ip-album-grid"
+                    aria-label={`${year} albums`}
+                    role="list"
+                  >
+                    {#each albums as album, index (album.id)}
+                      <li class="album-list-item">
+                        <a
+                          class="album ip-album"
+                          href={preview ? undefined : album.href || undefined}
+                          aria-disabled={!album.available || preview}
+                          tabindex={preview || !album.available ? -1 : 0}
+                        >
+                          <div class="cover ip-cover">
+                            {#if album.cover && !failed.includes(album.id)}
+                              <img
+                                src={album.cover}
+                                alt=""
+                                data-album-id={album.id}
+                                width="400"
+                                height="400"
+                                loading={groupIndex === 0 && index < 4
+                                  ? 'eager'
+                                  : 'lazy'}
+                                fetchpriority={!page.banner &&
+                                groupIndex === 0 &&
+                                index === 0
+                                  ? 'high'
+                                  : undefined}
+                                onerror={() => markCoverFailed(album.id)}
+                              />
+                            {:else}<span class="placeholder" aria-hidden="true"
+                                >▧</span
                               >{/if}
-                          </p>
-                        </div>
-                      </a>
-                    </li>
-                  {/each}
-                </ul>
-              </details>
-            {/each}
-          {/if}
-        </div>
-        <span class="visually-hidden" role="status">{resultsAnnouncement}</span>
-      {/if}
-    </main>
+                          </div>
+                          <div class="album-info ip-album-info">
+                            <h3 title={album.name}>{album.name}</h3>
+                            {#if dateRange(album.startDate, album.endDate)}<p>
+                                {dateRange(album.startDate, album.endDate)}
+                              </p>{/if}
+                            <p>
+                              {album.available
+                                ? `${album.count.toLocaleString('en')} items`
+                                : 'Currently unavailable'}{#if album.available}<span
+                                  class="shared"
+                                >
+                                  · Shared</span
+                                >{/if}
+                            </p>
+                          </div>
+                        </a>
+                      </li>
+                    {/each}
+                  </ul>
+                </details>
+              {/each}
+            {/if}
+          </div>
+          <span class="visually-hidden" role="status"
+            >{resultsAnnouncement}</span
+          >
+        {/if}
+      </main>
       <footer class="ip-footer">
-      <a
-        href="https://gitlab.com/wispd/ImmichPager"
-        target="_blank"
-        rel="noreferrer">ImmichPager</a
-      >
-      ·
-      <a
-        href="https://gitlab.com/wispd/ImmichPager/-/blob/main/LICENSE"
-        target="_blank"
-        rel="noreferrer">Source & license</a
-      >
-    </footer>
+        <a
+          href="https://gitlab.com/wispd/ImmichPager"
+          target="_blank"
+          rel="noreferrer">ImmichPager</a
+        >
+        ·
+        <a
+          href="https://gitlab.com/wispd/ImmichPager/-/blob/main/LICENSE"
+          target="_blank"
+          rel="noreferrer">Source & license</a
+        >
+      </footer>
     {/if}
   </div>
 </div>

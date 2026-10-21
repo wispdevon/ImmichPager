@@ -1,15 +1,6 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { setHeaderText } from './header-editor';
-
-async function confirmPublication(page: Page, label: string) {
-  await page.getByRole('button', { name: label, exact: true }).click();
-  const review = page.getByRole('dialog', {
-    name: 'Review publication',
-    exact: true,
-  });
-  await expect(review).toBeVisible();
-  await review.getByRole('button', { name: label, exact: true }).click();
-}
+import { confirmPublication } from './publication-helper';
 
 test('banner composition and scoped CSS autosave privately, preview and publish', async ({
   page,
@@ -141,7 +132,10 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
     'font-size',
     '19px',
   );
-  await expect(gallery.locator('.ip-header')).toHaveCSS('padding-bottom', '44px');
+  await expect(gallery.locator('.ip-header')).toHaveCSS(
+    'padding-bottom',
+    '44px',
+  );
   await expect(gallery.locator('.ip-logo')).toBeVisible();
   await expect(gallery.locator('.ip-logo')).toHaveCSS('width', '88px');
   await expect(gallery.locator('.ip-description')).toHaveText(
@@ -293,7 +287,10 @@ test('header presets stay per-page and private until publication', async ({
   await expect(gallery.locator('.ip-gallery')).toHaveClass(/overlay/);
   await expect(gallery.locator('.ip-gallery')).toHaveClass(/header-tall/);
   await expect(gallery.locator('.ip-header')).toHaveClass(/centered/);
-  await expect(gallery.locator('.ip-gallery')).toHaveCSS('--logo-size', '112px');
+  await expect(gallery.locator('.ip-gallery')).toHaveCSS(
+    '--logo-size',
+    '112px',
+  );
   await expect(gallery.locator('.ip-logo')).toHaveCSS('width', '112px');
   await expect(gallery.locator('.ip-gallery')).toHaveCSS(
     '--title-max-size',
@@ -308,7 +305,10 @@ test('header presets stay per-page and private until publication', async ({
     '3.5rem',
   );
   await expect(gallery.locator('.ip-gallery')).toHaveClass(/light/);
-  await expect(gallery.locator('.ip-gallery')).toHaveCSS('--custom-bg', '#112233');
+  await expect(gallery.locator('.ip-gallery')).toHaveCSS(
+    '--custom-bg',
+    '#112233',
+  );
   await expect(gallery.locator('.ip-title')).toHaveText('Client story');
   await expect(gallery.locator('.ip-description')).toHaveText(
     'A page description that stays as written.',
@@ -420,8 +420,7 @@ test('long header text, missing images, themes, and keyboard controls stay usabl
   const record = await created.json();
   await page.route(
     `**/page/media/${record.id}/album/${albums[0].id}*`,
-    (route) =>
-    route.fulfill({ status: 404, body: 'Cover unavailable' }),
+    (route) => route.abort(),
   );
   await page.goto(`/page/manage/${record.id}`);
 
@@ -459,15 +458,18 @@ test('long header text, missing images, themes, and keyboard controls stay usabl
       .evaluate((documentRoot) => documentRoot.scrollWidth <= innerWidth),
   ).toBe(true);
 
-  await page.keyboard.press('Tab');
   const back = page.getByRole('button', { name: 'Back to editor' });
+  for (let step = 0; step < 3; step++) await page.keyboard.press('Shift+Tab');
   await expect(back).toBeFocused();
   await page.keyboard.press('Enter');
   const options = page.getByRole('button', { name: 'Options', exact: true });
   await options.focus();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('dialog', { name: 'Options' })).toBeVisible();
-  const appearance = page.getByLabel('Appearance');
+  const appearance = page.getByRole('button', {
+    name: 'Appearance',
+    exact: true,
+  });
   await appearance.press('Enter');
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
