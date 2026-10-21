@@ -27,6 +27,9 @@ export const pageInputSchema = z
     accent: color.default('#accbfa'),
     alignment: z.enum(['left', 'center']).default('left'),
     headerLayout: z.enum(['below', 'overlay']).default('below'),
+    titleSize: z.number().min(1.5).max(4).default(3),
+    descriptionSize: z.number().min(0.875).max(1.5).default(1.125),
+    headerSpacing: z.number().min(1.5).max(5).default(2.5),
     customCss: z.string().max(20_000).default(''),
     bannerPosition: z.number().int().min(0).max(100).default(50),
     albumIds: z
@@ -95,6 +98,9 @@ export type GalleryPage = Pick<
   | 'alignment'
   | 'bannerPosition'
   | 'headerLayout'
+  | 'titleSize'
+  | 'descriptionSize'
+  | 'headerSpacing'
   | 'customCss'
   | 'order'
 > & {
@@ -148,6 +154,25 @@ export type Photo = {
 /** Additive JSON settings: old records keep their original appearance. */
 export function appearanceDefaults<T extends object>(
   record: T,
-): T & { headerLayout: 'below' | 'overlay'; customCss: string } {
-  return { headerLayout: 'below', customCss: '', ...record };
+): T & {
+  headerLayout: 'below' | 'overlay';
+  titleSize: number;
+  descriptionSize: number;
+  headerSpacing: number;
+  customCss: string;
+} {
+  return {
+    headerLayout: 'below',
+    titleSize: 3,
+    descriptionSize: 1.125,
+    headerSpacing: 2.5,
+    customCss: '',
+    ...record,
+  } as T & {
+    headerLayout: 'below' | 'overlay';
+    titleSize: number;
+    descriptionSize: number;
+    headerSpacing: number;
+    customCss: string;
+  };
 }

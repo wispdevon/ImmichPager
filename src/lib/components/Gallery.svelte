@@ -21,6 +21,12 @@
     style:--custom-bg={page.background || undefined}
     style:--custom-fg={page.foreground || undefined}
     style:--accent={page.accent}
+    style:--title-min-size={`${Math.min(1.875, page.titleSize * 0.625)}rem`}
+    style:--title-fluid-size={`${(3.4 / 3) * page.titleSize}vw`}
+    style:--title-max-size={`${page.titleSize}rem`}
+    style:--description-size={`${page.descriptionSize}rem`}
+    style:--header-spacing={`${page.headerSpacing}rem`}
+    style:--mobile-header-spacing={`${Math.max(1.5, page.headerSpacing * 0.8)}rem`}
   >
     <div class="hero ip-hero">
       {#if page.banner}<div class="banner ip-banner">
@@ -187,7 +193,7 @@
     object-fit: cover;
   }
   header {
-    padding: 52px 40px 40px;
+    padding: calc(var(--header-spacing) + 0.75rem) 40px var(--header-spacing);
     max-width: 1600px;
     margin: auto;
   }
@@ -200,7 +206,11 @@
     display: inline-block;
   }
   h1 {
-    font-size: clamp(30px, 3.4vw, 48px);
+    font-size: clamp(
+      var(--title-min-size),
+      var(--title-fluid-size),
+      var(--title-max-size)
+    );
     line-height: 1.15;
     font-weight: 650;
     letter-spacing: -1.3px;
@@ -208,7 +218,7 @@
     overflow-wrap: anywhere;
   }
   .description {
-    font-size: 18px;
+    font-size: var(--description-size);
     opacity: 0.72;
     max-width: 720px;
     white-space: pre-line;
@@ -325,7 +335,7 @@
   }
   @media (max-width: 600px) {
     header {
-      padding: 32px 20px;
+      padding: var(--mobile-header-spacing) 20px;
     }
     .albums {
       padding-inline: 8px;
