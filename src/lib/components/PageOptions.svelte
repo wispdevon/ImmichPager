@@ -500,7 +500,7 @@
     border-radius: 8px;
     background: #171c24;
     cursor: grab;
-    touch-action: none;
+    touch-action: pan-x pinch-zoom;
     -webkit-user-select: none;
     user-select: none;
   }
