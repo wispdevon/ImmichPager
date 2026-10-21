@@ -152,7 +152,7 @@ Report vulnerabilities privately according to [SECURITY.md](SECURITY.md). Never 
 
 ## Roadmap
 
-See the [ImmichPager roadmap](TODO.md) for released features, work on `dev`, and planned priorities.
+See the [ImmichPager roadmap](TODO.md) for released features, work on `dev`, and planned priorities. Proposed feature branches and verification are listed in the [pull request review index](tasks/review.md).
 
 ## Related projects and acknowledgments
 

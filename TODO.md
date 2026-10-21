@@ -8,11 +8,11 @@ Use the IDs below when discussing work or opening a feature branch and pull requ
 
 - **Released** means available in the stable `v0.1.0` release.
 - **Implemented on dev** means present on `dev`, but not part of the stable release.
-- **Planned** means not implemented yet.
+- **Planned** means not yet merged into `dev`. Proposed implementations awaiting approval are listed in the [pull request review index](tasks/review.md).
 - **Deferred** means a separate product decision is needed before scheduling the work.
 - **P1** is the current focus, **P2** follows it, and **P3** is later. Priorities do not imply dates.
 
-## Already available — released
+## Already available — stable (released)
 
 ### REL-01 — Persistent client pages
 

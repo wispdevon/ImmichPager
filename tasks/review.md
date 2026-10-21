@@ -1,0 +1,41 @@
+# Roadmap pull request review index
+
+The roadmap is in [TODO.md](../TODO.md). These changes are proposed for `dev`; an open pull request is not a release or an approved merge. `main` and the live deployment have not been changed. All appearance customization remains per page.
+
+## Ready for review
+
+| Roadmap ID | Pull request                                          | What it does for you                                                                                         |
+| ---------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| LTR-05     | [#1](https://github.com/wispdevon/ImmichPager/pull/1) | Runs repeatable API/sidebar compatibility checks and records what has actually been verified against Immich. |
+| LTR-03     | [#2](https://github.com/wispdevon/ImmichPager/pull/2) | Opens the actual published page from the editor and explains password prompts and private drafts.            |
+| VIS-02     | [#3](https://github.com/wispdevon/ImmichPager/pull/3) | Lets you drag the banner crop with mouse or touch while retaining the keyboard slider.                       |
+| VIS-06     | [#4](https://github.com/wispdevon/ImmichPager/pull/4) | Verifies customization edge cases and fixes long descriptions clipping on phones.                            |
+| LTR-06     | [#5](https://github.com/wispdevon/ImmichPager/pull/5) | Adds a fixture-only development Compose setup and starter-task guidance.                                     |
+| LTR-04     | [#6](https://github.com/wispdevon/ImmichPager/pull/6) | Prepares GitLab CI and protected manual multiarchitecture image publishing for the selected GitLab project.  |
+| LTR-01     | [#7](https://github.com/wispdevon/ImmichPager/pull/7) | Imports and exports validated appearance-only JSON without content or share capabilities.                    |
+| VIS-01     | [#8](https://github.com/wispdevon/ImmichPager/pull/8) | Edits title and description directly in the composed gallery header using Immich controls.                   |
+
+| WRK-04 | [#9](https://github.com/wispdevon/ImmichPager/pull/9) | Finds shoots with album-name search, month filters, and year navigation. |
+| VIS-03 | [#10](https://github.com/wispdevon/ImmichPager/pull/10) | Controls banner height and logo size without writing CSS. |
+| WRK-06 | [#11](https://github.com/wispdevon/ImmichPager/pull/11) | Reviews album and appearance changes before explicit publication, rejecting stale reviews. |
+| VIS-05 | [#12](https://github.com/wispdevon/ImmichPager/pull/12) | Checks desktop, tablet, and phone layouts using the real gallery renderer and viewport. |
+| WRK-01 | [#13](https://github.com/wispdevon/ImmichPager/pull/13) | Copies a design and branding into a private draft without albums, passwords, or shares. |
+| WRK-05 | [#14](https://github.com/wispdevon/ImmichPager/pull/14) | Sorts recently added albums, shows inclusion clearly, and selects visible albums in bulk within the 500-album limit. |
+| WRK-03 | [#15](https://github.com/wispdevon/ImmichPager/pull/15) | Reorders albums by dragging within year groups while retaining keyboard controls. |
+| VIS-04 | [#16](https://github.com/wispdevon/ImmichPager/pull/16) | Adjusts title size, description size, and header spacing while keeping Google Sans. |
+| LTR-02 | [#17](https://github.com/wispdevon/ImmichPager/pull/17) | Recognizes pages through safe branding thumbnails and filters drafts, published pages, changes, and synchronization states. |
+| WRK-02 | [#18](https://github.com/wispdevon/ImmichPager/pull/18) | Applies Classic, Centered, or Editorial header compositions to one private draft while preserving content and sharing. |
+
+All 18 planned roadmap items have a proposed feature PR. PR #18 includes its #10/#16 dependency commits; approve those controls before the preset PR. Review each feature independently before approving the integrated merge candidate.
+
+## Verification and limits
+
+Every feature PR records its own Node 22.23.3 / pnpm 11.28.5 checks, domain tests, build, and browser evidence. Browser tests use the isolated synthetic/NASA fixture library; no real client albums are published. The in-app browser connection was unavailable, so the repository's Playwright/Chromium workflow provides runtime checks.
+
+The local environment cannot access its Docker daemon. Compose configuration is validated, but the development container startup and distribution Docker smoke remain unverified. GitLab static CI lint passes; actual hosted pipelines, registry publishing, and repository cutover have not been run. The destination is [gitlab.com/wispd/ImmichPager](https://gitlab.com/wispd/ImmichPager), with registry `registry.gitlab.com/wispd/immichpager`.
+
+## Merge and release discipline
+
+Some PRs touch the same editor, gallery renderer, appearance contract, or tests. Resolve overlaps in a review branch and run combined checks before merging the series. Header controls must be included when reviewing presets, design duplication, portable appearance files, and publication appearance summaries. A local integration branch is being used to check these interactions; it does not update `dev`.
+
+Do not mark roadmap entries “Implemented on dev” until their PRs are merged, and do not mark them “Released” until release verification and publication are complete. Deferred product ideas remain deferred.
