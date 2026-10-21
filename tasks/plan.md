@@ -33,9 +33,9 @@ The user selected <https://gitlab.com/wispd/ImmichPager>. Prepare GitLab CI and 
 
 All roadmap items are tracked in `TODO.md`; PR links and final verification evidence will be added to a separate review index as agents finish. External service limitations or inaccessible live Immich verification must be recorded explicitly.
 
-## Queued goal: Immich UI and UX parity
+## Active goal: Immich UI and UX parity
 
-The user explicitly requested a further goal: make ImmichPager match Immich's UI and UX as closely as practical, study Immich's actual interface, take screenshots, and apply the findings. Begin read-only source/reference research while the roadmap integration verification finishes; activate this as the next goal after the existing PR-preparation goal is completed.
+The user explicitly requested a further goal: make ImmichPager match Immich's UI and UX as closely as practical, study Immich's actual interface, take screenshots, and apply the findings. The roadmap PR-preparation goal is complete: 18 feature PRs and verified draft integration PR #19 are ready for review. This UI/UX goal is now active; source and screenshot research began during the final integration checks.
 
 Capture versioned reference evidence for Immich's albums, page/album creation and inline editing, selection, ordering, options, sharing/password controls, navigation, empty/error/loading states, keyboard behavior, and responsive layouts. Compare equivalent Pager states, record visible differences and interaction findings, then implement the relevant changes in reviewable branches/PRs to `dev`. Preserve per-page customization, private drafts, explicit publishing, owner checks, `/page/` isolation, and native Immich viewer behavior. Use fixture/synthetic content for committed evidence; never commit client photos or credentials. Keep `main` and the live deployment unchanged pending approval.
 
