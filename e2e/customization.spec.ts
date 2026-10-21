@@ -271,3 +271,113 @@ test('CSS cannot style editor siblings, escape paint containment, or inject HTML
   );
   expect(errors).toEqual([]);
 });
+
+test('header composition presets autosave to a private draft without changing the live page', async ({
+  page,
+  browser,
+}) => {
+  await page.goto('/dev-login/alice');
+  const headers = { origin: 'http://127.0.0.1:3200' };
+  const albums = await (await page.request.get('/page/api/albums')).json();
+  const created = await page.request.post('/page/api/pages', {
+    headers,
+    data: {
+      title: 'Client story',
+      slug: 'header-preset-private',
+      description: 'A page description that stays as written.',
+      theme: 'light',
+      background: '#112233',
+      foreground: '#f0f0f0',
+      accent: '#123abc',
+      bannerPosition: 22,
+      customCss: ':scope { --pager-accent: #ff6633; }',
+      albumIds: [albums[0].id],
+      order: 'manual',
+    },
+  });
+  expect(created.ok()).toBe(true);
+  const record = await created.json();
+  await page.goto(`/page/manage/${record.id}`);
+  await page
+    .getByLabel('Banner', { exact: true })
+    .setInputFiles('fixtures/photos/earthrise.webp');
+  await expect(page.getByAltText('Banner preview')).toBeVisible();
+  await page
+    .getByLabel('Logo', { exact: true })
+    .setInputFiles('fixtures/photos/earthrise.webp');
+  await expect(page.getByAltText('Logo preview')).toBeVisible();
+  await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
+  await page.getByRole('button', { name: 'Publish page', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Page published');
+
+  const liveContext = await browser.newContext();
+  const live = await liveContext.newPage();
+  await live.goto('/page/header-preset-private');
+  await expect(live.locator('.ip-gallery')).not.toHaveClass(/overlay/);
+  await expect(live.locator('.ip-gallery')).not.toHaveClass(/header-tall/);
+  await expect(live.locator('.ip-gallery')).toHaveCSS(
+    '--title-max-size',
+    '3rem',
+  );
+  await expect(live.locator('.ip-logo')).toHaveCSS('width', '80px');
+
+  await page.getByRole('button', { name: 'Options', exact: true }).click();
+  await page.screenshot({
+    path: 'test-results/header-presets-options.png',
+    fullPage: false,
+  });
+  await page.getByRole('button', { name: /^Editorial/ }).click();
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
+  await page.reload();
+  await page.getByRole('button', { name: 'Preview', exact: true }).click();
+
+  await expect(page.locator('.ip-gallery')).toHaveClass(/overlay/);
+  await expect(page.locator('.ip-gallery')).toHaveClass(/header-tall/);
+  await expect(page.locator('.ip-header')).toHaveClass(/centered/);
+  await expect(page.locator('.ip-gallery')).toHaveCSS('--logo-size', '112px');
+  await expect(page.locator('.ip-logo')).toHaveCSS('width', '112px');
+  await expect(page.locator('.ip-gallery')).toHaveCSS(
+    '--title-max-size',
+    '3.5rem',
+  );
+  await expect(page.locator('.ip-gallery')).toHaveCSS(
+    '--description-size',
+    '1.25rem',
+  );
+  await expect(page.locator('.ip-gallery')).toHaveCSS(
+    '--header-spacing',
+    '3.5rem',
+  );
+  await expect(page.locator('.ip-gallery')).toHaveClass(/light/);
+  await expect(page.locator('.ip-gallery')).toHaveCSS('--custom-bg', '#112233');
+  await expect(page.locator('.ip-title')).toHaveText('Client story');
+  await expect(page.locator('.ip-description')).toHaveText(
+    'A page description that stays as written.',
+  );
+  await expect(page.locator('.ip-album')).toHaveCount(1);
+  expect(
+    await page
+      .locator('.ip-banner img')
+      .evaluate((image) => getComputedStyle(image).objectPosition),
+  ).toBe('50% 22%');
+  await expect(page.locator('.ip-gallery')).toHaveCSS(
+    '--pager-accent',
+    '#ff6633',
+  );
+  await page.screenshot({
+    path: 'test-results/header-preset-preview.png',
+    fullPage: false,
+  });
+
+  await live.reload();
+  await expect(live.locator('.ip-gallery')).not.toHaveClass(/overlay/);
+  await expect(live.locator('.ip-gallery')).not.toHaveClass(/header-tall/);
+  await expect(live.locator('.ip-gallery')).toHaveCSS(
+    '--title-max-size',
+    '3rem',
+  );
+  await expect(live.locator('.ip-logo')).toHaveCSS('width', '80px');
+  await liveContext.close();
+  await page.request.delete(`/page/api/pages/${record.id}`, { headers });
+});

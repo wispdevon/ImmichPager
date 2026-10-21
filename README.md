@@ -68,7 +68,7 @@ Start with **Add a title**, **Add a description**, and **Select albums**. Brandi
 
 ## Gallery customization (dev)
 
-Choose **Below banner** or **Over banner** to compose your logo, title, and description. Set a compact, standard, or tall banner; tune logo size, title and description sizes, and header spacing per page while keeping Google Sans as the default. Advanced per-page CSS supports further typography, cover corners, responsive spacing, and theme variables. Changes remain private until published. See the [customization guide and CSS examples](docs/customization.md). These additions are on `dev`; `main` and the current live deployment retain the existing UI.
+Choose **Below banner** or **Over banner** to compose your logo, title, and description, or start with a Classic, Centered, or Editorial header preset. Set a compact, standard, or tall banner; tune logo size, title and description sizes, and header spacing per page while keeping Google Sans as the default. Advanced per-page CSS supports further typography, cover corners, responsive spacing, and theme variables. Changes remain private until published. See the [customization guide and CSS examples](docs/customization.md). These additions are on `dev`; `main` and the current live deployment retain the existing UI.
 
 ## Quick start
 
