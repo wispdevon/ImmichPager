@@ -150,80 +150,84 @@
           </p>{/if}
       </header>
     </div>
-    <main class="albums ip-albums" aria-label="Albums" hidden={editorHeader}>
-      {#each groups as [year, albums], groupIndex (year)}
-        <details class="ip-year-group" open>
-          <summary class="ip-year-heading"
-            ><span class="chevron" aria-hidden="true">›</span>
-            <h2>{year}</h2>
-            <span class="group-count"
-              >({albums.length}
-              {albums.length === 1 ? 'Album' : 'Albums'})</span
-            ></summary
-          >
-          <div class="album-grid ip-album-grid">
-            {#each albums as album, index (album.id)}
-              <a
-                class="album ip-album"
-                href={preview ? undefined : album.href || undefined}
-                aria-disabled={!album.available || preview}
-                tabindex={preview || !album.available ? -1 : 0}
-              >
-                <div class="cover ip-cover">
-                  {#if album.cover && !failed.includes(album.id)}
-                    <img
-                      src={album.cover}
-                      alt=""
-                      width="400"
-                      height="400"
-                      loading={groupIndex === 0 && index < 4 ? 'eager' : 'lazy'}
-                      fetchpriority={!page.banner &&
-                      groupIndex === 0 &&
-                      index === 0
-                        ? 'high'
-                        : undefined}
-                      onerror={() => (failed = [...failed, album.id])}
-                    />
-                  {:else}<span class="placeholder" aria-hidden="true">▧</span
-                    >{/if}
-                </div>
-                <div class="album-info ip-album-info">
-                  <h3 title={album.name}>{album.name}</h3>
-                  {#if dateRange(album.startDate, album.endDate)}<p>
-                      {dateRange(album.startDate, album.endDate)}
-                    </p>{/if}
-                  <p>
-                    {album.available
-                      ? `${album.count.toLocaleString('en')} items`
-                      : 'Currently unavailable'}{#if album.available}<span
-                        class="shared"
-                      >
-                        · Shared</span
+    {#if !editorHeader}
+      <main class="albums ip-albums" aria-label="Albums">
+        {#each groups as [year, albums], groupIndex (year)}
+          <details class="ip-year-group" open>
+            <summary class="ip-year-heading"
+              ><span class="chevron" aria-hidden="true">›</span>
+              <h2>{year}</h2>
+              <span class="group-count"
+                >({albums.length}
+                {albums.length === 1 ? 'Album' : 'Albums'})</span
+              ></summary
+            >
+            <div class="album-grid ip-album-grid">
+              {#each albums as album, index (album.id)}
+                <a
+                  class="album ip-album"
+                  href={preview ? undefined : album.href || undefined}
+                  aria-disabled={!album.available || preview}
+                  tabindex={preview || !album.available ? -1 : 0}
+                >
+                  <div class="cover ip-cover">
+                    {#if album.cover && !failed.includes(album.id)}
+                      <img
+                        src={album.cover}
+                        alt=""
+                        width="400"
+                        height="400"
+                        loading={groupIndex === 0 && index < 4
+                          ? 'eager'
+                          : 'lazy'}
+                        fetchpriority={!page.banner &&
+                        groupIndex === 0 &&
+                        index === 0
+                          ? 'high'
+                          : undefined}
+                        onerror={() => (failed = [...failed, album.id])}
+                      />
+                    {:else}<span class="placeholder" aria-hidden="true">▧</span
                       >{/if}
-                  </p>
-                </div>
-              </a>
-            {/each}
-          </div>
-        </details>
-      {:else}<div class="empty">
-          <h2>No albums yet</h2>
-          <p>The next chapter is on its way.</p>
-        </div>{/each}
-    </main>
-    <footer class="ip-footer" hidden={editorHeader}>
-      <a
-        href="https://github.com/wispdevon/ImmichPager"
-        target="_blank"
-        rel="noreferrer">ImmichPager</a
-      >
-      ·
-      <a
-        href="https://github.com/wispdevon/ImmichPager/blob/main/LICENSE"
-        target="_blank"
-        rel="noreferrer">Source & license</a
-      >
-    </footer>
+                  </div>
+                  <div class="album-info ip-album-info">
+                    <h3 title={album.name}>{album.name}</h3>
+                    {#if dateRange(album.startDate, album.endDate)}<p>
+                        {dateRange(album.startDate, album.endDate)}
+                      </p>{/if}
+                    <p>
+                      {album.available
+                        ? `${album.count.toLocaleString('en')} items`
+                        : 'Currently unavailable'}{#if album.available}<span
+                          class="shared"
+                        >
+                          · Shared</span
+                        >{/if}
+                    </p>
+                  </div>
+                </a>
+              {/each}
+            </div>
+          </details>
+        {:else}<div class="empty">
+            <h2>No albums yet</h2>
+            <p>The next chapter is on its way.</p>
+          </div>{/each}
+      </main>
+      <footer class="ip-footer">
+        <a
+          href="https://github.com/wispdevon/ImmichPager"
+          target="_blank"
+          rel="noreferrer">ImmichPager</a
+        >
+        ·
+        <a
+          href="https://github.com/wispdevon/ImmichPager/blob/main/LICENSE"
+          target="_blank"
+          rel="noreferrer">Source & license</a
+        >
+      </footer>
+    {/if}
   </div>
 </div>
 
