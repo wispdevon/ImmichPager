@@ -1,13 +1,12 @@
 import type { GalleryAlbum, GalleryPage } from './contracts';
+import { albumYear } from './album-order';
 export function albumGroups(page: GalleryPage) {
   const groups = new Map<string, GalleryAlbum[]>();
   const albums = [...page.albums];
   if (page.order === 'newest')
     albums.sort((a, b) => (b.endDate || '').localeCompare(a.endDate || ''));
   for (const album of albums) {
-    const year = album.endDate
-      ? new Date(album.endDate).getUTCFullYear().toString()
-      : 'Undated';
+    const year = albumYear(album.endDate);
     const list = groups.get(year) ?? [];
     list.push(album);
     groups.set(year, list);
