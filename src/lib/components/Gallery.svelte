@@ -24,7 +24,7 @@
     style:--custom-fg={page.foreground || undefined}
     style:--accent={page.accent}
     style:--logo-size={`${page.logoSize}px`}
-    style:--title-min-size={`${Math.min(1.875, page.titleSize * 0.625)}rem`}
+    style:--title-min-size={`${page.titleSize * 0.625}rem`}
     style:--title-fluid-size={`${(3.4 / 3) * page.titleSize}vw`}
     style:--title-max-size={`${page.titleSize}rem`}
     style:--description-size={`${page.descriptionSize}rem`}

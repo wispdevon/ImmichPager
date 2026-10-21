@@ -81,12 +81,15 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
     descriptionSize: '18px',
   });
   expect(defaultTypography.titleFont).toContain('GoogleSans');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('.ip-title')).toHaveCSS('font-size', '30px');
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.getByRole('button', { name: 'Back to editor' }).click();
   await page.getByRole('button', { name: 'Options', exact: true }).click();
   await page.getByRole('button', { name: 'Header size', exact: true }).click();
   await page.getByRole('option', { name: 'Tall', exact: true }).click();
   await page.getByRole('slider', { name: 'Logo size' }).press('ArrowRight');
-  await page.getByRole('slider', { name: 'Title size' }).press('ArrowRight');
+  await page.getByRole('slider', { name: 'Title size' }).press('End');
   await page
     .getByRole('slider', { name: 'Description size' })
     .press('ArrowRight');
@@ -95,7 +98,7 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
     .press('ArrowRight');
   await page.getByText('Advanced · Custom CSS', { exact: true }).click();
   const source =
-    ':scope { --pager-accent: #ff6600; } .ip-title { color: rgb(240, 182, 127) !important; font-family: Georgia, serif; } .ip-cover { border-radius: 4px; } @media (max-width:600px) { .ip-title { font-size: 38px !important; } }';
+    ':scope { --pager-accent: #ff6600; } .ip-title { color: rgb(240, 182, 127) !important; font-family: Georgia, serif; } .ip-cover { border-radius: 4px; } @media (max-width:600px) { .ip-title { color: rgb(30, 200, 120) !important; } }';
   await page.getByLabel('Custom CSS', { exact: true }).fill(source);
   await expect(page.locator('#css-feedback')).toContainText('Use Preview');
   await page.screenshot({
@@ -119,7 +122,7 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
   await expect(page.locator('.ip-gallery')).toHaveClass(/header-tall/);
   await expect(page.locator('.ip-gallery')).toHaveCSS(
     '--title-max-size',
-    '3.125rem',
+    '4rem',
   );
   await expect(page.locator('.ip-description')).toHaveCSS('font-size', '19px');
   await expect(page.locator('.ip-header')).toHaveCSS('padding-bottom', '44px');
@@ -133,7 +136,11 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
     fullPage: false,
   });
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator('.ip-title')).toHaveCSS('font-size', '38px');
+  await expect(page.locator('.ip-title')).toHaveCSS('font-size', '40px');
+  await expect(page.locator('.ip-title')).toHaveCSS(
+    'color',
+    'rgb(30, 200, 120)',
+  );
   await expect(page.locator('.ip-header')).toHaveCSS(
     'padding-bottom',
     '35.2px',
@@ -169,7 +176,7 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
   await expect(client.locator('.ip-logo')).toHaveCSS('width', '88px');
   await expect(client.locator('.ip-gallery')).toHaveCSS(
     '--title-max-size',
-    '3.125rem',
+    '4rem',
   );
   await expect(client.locator('.ip-description')).toHaveCSS(
     'font-size',
