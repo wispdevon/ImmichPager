@@ -215,7 +215,8 @@
           </p>{/if}
       </header>
     </div>
-    <main class="albums ip-albums" aria-label="Albums" hidden={editorHeader}>
+    {#if !editorHeader}
+      <main class="albums ip-albums" aria-label="Albums">
       {#if page.albums.length === 0}<div class="empty">
           <h2>No albums yet</h2>
           <p>The next chapter is on its way.</p>
@@ -364,7 +365,7 @@
         <span class="visually-hidden" role="status">{resultsAnnouncement}</span>
       {/if}
     </main>
-    <footer class="ip-footer" hidden={editorHeader}>
+      <footer class="ip-footer">
       <a
         href="https://gitlab.com/wispd/ImmichPager"
         target="_blank"
@@ -377,6 +378,7 @@
         rel="noreferrer">Source & license</a
       >
     </footer>
+    {/if}
   </div>
 </div>
 

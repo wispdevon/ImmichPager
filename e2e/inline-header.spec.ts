@@ -6,6 +6,9 @@ test('edits the gallery header in place, autosaves privately, and publishes expl
 }) => {
   await page.goto('/dev-login/alice');
   await page.goto('/page/manage/new');
+  await expect(page.locator('.ip-albums, .ip-album, .ip-footer')).toHaveCount(
+    0,
+  );
 
   await page
     .getByRole('button', { name: 'Edit title, Add a title', exact: true })
