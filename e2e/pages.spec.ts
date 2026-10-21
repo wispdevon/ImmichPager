@@ -583,3 +583,247 @@ test('photo picker browses owned albums and favorites and clears selection when 
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page).toHaveURL(/\/manage\/new$/);
 });
+
+test('Pages owns the sidebar active state and restores native navigation and focus', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1506, height: 900 });
+  await page.goto('/dev-login/alice');
+  await page.goto('/albums');
+  const sidebar = page.locator('#sidebar');
+  await expect(sidebar).toBeVisible();
+  await expect(page.locator('#top-menu-button')).toBeHidden();
+  const albumLink = sidebar.locator('a[href="/albums"]');
+  await expect(albumLink).toHaveAttribute('aria-current', 'page');
+  await albumLink.focus();
+  await page.evaluate(() =>
+    history.pushState({ fixture: true }, '', '#native-history'),
+  );
+  await page.goBack();
+  await expect(page).toHaveURL(/\/albums$/);
+  await expect(albumLink).toBeFocused();
+
+  const pages = sidebar.locator('[data-pager-link]');
+  await pages.focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/albums#client-pages$/);
+  const frame = page.locator('iframe[title="Client pages"]');
+  await expect(frame).toBeVisible();
+  const activeLinks = sidebar.locator('a[aria-current="page"]');
+  await expect(activeLinks).toHaveCount(1);
+  await expect(activeLinks).toHaveAttribute('href', '/page/manage');
+  await expect(activeLinks).toHaveClass(/bg-primary\/10/);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.activeElement === document.querySelector('iframe'),
+      ),
+    )
+    .toBe(true);
+  await expect
+    .poll(() =>
+      page
+        .frameLocator('iframe[title="Client pages"]')
+        .locator('main')
+        .evaluate((main) => main.ownerDocument.activeElement === main),
+    )
+    .toBe(true);
+  await page.screenshot({
+    path: 'test-results/sidebar-pages-active-desktop.png',
+    fullPage: false,
+  });
+  await sidebar.evaluate((nav) => {
+    const items = [
+      ['/photos', 'Photos'],
+      ['/albums', 'Albums'],
+      ['/sharing', 'Sharing'],
+    ] as const;
+    nav.replaceChildren(
+      ...items.map(([href, label]) => {
+        const item = document.createElement('div');
+        item.dataset.navbarItem = '';
+        const row = document.createElement('div');
+        row.className = 'navbar-row';
+        const link = document.createElement('a');
+        link.setAttribute('href', href);
+        const active = location.pathname.startsWith(href);
+        if (active) {
+          link.setAttribute('aria-current', 'page');
+          link.classList.add('bg-primary/10', 'text-primary');
+        }
+        const text = document.createElement('span');
+        text.textContent = label;
+        link.append(text);
+        row.append(link);
+        item.append(row);
+        return item;
+      }),
+    );
+  });
+  await expect(sidebar.locator('[data-pager-row]')).toHaveCount(1);
+  await expect(sidebar.locator('[data-pager-link]')).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(sidebar.locator('a[aria-current="page"]')).toHaveCount(1);
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/albums$/);
+  await expect(frame).toHaveCount(0);
+  await expect(sidebar.locator('a[href="/albums"]')).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(sidebar.locator('a[aria-current="page"]')).toHaveCount(1);
+  await expect(pages).not.toHaveAttribute('aria-current', 'page');
+  await expect(pages).toBeFocused();
+
+  await page.goForward();
+  await expect(page).toHaveURL(/\/albums#client-pages$/);
+  await expect(frame).toBeVisible();
+  await expect(sidebar.locator('a[aria-current="page"]')).toHaveAttribute(
+    'href',
+    '/page/manage',
+  );
+  await sidebar.locator('a[href="/photos"]').click();
+  await expect(page).toHaveURL(/\/photos$/);
+  await expect(page.locator('iframe')).toHaveCount(0);
+  await expect(sidebar.locator('a[aria-current="page"]')).toHaveAttribute(
+    'href',
+    '/photos',
+  );
+});
+
+test('mobile sidebar active state and focus stay usable across history', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/dev-login/alice');
+  await page.goto('/sharing');
+  const sidebar = page.locator('#sidebar');
+  const menu = page.getByRole('button', { name: 'Main menu' });
+  await expect(menu).toBeVisible();
+  await expect(sidebar).toHaveAttribute('inert', '');
+  await expect(sidebar).toBeHidden();
+  await menu.focus();
+  await page.keyboard.press('Enter');
+  await expect(sidebar).toBeVisible();
+  await expect(sidebar).toHaveCSS('width', '256px');
+  await expect(sidebar).not.toHaveAttribute('inert', '');
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await expect(sidebar.locator('a[href="/photos"]')).toBeFocused();
+  await expect(sidebar.locator('a[href="/sharing"]')).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  const pages = sidebar.locator('[data-pager-link]');
+  await page.keyboard.press('Shift+Tab');
+  await expect(pages).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/sharing#client-pages$/);
+  await expect(sidebar).toHaveAttribute('inert', '');
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  const activeLinks = sidebar.locator('a[aria-current="page"]');
+  await expect(activeLinks).toHaveCount(1);
+  await expect(activeLinks).toHaveAttribute('href', '/page/manage');
+  const frame = page.locator('iframe[title="Client pages"]');
+  await expect(frame).toBeVisible();
+  await expect
+    .poll(() =>
+      page
+        .frameLocator('iframe[title="Client pages"]')
+        .locator('main')
+        .evaluate((main) => main.ownerDocument.activeElement === main),
+    )
+    .toBe(true);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/sharing$/);
+  await expect(page.locator('iframe')).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.activeElement === document.querySelector('main'),
+      ),
+    )
+    .toBe(true);
+  await expect(sidebar.locator('a[href="/sharing"]')).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(sidebar.locator('a[aria-current="page"]')).toHaveCount(1);
+  await menu.focus();
+  await page.keyboard.press('Enter');
+  await expect(sidebar).toBeVisible();
+  await expect(sidebar.locator('a[href="/sharing"]')).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(sidebar.locator('[data-pager-link]')).not.toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await menu.focus();
+  await page.keyboard.press('Enter');
+  await expect(sidebar).toHaveAttribute('inert', '');
+  await page.goForward();
+  await expect(page).toHaveURL(/\/sharing#client-pages$/);
+  await expect(frame).toBeVisible();
+  await expect(sidebar).toHaveAttribute('inert', '');
+  await menu.focus();
+  await page.keyboard.press('Enter');
+  await expect(sidebar).toBeVisible();
+  await expect(sidebar).toHaveCSS('width', '256px');
+  await expect(sidebar.locator('a[aria-current="page"]')).toHaveCount(1);
+  await expect(sidebar.locator('a[aria-current="page"]')).toHaveAttribute(
+    'href',
+    '/page/manage',
+  );
+  await page.screenshot({
+    path: 'test-results/sidebar-pages-active-mobile.png',
+    fullPage: false,
+  });
+  await page.goBack();
+  await expect(page).toHaveURL(/\/sharing$/);
+  await expect(frame).toHaveCount(0);
+  await expect(sidebar.locator('a[href="/sharing"]')).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(sidebar.locator('a[aria-current="page"]')).toHaveCount(1);
+  await expect(sidebar.locator('[data-pager-link]')).toBeFocused();
+});
+
+test('Pages preserves modifier clicks and native share API navigation', async ({
+  page,
+  context,
+}) => {
+  await page.setViewportSize({ width: 1506, height: 900 });
+  await page.goto('/dev-login/alice');
+  await page.goto('/photos');
+  const pages = page.locator('#sidebar [data-pager-link]');
+  const [newTab] = await Promise.all([
+    context.waitForEvent('page'),
+    pages.click({ modifiers: ['Control'] }),
+  ]);
+  await expect(newTab).toHaveURL(/\/page\/manage$/);
+  await expect(page).toHaveURL(/\/photos$/);
+  await expect(page.locator('iframe')).toHaveCount(0);
+  await newTab.close();
+
+  await page.evaluate(() => {
+    const link = document.createElement('a');
+    link.href = '/api/share/s/fixture-key';
+    link.textContent = 'Open share API route';
+    link.style.cssText =
+      'position:fixed;top:0;right:0;z-index:10;padding:12px;background:#111';
+    document.querySelector('header')?.append(link);
+  });
+  await pages.click();
+  await expect(page.locator('iframe[title="Client pages"]')).toBeVisible();
+  await page.getByRole('link', { name: 'Open share API route' }).click();
+  await expect(page).toHaveURL(/\/api\/share\/s\/fixture-key$/);
+  await expect(page.locator('iframe')).toHaveCount(0);
+  await expect(page.locator('body')).toContainText(
+    '"/api/share/s/fixture-key"',
+  );
+});
