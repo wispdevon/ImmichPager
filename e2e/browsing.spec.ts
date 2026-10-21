@@ -112,12 +112,10 @@ test('public gallery browsing, responsive layout, and year navigation work', asy
       sharedGap: getComputedStyle(shared).columnGap,
     };
   });
-  expect(metadataGaps).toEqual({
-    countToShared: 2,
-    bulletToLabel: 2,
-    metadataColumnGap: '2px',
-    sharedGap: '2px',
-  });
+  expect(metadataGaps.countToShared).toBeGreaterThanOrEqual(7.9);
+  expect(metadataGaps.bulletToLabel).toBeGreaterThanOrEqual(7.9);
+  expect(metadataGaps.metadataColumnGap).toBe('8px');
+  expect(metadataGaps.sharedGap).toBe('8px');
   const cover = firstAlbum.locator('.cover');
   const coverBox = await cover.boundingBox();
   expect(coverBox).not.toBeNull();

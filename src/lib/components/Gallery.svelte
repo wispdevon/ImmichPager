@@ -848,13 +848,13 @@
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    column-gap: 2px;
-    row-gap: 2px;
+    column-gap: 0.5rem;
+    row-gap: 0.5rem;
   }
   .shared {
     display: inline-flex;
     align-items: baseline;
-    gap: 2px;
+    gap: 0.5rem;
   }
   .empty {
     padding: 70px 24px;
