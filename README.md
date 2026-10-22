@@ -71,6 +71,10 @@ Start with **Add a title**, **Add a description**, and **Select albums**. Brandi
 
 Choose **Below banner** or **Over banner** to compose your logo, title, and description, or start with a Classic, Centered, or Editorial header preset. Set compact, standard, or tall banners; tune logo size, title and description sizes, and header spacing per page while keeping Google Sans as the default. Advanced per-page CSS supports further typography, cover corners, responsive spacing, and theme variables. Changes remain private until published. See the [customization guide and CSS examples](docs/customization.md). These additions ship in v0.2.0, tagged from `dev`; existing deployments update only when their operator upgrades.
 
+## Per-page customization (in review)
+
+The next update adds **Customize** inside Pages, with **Design**, **Elements**, **Themes**, and **CSS** tabs beside a private responsive preview. Choose which client elements appear, adjust gallery typography and spacing, edit isolated CSS, or transfer a design with a version 2 appearance file. Separate [DTCG design token files](docs/design-tokens.md) transfer styling after an import summary while keeping content, visibility, and CSS intact. New pages start with browsing controls off; existing pages keep their current appearance. These changes are separate from the v0.2.0 release and remain private until a page is explicitly published.
+
 ## Quick start
 
 Requires Docker Compose v2, an existing Immich installation, and control of its HTTPS reverse proxy.

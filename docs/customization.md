@@ -2,7 +2,7 @@
 
 Open **Pages → your page → Customize**. All client appearance settings belong to this page. Changes autosave as a private working draft; use **Preview** to check them, then **Publish page** or **Update live page** to show them to clients. Your existing client URL stays the same.
 
-This feature is being developed on the **dev branch**. The current main release and live deployment remain unchanged.
+The Customize panel, element switches, gallery controls, and portable tokens are in draft review for the next update. They are separate from v0.2.0; deployments change only when their operator upgrades.
 
 ## Check what clients see
 
@@ -10,7 +10,7 @@ After publishing, choose **Open published page** in the editor to open the actua
 
 ## Colors and accent
 
-Choose Dark, Light, or System under **Customize → Design**. Expand **Custom colors** to override background, text, and accent colors. The default accent is Immich blue (`#accbfa`). Currently, accent changes **album-title text on hover**; it does not recolor the page title, banner, management buttons, or native Immich album viewer. CSS can use the same accent for other gallery elements.
+Choose Dark, Light, or System under **Customize → Design**. Use the color controls to override background, text, and accent colors. The default accent is Immich blue (`#accbfa`). Currently, accent changes **album-title text on hover**; it does not recolor the page title, banner, management buttons, or native Immich album viewer. CSS can use the same accent for other gallery elements.
 
 ## Move a design between pages
 
