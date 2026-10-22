@@ -229,6 +229,14 @@ All visual settings map to these variables. Lengths use `px` or `rem` as shown;
 cover aspect ratio is width divided by height. Derived spacing and banner
 variables keep the current responsive layout as the defaults change.
 
+Legacy header properties (`--logo-size`, `--title-min-size`,
+`--title-fluid-size`, `--title-max-size`, `--description-size`,
+`--header-spacing`, and `--mobile-header-spacing`) remain exposed as computed
+aliases for compatibility. The gallery renders from the corresponding
+`--pager-*` properties; use those when authoring custom styles. The former
+theme properties `--custom-bg`, `--custom-fg`, `--accent`, and
+`--gallery-hover-accent` also remain available when their settings apply.
+
 | Variable                                | Setting and default                                            |
 | --------------------------------------- | -------------------------------------------------------------- |
 | `--pager-font-family`                   | Font family; `"GoogleSans", sans-serif`                        |
