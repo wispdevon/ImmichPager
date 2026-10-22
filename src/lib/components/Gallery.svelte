@@ -452,7 +452,6 @@
                   {#if ui.showYearHeadings && ui.allowYearCollapse}<details
                       id={`ip-year-${year.toLowerCase()}`}
                       class="ip-year-group"
-                      tabindex="-1"
                       open
                     >
                       <summary class="ip-year-heading">
@@ -723,10 +722,6 @@
     .album {
       transition: none;
     }
-    .album:hover,
-    .album:focus-visible {
-      transform: none;
-    }
   }
   .albums {
     padding: 0 var(--pager-gallery-inline-padding, 16px) 40px;
@@ -918,6 +913,12 @@
   .album:focus-visible {
     outline: 2px solid currentColor;
     outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .album:hover,
+    .album:focus-visible {
+      transform: none;
+    }
   }
   .album:hover h3,
   .album:focus-visible h3 {
