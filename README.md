@@ -44,7 +44,7 @@ Screenshots use attributed [NASA Apollo photographs](fixtures/photos/README.md) 
 - **Immich-style albums:** square covers, dates, item counts, collapsible years, and manual or chronological ordering.
 - **Per-page branding:** choose a logo/banner from Immich Photos, drop an image, or upload; adjust crop, alignment, banner and logo size, title and description sizes, header spacing, and colors.
 - **Private autosaved drafts:** edit freely without changing the live page; publish updates explicitly.
-- **Publication review (dev):** see albums being added or removed and page appearance changes before updating the live page.
+- **Publication review:** see albums being added or removed and page appearance changes before updating the live page.
 - **Easy sharing:** Copy link on each published page, with an Immich-style Options panel for configuration.
 - **Password protection:** optional page password/PIN applied to dedicated Immich album shares too. The native viewer may prompt again.
 - **Inside Immich:** a Pages sidebar entry and existing session authentication; each photographer manages their own pages.
@@ -67,16 +67,16 @@ Start with **Add a title**, **Add a description**, and **Select albums**. Brandi
 
 </details>
 
-## Gallery customization (dev)
+## Gallery customization
 
-Choose **Below banner** or **Over banner** to compose your logo, title, and description, or start with a Classic, Centered, or Editorial header preset. Set compact, standard, or tall banners; tune logo size, title and description sizes, and header spacing per page while keeping Google Sans as the default. Advanced per-page CSS supports further typography, cover corners, responsive spacing, and theme variables. Changes remain private until published. See the [customization guide and CSS examples](docs/customization.md). These additions are on `dev`; `main` and the current live deployment retain the existing UI.
+Choose **Below banner** or **Over banner** to compose your logo, title, and description, or start with a Classic, Centered, or Editorial header preset. Set compact, standard, or tall banners; tune logo size, title and description sizes, and header spacing per page while keeping Google Sans as the default. Advanced per-page CSS supports further typography, cover corners, responsive spacing, and theme variables. Changes remain private until published. See the [customization guide and CSS examples](docs/customization.md). These additions ship in v0.2.0, tagged from `dev`; existing deployments update only when their operator upgrades.
 
 ## Quick start
 
 Requires Docker Compose v2, an existing Immich installation, and control of its HTTPS reverse proxy.
 
 ```sh
-git clone --branch v0.1.0 --depth 1 https://gitlab.com/wispd/ImmichPager.git
+git clone --branch v0.2.0 --depth 1 https://gitlab.com/wispd/ImmichPager.git
 cd ImmichPager
 cp .env.example .env
 ```
@@ -91,13 +91,13 @@ Point the existing HTTPS proxy at Pager's default `127.0.0.1:3102` listener. Sig
 
 All Pager routes and assets use `/page/`; native Immich `/api/`, `/s/`, and `/share/` routes continue to the upstream. You can chain Pager in front of Immichinko or keep an Immicull custom server. See [deployment and configuration](docs/deployment.md) for exact setup, image tags, proxy trust, backups, and rollback.
 
-The [v0.1.0 release](https://github.com/wispdevon/ImmichPager/releases/tag/v0.1.0) also includes a prebuilt ARM64 Docker image, a compiled runtime build context, source, and SHA-256 checksums. See [importing the ARM64 package](docs/deployment.md#prebuilt-arm64-package) to install without a frontend build.
+The [v0.2.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.2.0) includes tagged source and a compiled runtime build context with SHA-256 checksums. Historical v0.1.0 ARM64 packages remain available through the [deployment guide](docs/deployment.md#prebuilt-arm64-package).
 
 ## Compatibility and current status
 
 Initial source review targets **Immich v3.3.1**, with an ARM64 runtime deployment and public HTTP smoke checks verified on **v3.3.3** alongside Immichinko and a RAW/JPEG companion. Authenticated editing and publishing tests use an isolated fixture; the signed-in live workflow remains to be checked. This is an early implementation, not a claim of compatibility with every Immich release.
 
-The stable release was verified locally with 55 domain tests and 7 browser tests. Source and active reviews now live on [GitLab](https://gitlab.com/wispd/ImmichPager); see the [migration record](docs/gitlab-migration.md). Historical v0.1.0 downloads remain on GitHub. GitLab CI and manual registry publishing are proposed in merge request !6 and the combined candidate !26; images have not been published by this migration. Source builds support amd64 and arm64.
+The v0.2.0 candidate passed 127 unit tests, 34 Chromium scenarios, type checking, lint, formatting, audit, production build, and a hosted Docker smoke check. Source, releases, and active reviews live on [GitLab](https://gitlab.com/wispd/ImmichPager); see the [migration record](docs/gitlab-migration.md). Historical v0.1.0 downloads remain on GitHub. Source builds support amd64 and arm64. Registry image publication is a separate manual release action.
 
 The sidebar bridge is a maintained DOM integration rather than an official Immich plugin API. Use one Pager container per database. When upstream revocation fails, the overview is hidden; existing native links remain subject to Immich until the owner finishes synchronization. See [validation notes](docs/validation.md).
 
