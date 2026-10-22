@@ -44,8 +44,6 @@
     clientUi: initial?.clientUi ?? NEW_PAGE_CLIENT_UI,
     galleryStyle: initial?.galleryStyle ?? DEFAULT_GALLERY_STYLE,
     customCss: initial?.customCss ?? '',
-    clientUi: initial?.clientUi ?? NEW_PAGE_CLIENT_UI,
-    galleryStyle: initial?.galleryStyle ?? DEFAULT_GALLERY_STYLE,
     albumIds: [...(initial?.albumIds ?? [])],
     order: initial?.order ?? 'newest',
     passwordMode: 'keep',
