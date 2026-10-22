@@ -1,10 +1,10 @@
 # GitLab distribution and repository migration
 
-## Preparation status
+## Repository migration status
 
-This change prepares GitLab CI, the GitLab container registry, and project links for `https://gitlab.com/wispd/ImmichPager`. It does not move the canonical repository or publish an image. The current source branch still uses the GitHub `origin`; the destination project has not been changed by this work.
+The user authorized moving the active repository and reviews to `https://gitlab.com/wispd/ImmichPager`. All 26 review branches and descriptions now have GitLab merge requests targeting `dev`; local `origin` and branch upstreams use GitLab. No feature merge or image publication is implied. The stable `main` commit and existing `v0.1.0` tag are unchanged; historical release downloads remain available on GitHub. See [the migration record on dev](https://gitlab.com/wispd/ImmichPager/-/blob/dev/docs/gitlab-migration.md) and [the approval index](https://gitlab.com/wispd/ImmichPager/-/blob/dev/tasks/review.md).
 
-The destination is public, its default branch is `main`, and its container registry is enabled at `registry.gitlab.com/wispd/immichpager`. It already contains `main`, `dev`, and a `v0.1.0` tag. The peeled `v0.1.0` commit (`3f47be81`) and current `dev` commit (`c0b57e2a`) match the GitHub refs. Compare peeled commit IDs when checking annotated tags; the tag object's own ID is different by design.
+This MR prepares the CI configuration and registry publishing behavior for review. GitLab attempted pipelines after the transfer but created no jobs because it reports that the user is not verified. Account verification is required before hosted checks can run; local checks do not certify runner or registry operation.
 
 ## CI and image publishing
 
@@ -16,17 +16,13 @@ Docker-in-Docker is used for the smoke test and image publication. GitLab runner
 
 The configuration can be checked with GitLab's [CI Lint API](https://docs.gitlab.com/api/lint/) using static validation (`dry_run` omitted or `false`). That endpoint validates YAML without creating a pipeline. A successful lint response does not test runner availability or publish images.
 
-## Remaining migration steps
+## Remaining CI and release steps
 
-After reviewing and approving the GitHub pull request:
+1. Review and approve the proposed CI and feature changes through GitLab merge requests. The combined candidate is draft !26; all features remain unmerged.
+2. Complete the GitLab account verification required to start CI jobs, then run the candidate pipeline. Confirm Node/pnpm setup, browser tests, Docker smoke tests, and the runner's privileged Docker-in-Docker support.
+3. Before any release, verify `main` protection and configure a protected tag rule for `v*` with Maintainer-level release access. Confirm that CI marks release tags as protected and that manual `publish_image` is absent from ordinary branches and unprotected tags.
+4. Review the proposed GitLab issue/MR templates and verify a private vulnerability-reporting path before replacing existing security contact guidance.
+5. Retain historical v0.1.0 downloads on GitHub. Test image pulls before updating installation guidance to a newly published GitLab image. GitHub is retained for history, upstream references, and existing download links.
+6. Create a new protected semantic-version tag only after release checks pass. A maintainer can then start the manual image job and verify the manifest and version tags before updating a deployment.
 
-1. Compare every destination branch and tag against the intended GitHub source commits. The inspected `main`, `dev`, and `v0.1.0` refs currently match; recheck them at migration time, preserve release tags and assets, and avoid force-pushing unless an explicit recovery decision is made.
-2. Transfer the reviewed branches and tags, then confirm `main` is the intended default branch. Keep the GitHub repository available until clones, links, and release downloads work from GitLab.
-3. Protect `main` and configure a protected tag rule for `v*` with Maintainer-level release access. Confirm that CI marks release tags as protected and that the manual `publish_image` job is absent from ordinary branches and unprotected tags.
-4. Run a GitLab pipeline on the migrated `dev` branch and confirm Node/pnpm setup, browser tests, Docker smoke test, and the runner's privileged DinD support. Use static CI lint before the first pipeline if the configuration changes.
-5. Port GitHub-only issue forms, pull request templates, and private security-report instructions to GitLab. Verify the private vulnerability reporting path before changing the public security contact.
-6. Transfer or retain the v0.1.0 release files. Current documentation links those historical downloads to GitHub. Test a clone from GitLab and an image pull before changing old installation guidance or archiving GitHub.
-7. For the next release, create a new protected semantic-version tag only after its checks pass. A maintainer can then start the manual image job and verify the published manifest and version tags before updating a deployment.
-8. Switch local remotes and any remaining integrations to GitLab after the migration is approved and verified. The current remote is intentionally unchanged.
-
-The branch changes prepare these files and links for review. The migration steps above remain separate from this configuration change.
+Repository and review migration is complete. Feature approval, release verification, registry publication, and deployment remain separate from that transfer.
