@@ -5,8 +5,10 @@ Pages can import and export `.tokens.json` files alongside the complete
 Format 2025.10](https://www.designtokens.org/tr/2025.10/format/) and the [DTCG
 Color Module 2025.10](https://www.designtokens.org/tr/2025.10/color/). Pager supports
 local token aliases, local JSON Pointer `$ref` references, and `$type`
-inheritance from token groups. It does not fetch references or resolve external
-files.
+inheritance from token groups. JSON Pointer references can target whole tokens
+or individual properties inside composite values, as defined in [DTCG §7.3
+Property-Level References](https://www.designtokens.org/tr/2025.10/format/#property-level-references).
+It does not fetch references or resolve external files.
 
 In **Pages → Customize → Themes**, choose a `.tokens.json` file to review its
 recognized and unsupported paths before applying it. Invalid recognized
