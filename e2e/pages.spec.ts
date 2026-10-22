@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { setHeaderText } from './header-editor';
+import { confirmPublication } from './publication-helper';
 
 test('client album grid, year collapse, native viewer and mobile layout', async ({
   page,
@@ -61,9 +63,7 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
     path: 'test-results/editor-empty.png',
     fullPage: true,
   });
-  await page
-    .getByLabel('Title', { exact: true })
-    .fill('Acme monthly photography');
+  await setHeaderText(page, 'Title', 'Acme monthly photography');
   await expect(page).not.toHaveURL(/\/manage\/new$/);
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await page.getByRole('button', { name: 'Options', exact: true }).click();
@@ -99,9 +99,7 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
     .check();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await page
-    .getByLabel('Description', { exact: true })
-    .fill('Our work over the months.');
+  await setHeaderText(page, 'Description', 'Our work over the months.');
   await page
     .getByRole('button', { name: 'Choose logo from Immich', exact: true })
     .click();
@@ -143,11 +141,24 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
   await page.screenshot({ path: 'test-results/options.png', fullPage: true });
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await page.getByRole('button', { name: 'Preview', exact: true }).click();
+  const gallery = page.frameLocator('[data-testid="responsive-preview-frame"]');
   await expect(
-    page.getByRole('heading', { name: 'Acme monthly photography' }),
+    gallery.getByRole('heading', { name: 'Acme monthly photography' }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Back to editor' }).click();
   await page.getByRole('button', { name: 'Publish page', exact: true }).click();
+  const firstReview = page.getByRole('dialog', {
+    name: 'Review publication',
+    exact: true,
+  });
+  await expect(
+    firstReview.getByRole('heading', { name: 'Albums to publish' }),
+  ).toBeVisible();
+  await expect(firstReview).toContainText('Liberty Family Camp ’26');
+  expect(await firstReview.innerText()).not.toContain('2468');
+  await firstReview
+    .getByRole('button', { name: 'Publish page', exact: true })
+    .click();
   await expect(page.getByRole('status')).toContainText('Page published');
   await page.screenshot({ path: 'test-results/editor.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
@@ -174,7 +185,7 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
   await visitor.getByPlaceholder('Password', { exact: true }).fill('2468');
   await visitor.getByRole('button', { name: 'View albums' }).click();
   await expect(visitor.locator('.banner img')).toBeVisible();
-  await page.getByLabel('Title', { exact: true }).fill('Changed privately');
+  await setHeaderText(page, 'Title', 'Changed privately');
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await visitor.reload();
   await expect(
@@ -183,6 +194,20 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
   await page
     .getByRole('button', { name: 'Update live page', exact: true })
     .click();
+  const updateReview = page.getByRole('dialog', {
+    name: 'Review publication',
+    exact: true,
+  });
+  await expect(updateReview).toContainText('Page title');
+  await updateReview
+    .getByRole('button', { name: 'Cancel', exact: true })
+    .click();
+  await expect(updateReview).toHaveCount(0);
+  await visitor.reload();
+  await expect(
+    visitor.getByRole('heading', { name: 'Acme monthly photography' }),
+  ).toBeVisible();
+  await confirmPublication(page, 'Update live page');
   await expect(page.getByRole('status')).toContainText('Page published');
   await visitor.reload();
   await visitor.getByPlaceholder('Password', { exact: true }).fill('2468');
@@ -238,9 +263,31 @@ test('ownership, same-origin writes, reserved slugs and sidebar integration', as
   const owner = await page.request.get('/page/api/pages');
   const pages = await owner.json();
   const id = pages[0].id;
+  const ownerDraft = await (
+    await page.request.get(`/page/api/pages/${id}`)
+  ).json();
+  const reviewUrl = `/page/api/pages/${id}/publication-review?expectedDraftRevision=${ownerDraft.draftRevision}`;
+  const reviewResponse = await page.request.get(reviewUrl);
+  expect(reviewResponse.ok()).toBe(true);
+  expect(JSON.stringify(await reviewResponse.json())).not.toMatch(
+    /passwordHash|native-cookie|shareId|"key"/i,
+  );
+  expect(
+    (
+      await page.request.get(`/page/api/pages/${id}/publication-review`)
+    ).status(),
+  ).toBe(400);
+  expect(
+    (
+      await page.request.get(
+        `/page/api/pages/${id}/publication-review?expectedDraftRevision=${ownerDraft.draftRevision - 1}`,
+      )
+    ).status(),
+  ).toBe(409);
   const bob = await browser.newContext();
   await bob.request.get('/dev-login/bob');
   expect((await bob.request.get(`/page/api/pages/${id}`)).status()).toBe(404);
+  expect((await bob.request.get(reviewUrl)).status()).toBe(404);
   expect(await (await bob.request.get('/page/api/pages')).json()).toEqual([]);
   const origin = 'http://127.0.0.1:3200';
   expect(
@@ -261,7 +308,153 @@ test('ownership, same-origin writes, reserved slugs and sidebar integration', as
   ).toBe(200);
   const anonymous = await browser.newContext();
   expect((await anonymous.request.get('/page/api/pages')).status()).toBe(401);
+  expect((await anonymous.request.get(reviewUrl)).status()).toBe(401);
   await anonymous.close();
+  await bob.close();
+});
+
+test('duplicates only appearance and branding into a private draft', async ({
+  page,
+  browser,
+}) => {
+  await page.goto('/dev-login/alice');
+  const origin = 'http://127.0.0.1:3200';
+  let sourceResponse = await page.request.post('/page/api/pages', {
+    headers: { origin },
+    data: {
+      title: 'A source design for Acme',
+      slug: 'source-design-for-acme',
+      description: 'A description that belongs only to the source page.',
+      albumIds: ['00000000-0000-4000-8000-000000000001'],
+      theme: 'light',
+      background: '#112233',
+      foreground: '#ddeeff',
+      accent: '#abcdef',
+      alignment: 'center',
+      headerLayout: 'overlay',
+      headerSize: 'tall',
+      logoSize: 112,
+      titleSize: 3.5,
+      descriptionSize: 1.25,
+      headerSpacing: 3.5,
+      customCss: ':scope { --pager-accent: #abcdef; }',
+      bannerPosition: 28,
+      order: 'manual',
+    },
+  });
+  expect(sourceResponse.ok()).toBe(true);
+  let source = await sourceResponse.json();
+  for (const kind of ['logo', 'banner']) {
+    sourceResponse = await page.request.post(
+      `/page/api/pages/${source.id}/branding/${kind}`,
+      {
+        headers: { origin },
+        data: {
+          assetId: '10000000-0000-4000-8000-000000000001',
+          expectedDraftRevision: source.draftRevision,
+        },
+      },
+    );
+    expect(sourceResponse.ok()).toBe(true);
+    source = await sourceResponse.json();
+  }
+  sourceResponse = await page.request.post(
+    `/page/api/pages/${source.id}/publish`,
+    {
+      headers: { origin },
+      data: {
+        password: 'source-pin',
+        passwordMode: 'set',
+        expectedDraftRevision: source.draftRevision,
+      },
+    },
+  );
+  expect(sourceResponse.ok()).toBe(true);
+  source = await sourceResponse.json();
+  expect(source.publishedSlug).toBe('source-design-for-acme');
+  expect(source.hasPassword).toBe(true);
+
+  const sharesBefore = await (
+    await page.request.get('/api/shared-links')
+  ).json();
+  await page.goto('/page/manage');
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  const sourceRow = page.getByRole('article').filter({
+    has: page.getByRole('heading', { name: 'A source design for Acme' }),
+  });
+  await sourceRow
+    .getByRole('button', {
+      name: 'More actions for A source design for Acme',
+    })
+    .click();
+  await page.getByRole('menuitem', { name: 'Duplicate design' }).click();
+  await expect(page).toHaveURL(/\/page\/manage\/[0-9a-f-]+$/);
+  const duplicateId = page.url().split('/').pop()!;
+  await expect(
+    page.getByRole('button', { name: 'Edit title, Add a title', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', {
+      name: 'Edit description, Add a description',
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.getByAltText('Logo preview')).toBeVisible();
+  await expect(page.getByAltText('Banner preview')).toBeVisible();
+  const duplicateResponse = await page.request.get(
+    `/page/api/pages/${duplicateId}`,
+  );
+  expect(duplicateResponse.ok()).toBe(true);
+  const duplicate = await duplicateResponse.json();
+  expect(duplicate).toMatchObject({
+    title: '',
+    description: '',
+    slug: '',
+    albumIds: [],
+    order: 'newest',
+    theme: 'light',
+    background: '#112233',
+    foreground: '#ddeeff',
+    accent: '#abcdef',
+    alignment: 'center',
+    headerLayout: 'overlay',
+    headerSize: 'tall',
+    logoSize: 112,
+    titleSize: 3.5,
+    descriptionSize: 1.25,
+    headerSpacing: 3.5,
+    customCss: ':scope { --pager-accent: #abcdef; }',
+    bannerPosition: 28,
+    logo: true,
+    banner: true,
+    status: 'draft',
+    publishedSlug: null,
+    publishedRevision: null,
+    hasPassword: false,
+  });
+  expect(duplicate).not.toHaveProperty('passwordHash');
+  expect(duplicate).not.toHaveProperty('key');
+  expect(duplicate).not.toHaveProperty('password');
+  expect(await (await page.request.get('/api/shared-links')).json()).toEqual(
+    sharesBefore,
+  );
+  expect(
+    (await page.request.get('/page/source-design-for-acme')).status(),
+  ).toBe(200);
+
+  const bob = await browser.newContext();
+  await bob.request.get('/dev-login/bob');
+  const denied = await bob.request.post(
+    `/page/api/pages/${source.id}/duplicate`,
+    { headers: { origin }, data: {} },
+  );
+  expect(denied.status()).toBe(404);
+  expect(await (await bob.request.get('/page/api/pages')).json()).toEqual([]);
   await bob.close();
 });
 
@@ -275,13 +468,11 @@ test('autosave recovers from an empty proxy error and rejects oversized branding
       ? route.fulfill({ status: 502, body: '' })
       : route.continue(),
   );
-  await page
-    .getByLabel('Title', { exact: true })
-    .fill('Test response recovery');
+  await setHeaderText(page, 'Title', 'Test response recovery');
   await expect(page.getByRole('alert')).toContainText('HTTP 502');
-  await expect(page.getByLabel('Title', { exact: true })).toHaveValue(
-    'Test response recovery',
-  );
+  await expect(
+    page.getByRole('button', { name: 'Edit title, Test response recovery' }),
+  ).toBeVisible();
   await page.unroute('**/page/api/pages');
   await page.getByRole('button', { name: 'Retry save' }).click();
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
@@ -326,7 +517,7 @@ test('dropped branding creates an untitled draft, Options work on mobile, and st
     .dispatchEvent('drop', { dataTransfer: transfer });
   await expect(page.getByAltText('Logo preview')).toBeVisible();
   await expect(page).not.toHaveURL(/\/manage\/new$/);
-  await page.getByLabel('Title', { exact: true }).fill('Drop and configure');
+  await setHeaderText(page, 'Title', 'Drop and configure');
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('button', { name: 'Options', exact: true }).click();
@@ -347,15 +538,15 @@ test('dropped branding creates an untitled draft, Options work on mobile, and st
   await expect(page.getByAltText('Logo preview')).toBeVisible();
   const other = await context.newPage();
   await other.goto(page.url());
-  await page.getByLabel('Title', { exact: true }).fill('First tab saved');
+  await setHeaderText(page, 'Title', 'First tab saved');
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
-  await other
-    .getByLabel('Title', { exact: true })
-    .fill('Second tab conflicting');
+  await setHeaderText(other, 'Title', 'Second tab conflicting');
   await expect(other.getByRole('alert')).toContainText('another tab');
-  await expect(other.getByLabel('Title', { exact: true })).toHaveValue(
-    'Second tab conflicting',
-  );
+  await expect(
+    other.getByRole('button', {
+      name: 'Edit title, Second tab conflicting',
+    }),
+  ).toBeVisible();
   const id = page.url().split('/').pop();
   expect(
     (await (await page.request.get(`/page/api/pages/${id}`)).json()).title,
@@ -392,4 +583,248 @@ test('photo picker browses owned albums and favorites and clears selection when 
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page).toHaveURL(/\/manage\/new$/);
+});
+
+test('Pages owns the sidebar active state and restores native navigation and focus', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1506, height: 900 });
+  await page.goto('/dev-login/alice');
+  await page.goto('/albums');
+  const sidebar = page.locator('#sidebar');
+  await expect(sidebar).toBeVisible();
+  await expect(page.locator('#top-menu-button')).toBeHidden();
+  const albumLink = sidebar.locator('a[href="/albums"]');
+  await expect(albumLink).toHaveAttribute('aria-current', 'page');
+  await albumLink.focus();
+  await page.evaluate(() =>
+    history.pushState({ fixture: true }, '', '#native-history'),
+  );
+  await page.goBack();
+  await expect(page).toHaveURL(/\/albums$/);
+  await expect(albumLink).toBeFocused();
+
+  const pages = sidebar.locator('[data-pager-link]');
+  await pages.focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/albums#client-pages$/);
+  const frame = page.locator('iframe[title="Client pages"]');
+  await expect(frame).toBeVisible();
+  const activeLinks = sidebar.locator('a[aria-current="page"]');
+  await expect(activeLinks).toHaveCount(1);
+  await expect(activeLinks).toHaveAttribute('href', '/page/manage');
+  await expect(activeLinks).toHaveClass(/bg-primary\/10/);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.activeElement === document.querySelector('iframe'),
+      ),
+    )
+    .toBe(true);
+  await expect
+    .poll(() =>
+      page
+        .frameLocator('iframe[title="Client pages"]')
+        .locator('main')
+        .evaluate((main) => main.ownerDocument.activeElement === main),
+    )
+    .toBe(true);
+  await page.screenshot({
+    path: 'test-results/sidebar-pages-active-desktop.png',
+    fullPage: false,
+  });
+  await sidebar.evaluate((nav) => {
+    const items = [
+      ['/photos', 'Photos'],
+      ['/albums', 'Albums'],
+      ['/sharing', 'Sharing'],
+    ] as const;
+    nav.replaceChildren(
+      ...items.map(([href, label]) => {
+        const item = document.createElement('div');
+        item.dataset.navbarItem = '';
+        const row = document.createElement('div');
+        row.className = 'navbar-row';
+        const link = document.createElement('a');
+        link.setAttribute('href', href);
+        const active = location.pathname.startsWith(href);
+        if (active) {
+          link.setAttribute('aria-current', 'page');
+          link.classList.add('bg-primary/10', 'text-primary');
+        }
+        const text = document.createElement('span');
+        text.textContent = label;
+        link.append(text);
+        row.append(link);
+        item.append(row);
+        return item;
+      }),
+    );
+  });
+  await expect(sidebar.locator('[data-pager-row]')).toHaveCount(1);
+  await expect(sidebar.locator('[data-pager-link]')).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(sidebar.locator('a[aria-current="page"]')).toHaveCount(1);
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/albums$/);
+  await expect(frame).toHaveCount(0);
+  await expect(sidebar.locator('a[href="/albums"]')).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(sidebar.locator('a[aria-current="page"]')).toHaveCount(1);
+  await expect(pages).not.toHaveAttribute('aria-current', 'page');
+  await expect(pages).toBeFocused();
+
+  await page.goForward();
+  await expect(page).toHaveURL(/\/albums#client-pages$/);
+  await expect(frame).toBeVisible();
+  await expect(sidebar.locator('a[aria-current="page"]')).toHaveAttribute(
+    'href',
+    '/page/manage',
+  );
+  await sidebar.locator('a[href="/photos"]').click();
+  await expect(page).toHaveURL(/\/photos$/);
+  await expect(page.locator('iframe')).toHaveCount(0);
+  await expect(sidebar.locator('a[aria-current="page"]')).toHaveAttribute(
+    'href',
+    '/photos',
+  );
+});
+
+test('mobile sidebar active state and focus stay usable across history', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/dev-login/alice');
+  await page.goto('/sharing');
+  const sidebar = page.locator('#sidebar');
+  const menu = page.getByRole('button', { name: 'Main menu' });
+  await expect(menu).toBeVisible();
+  await expect(sidebar).toHaveAttribute('inert', '');
+  await expect(sidebar).toBeHidden();
+  await menu.focus();
+  await page.keyboard.press('Enter');
+  await expect(sidebar).toBeVisible();
+  await expect(sidebar).toHaveCSS('width', '256px');
+  await expect(sidebar).not.toHaveAttribute('inert', '');
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await expect(sidebar.locator('a[href="/photos"]')).toBeFocused();
+  await expect(sidebar.locator('a[href="/sharing"]')).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  const pages = sidebar.locator('[data-pager-link]');
+  await page.keyboard.press('Shift+Tab');
+  await expect(pages).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/sharing#client-pages$/);
+  await expect(sidebar).toHaveAttribute('inert', '');
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  const activeLinks = sidebar.locator('a[aria-current="page"]');
+  await expect(activeLinks).toHaveCount(1);
+  await expect(activeLinks).toHaveAttribute('href', '/page/manage');
+  const frame = page.locator('iframe[title="Client pages"]');
+  await expect(frame).toBeVisible();
+  await expect
+    .poll(() =>
+      page
+        .frameLocator('iframe[title="Client pages"]')
+        .locator('main')
+        .evaluate((main) => main.ownerDocument.activeElement === main),
+    )
+    .toBe(true);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/sharing$/);
+  await expect(page.locator('iframe')).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.activeElement === document.querySelector('main'),
+      ),
+    )
+    .toBe(true);
+  await expect(sidebar.locator('a[href="/sharing"]')).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(sidebar.locator('a[aria-current="page"]')).toHaveCount(1);
+  await menu.focus();
+  await page.keyboard.press('Enter');
+  await expect(sidebar).toBeVisible();
+  await expect(sidebar.locator('a[href="/sharing"]')).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(sidebar.locator('[data-pager-link]')).not.toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await menu.focus();
+  await page.keyboard.press('Enter');
+  await expect(sidebar).toHaveAttribute('inert', '');
+  await page.goForward();
+  await expect(page).toHaveURL(/\/sharing#client-pages$/);
+  await expect(frame).toBeVisible();
+  await expect(sidebar).toHaveAttribute('inert', '');
+  await menu.focus();
+  await page.keyboard.press('Enter');
+  await expect(sidebar).toBeVisible();
+  await expect(sidebar).toHaveCSS('width', '256px');
+  await expect(sidebar.locator('a[aria-current="page"]')).toHaveCount(1);
+  await expect(sidebar.locator('a[aria-current="page"]')).toHaveAttribute(
+    'href',
+    '/page/manage',
+  );
+  await page.screenshot({
+    path: 'test-results/sidebar-pages-active-mobile.png',
+    fullPage: false,
+  });
+  await page.goBack();
+  await expect(page).toHaveURL(/\/sharing$/);
+  await expect(frame).toHaveCount(0);
+  await expect(sidebar.locator('a[href="/sharing"]')).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(sidebar.locator('a[aria-current="page"]')).toHaveCount(1);
+  await expect(sidebar.locator('[data-pager-link]')).toBeFocused();
+});
+
+test('Pages preserves modifier clicks and native share API navigation', async ({
+  page,
+  context,
+}) => {
+  await page.setViewportSize({ width: 1506, height: 900 });
+  await page.goto('/dev-login/alice');
+  await page.goto('/photos');
+  const pages = page.locator('#sidebar [data-pager-link]');
+  const [newTab] = await Promise.all([
+    context.waitForEvent('page'),
+    pages.click({ modifiers: ['Control'] }),
+  ]);
+  await expect(newTab).toHaveURL(/\/page\/manage$/);
+  await expect(page).toHaveURL(/\/photos$/);
+  await expect(page.locator('iframe')).toHaveCount(0);
+  await newTab.close();
+
+  await page.evaluate(() => {
+    const link = document.createElement('a');
+    link.href = '/api/share/s/fixture-key';
+    link.textContent = 'Open share API route';
+    link.style.cssText =
+      'position:fixed;top:0;right:0;z-index:10;padding:12px;background:#111';
+    document.querySelector('header')?.append(link);
+  });
+  await pages.click();
+  await expect(page.locator('iframe[title="Client pages"]')).toBeVisible();
+  await page.getByRole('link', { name: 'Open share API route' }).click();
+  await expect(page).toHaveURL(/\/api\/share\/s\/fixture-key$/);
+  await expect(page.locator('iframe')).toHaveCount(0);
+  await expect(page.locator('body')).toContainText(
+    '"/api/share/s/fixture-key"',
+  );
 });

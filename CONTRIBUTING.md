@@ -4,7 +4,9 @@ Thank you for helping improve ImmichPager. Small, focused merge requests are wel
 
 ## Local setup
 
-Use the Node version in `.nvmrc`, enable Corepack, then run `pnpm install --frozen-lockfile` and `pnpm dev:demo`. The fixture server provides synthetic Immich accounts and albums without accessing a real library. See [development](docs/development.md).
+Use the Node version in `.nvmrc`, enable Corepack, then run `pnpm install --frozen-lockfile` and `pnpm dev:demo`. The fixture server provides synthetic Immich accounts and albums without accessing a real library. Contributors who prefer Docker can use the [fixture-only Compose demo](docs/development.md#fixture-only-docker-compose-demo); it needs no Immich credentials or client photos.
+
+See the [starter tasks](docs/development.md#starter-tasks) for roadmap items that can be built and checked against the local fixture.
 
 ## Changes
 

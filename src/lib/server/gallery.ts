@@ -4,6 +4,9 @@ import { AppError } from '../contracts';
 import { database, upstream } from './runtime';
 import type { PageSession } from './store';
 
+type GallerySource = Omit<GalleryPage, 'logo' | 'banner' | 'albums'> &
+  Pick<PageRecord, 'ownerId' | 'albumIds' | 'logo' | 'banner'>;
+
 export const cookieName = (page: PageRecord) =>
   `pager_${page.id.replaceAll('-', '')}`;
 export async function pageAccess(
@@ -25,7 +28,7 @@ export async function pageAccess(
   return { preview: false, session };
 }
 export async function gallery(
-  page: PageRecord,
+  page: GallerySource,
   event: RequestEvent,
   access: Awaited<ReturnType<typeof pageAccess>>,
 ): Promise<GalleryPage> {
@@ -42,6 +45,11 @@ export async function gallery(
     alignment,
     bannerPosition,
     headerLayout,
+    headerSize,
+    logoSize,
+    titleSize,
+    descriptionSize,
+    headerSpacing,
     customCss,
     order,
   } = page;
@@ -57,6 +65,11 @@ export async function gallery(
     alignment,
     bannerPosition,
     headerLayout,
+    headerSize,
+    logoSize,
+    titleSize,
+    descriptionSize,
+    headerSpacing,
     customCss,
     order,
     logo: page.logo ? `/page/media/${id}/branding/logo${suffix}` : null,
@@ -80,7 +93,8 @@ export async function gallery(
                     )
                   ).album
                 : undefined;
-            if (!album) throw new AppError(404, 'Album unavailable');
+            if (!album || (access.preview && album.ownerId !== page.ownerId))
+              throw new AppError(404, 'Album unavailable');
             return {
               id: albumId,
               name: album.albumName,

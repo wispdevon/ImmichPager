@@ -4,15 +4,84 @@
   window.__immichPager = true;
   let frame,
     hidden = [],
-    originalTitle;
-  function close() {
+    originalTitle,
+    opener;
+  const activeClasses = ['bg-primary/10', 'text-primary'];
+  const navigationState = new Map();
+  const sidebars = () => document.querySelectorAll('#sidebar');
+  function rememberNavigation(sidebar) {
+    for (const link of sidebar.querySelectorAll('a[href]')) {
+      if (navigationState.has(link)) continue;
+      navigationState.set(link, {
+        current: link.getAttribute('aria-current'),
+        classes: activeClasses.map((name) => link.classList.contains(name)),
+      });
+    }
+  }
+  function showPagesAsActive() {
+    for (const [link] of navigationState) {
+      if (!link.isConnected) navigationState.delete(link);
+    }
+    for (const sidebar of sidebars()) {
+      rememberNavigation(sidebar);
+      for (const link of sidebar.querySelectorAll('a[href]')) {
+        link.removeAttribute('aria-current');
+        link.classList.remove(...activeClasses);
+      }
+      const pageLink = sidebar.querySelector('[data-pager-link]');
+      if (pageLink) {
+        pageLink.setAttribute('aria-current', 'page');
+        pageLink.classList.add(...activeClasses);
+      }
+    }
+  }
+  function restoreNavigation() {
+    for (const [link, state] of navigationState) {
+      if (!link.isConnected) continue;
+      if (state.current === null) link.removeAttribute('aria-current');
+      else link.setAttribute('aria-current', state.current);
+      activeClasses.forEach((name, index) =>
+        link.classList.toggle(name, state.classes[index]),
+      );
+    }
+    navigationState.clear();
+  }
+  function focusUsableTarget(target) {
+    if (target?.isConnected && target.getClientRects().length) {
+      target.focus();
+      if (document.activeElement === target) return;
+    }
+    const main = document.querySelector('#main, main');
+    if (!main) return;
+    if (!main.hasAttribute('tabindex')) main.setAttribute('tabindex', '-1');
+    main.focus({ preventScroll: true });
+  }
+  function closeMobileSidebar() {
+    const sidebar = document.querySelector('#sidebar');
+    const menuButton = document.querySelector('#top-menu-button');
+    if (!sidebar || sidebar.inert || !menuButton?.getClientRects().length)
+      return;
+    menuButton.click();
+  }
+  function close({ restoreFocus = false } = {}) {
+    const wasOpen = Boolean(frame);
     frame?.remove();
     frame = undefined;
     for (const [node, display] of hidden) node.style.display = display;
     hidden = [];
-    if (originalTitle) document.title = originalTitle;
+    restoreNavigation();
+    if (originalTitle !== undefined) document.title = originalTitle;
+    originalTitle = undefined;
+    const previousOpener = opener;
+    opener = undefined;
+    if (restoreFocus && wasOpen) {
+      const focusTarget = previousOpener?.isConnected
+        ? previousOpener
+        : document.querySelector('[data-pager-link]');
+      focusUsableTarget(focusTarget);
+    }
   }
-  function show() {
+  function show({ focus = false, source } = {}) {
     close();
     const main = document.querySelector('#main, main');
     if (!main) {
@@ -28,11 +97,24 @@
     frame.src = '/page/manage';
     frame.title = 'Client pages';
     frame.style.cssText =
-      'width:100%;height:calc(100dvh - 80px);border:0;display:block;background:#000;';
+      'width:100%;height:calc(100dvh - 80px);border:0;display:block;background:transparent;';
+    frame.tabIndex = 0;
+    const currentFrame = frame;
+    const shouldFocus = focus;
+    currentFrame.addEventListener('load', () => {
+      if (!shouldFocus) return;
+      const contentMain = currentFrame.contentDocument?.querySelector('main');
+      if (contentMain) {
+        if (!contentMain.hasAttribute('tabindex'))
+          contentMain.setAttribute('tabindex', '-1');
+        contentMain.focus({ preventScroll: true });
+      } else currentFrame.focus({ preventScroll: true });
+    });
     main.append(frame);
+    opener = source instanceof HTMLElement ? source : null;
     document.title = 'Pages · Immich';
-    const mobileClose = document.querySelector('[aria-label="Close sidebar"]');
-    mobileClose?.click();
+    showPagesAsActive();
+    closeMobileSidebar();
   }
   function install() {
     for (const sharing of document.querySelectorAll('a[href="/sharing"]')) {
@@ -75,10 +157,11 @@
           return;
         event.preventDefault();
         history.pushState({ pager: true }, '', '#client-pages');
-        show();
+        show({ focus: event.detail === 0, source: link });
       });
       reference.after(row);
     }
+    if (frame) showPagesAsActive();
   }
   document.addEventListener(
     'click',
@@ -89,8 +172,12 @@
     true,
   );
   window.addEventListener('popstate', () => {
-    if (location.hash === '#client-pages') show();
-    else close();
+    if (location.hash === '#client-pages')
+      show({
+        focus: true,
+        source: document.querySelector('[data-pager-link]'),
+      });
+    else close({ restoreFocus: true });
   });
   new MutationObserver(install).observe(document.body, {
     childList: true,

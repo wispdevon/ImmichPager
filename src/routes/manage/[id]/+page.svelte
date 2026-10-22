@@ -1,15 +1,18 @@
 <script lang="ts">
   import { goto, replaceState, beforeNavigate } from '$app/navigation';
   import { untrack, onMount } from 'svelte';
-  import { Button, Textarea } from '@immich/ui';
+  import { Button } from '@immich/ui';
   import Gallery from '$lib/components/Gallery.svelte';
   import AlbumPicker from '$lib/components/AlbumPicker.svelte';
   import BrandingSlot from '$lib/components/BrandingSlot.svelte';
   import PhotoPicker from '$lib/components/PhotoPicker.svelte';
   import PageOptions from '$lib/components/PageOptions.svelte';
+  import PublicationReview from '$lib/components/PublicationReview.svelte';
   import CopyLink from '$lib/components/CopyLink.svelte';
+  import PublishedView from '$lib/components/PublishedView.svelte';
   import { readApiResponse } from '$lib/api-response';
   import type { DraftEditorPage, GalleryPage, PageInput } from '$lib/contracts';
+  import type { PublicationSummary } from '$lib/publication-summary';
   import type { PageData } from './$types';
   let { data }: { data: PageData } = $props();
   const initial = untrack(() => data.page);
@@ -25,6 +28,11 @@
     alignment: initial?.alignment ?? 'left',
     bannerPosition: initial?.bannerPosition ?? 50,
     headerLayout: initial?.headerLayout ?? 'below',
+    headerSize: initial?.headerSize ?? 'standard',
+    logoSize: initial?.logoSize ?? 80,
+    titleSize: initial?.titleSize ?? 3,
+    descriptionSize: initial?.descriptionSize ?? 1.125,
+    headerSpacing: initial?.headerSpacing ?? 2.5,
     customCss: initial?.customCss ?? '',
     albumIds: [...(initial?.albumIds ?? [])],
     order: initial?.order ?? 'newest',
@@ -36,10 +44,12 @@
     message = $state(''),
     success = $state(''),
     preview = $state(false),
+    previewSize = $state<'desktop' | 'tablet' | 'phone'>('desktop'),
     optionsOpen = $state(false),
     albumsOpen = $state(false),
     photoKind = $state<'logo' | 'banner' | null>(null),
     brandingVersion = $state(0),
+    publicationReview = $state<PublicationSummary | null>(null),
     slugLocked = $state(!!initial?.slug),
     conflict = $state(false),
     failedSnapshot = $state<string | null>(null);
@@ -69,7 +79,7 @@
   const previewPage = $derived<GalleryPage>({
     ...fields,
     id: saved?.id ?? 'preview',
-    title: fields.title || 'Your client page',
+    title: fields.title,
     logo,
     banner,
     albums: selected.map((a) => ({
@@ -83,6 +93,9 @@
       available: true,
     })),
   });
+  const previewUrl = $derived(
+    saved ? `/page/manage/${saved.id}/preview` : null,
+  );
   let queue: Promise<unknown> = Promise.resolve();
   function enqueue<T>(work: () => Promise<T>): Promise<T> {
     const next = queue.catch(() => {}).then(work);
@@ -186,12 +199,99 @@
       /* Keep unsaved edits visible. */
     }
   }
+  async function openPreview() {
+    try {
+      await flush(true);
+      previewSize = 'desktop';
+      preview = true;
+    } catch {
+      /* Keep the editor open when the private draft cannot be saved. */
+    }
+  }
   function select(id: string) {
     fields.albumIds = fields.albumIds.includes(id)
       ? fields.albumIds.filter((x) => x !== id)
       : [...fields.albumIds, id];
   }
+  function editTitle(title: string) {
+    fields.title = title;
+    if (!slugLocked)
+      fields.slug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+        .slice(0, 80);
+  }
+  async function reviewPublication() {
+    if (busy) return;
+    busy = true;
+    message = '';
+    success = '';
+    publicationReview = null;
+    optionsOpen = false;
+    albumsOpen = false;
+    photoKind = null;
+    try {
+      await flush(true);
+      if (!saved) throw Error('Save the draft before publishing');
+      publicationReview = await api<PublicationSummary>(
+        `/page/api/pages/${saved.id}/publication-review?expectedDraftRevision=${saved.draftRevision}`,
+        'GET',
+      );
+    } catch (cause) {
+      message =
+        cause instanceof Error
+          ? cause.message
+          : 'Could not prepare the publication review';
+    } finally {
+      if (!publicationReview) busy = false;
+    }
+  }
+  async function publishReviewed() {
+    const review = publicationReview;
+    if (!review || !saved) return;
+    const id = saved.id;
+    publicationReview = null;
+    message = '';
+    success = '';
+    try {
+      saved = await enqueue(() =>
+        api<DraftEditorPage>(`/page/api/pages/${id}/publish`, 'POST', {
+          password: fields.password,
+          passwordMode: fields.passwordMode,
+          expectedDraftRevision: review.draftRevision,
+          expectedPublishedRevision: review.expectedPublishedRevision,
+        }),
+      );
+      fields.password = '';
+      fields.passwordMode = 'keep';
+      success = 'Page published. Your client link is ready.';
+    } catch (cause) {
+      message =
+        cause instanceof Error
+          ? cause.message
+          : 'Could not complete this operation';
+      if (saved) {
+        try {
+          saved = await api(`/page/api/pages/${saved.id}`, 'GET');
+        } catch {
+          /* Preserve the last known draft. */
+        }
+      }
+      if (message.toLowerCase().includes('password')) optionsOpen = true;
+    } finally {
+      busy = false;
+    }
+  }
+  function cancelPublicationReview() {
+    publicationReview = null;
+    busy = false;
+  }
   async function perform(action: 'publish' | 'retry' | 'unpublish' | 'delete') {
+    if (action === 'publish') {
+      await reviewPublication();
+      return;
+    }
     if (
       action === 'delete' &&
       !confirm('Delete this page and revoke its dedicated album links?')
@@ -206,8 +306,7 @@
     message = '';
     success = '';
     try {
-      if (action === 'publish') await flush(true);
-      else await queue.catch(() => {});
+      await queue.catch(() => {});
       if (!saved) return;
       const result = await enqueue(() =>
         api<DraftEditorPage | { deleted: true }>(
@@ -225,16 +324,14 @@
         return;
       }
       saved = result;
-      if (action === 'publish' || action === 'retry') {
+      if (action === 'retry') {
         fields.password = '';
         fields.passwordMode = 'keep';
       }
       success =
-        action === 'publish'
-          ? 'Page published. Your client link is ready.'
-          : action === 'unpublish'
-            ? 'Page unpublished and album links revoked.'
-            : 'Synchronization complete.';
+        action === 'unpublish'
+          ? 'Page unpublished and album links revoked.'
+          : 'Synchronization complete.';
     } catch (cause) {
       message =
         cause instanceof Error
@@ -297,15 +394,52 @@
 <svelte:head
   ><title>{fields.title || 'New page'} · ImmichPager</title></svelte:head
 >
-{#if preview}<div class="preview-toolbar">
-    <Button variant="ghost" onclick={() => (preview = false)}
-      >← Back to editor</Button
-    ><span>Private preview · includes your draft changes</span>
-  </div>
-  <Gallery page={previewPage} preview />
+{#if preview && previewUrl}<main class="responsive-preview">
+    <header class="preview-toolbar">
+      <Button variant="ghost" onclick={() => (preview = false)}
+        >← Back to editor</Button
+      >
+      <p class="preview-note">Private preview · includes your draft changes</p>
+      <div class="preview-sizes" role="group" aria-label="Preview size">
+        <Button
+          variant="ghost"
+          color="secondary"
+          aria-label="Desktop preview"
+          aria-pressed={previewSize === 'desktop'}
+          onclick={() => (previewSize = 'desktop')}>Desktop</Button
+        >
+        <Button
+          variant="ghost"
+          color="secondary"
+          aria-label="Tablet preview"
+          aria-pressed={previewSize === 'tablet'}
+          onclick={() => (previewSize = 'tablet')}>Tablet</Button
+        >
+        <Button
+          variant="ghost"
+          color="secondary"
+          aria-label="Phone preview"
+          aria-pressed={previewSize === 'phone'}
+          onclick={() => (previewSize = 'phone')}>Phone</Button
+        >
+      </div>
+    </header>
+    <div
+      class="preview-stage"
+      class:tablet={previewSize === 'tablet'}
+      class:phone={previewSize === 'phone'}
+    >
+      <iframe
+        data-testid="responsive-preview-frame"
+        class:tablet={previewSize === 'tablet'}
+        class:phone={previewSize === 'phone'}
+        title={`${previewSize[0].toUpperCase()}${previewSize.slice(1)} preview of ${fields.title || 'your client page'}`}
+        src={previewUrl}
+      ></iframe>
+    </div>
+  </main>
 {:else}
   <main class="editor">
-    <h1 class="sr-only">{fields.title || 'New client page'}</h1>
     <header class="editor-toolbar">
       <Button
         variant="ghost"
@@ -342,10 +476,8 @@
           variant="ghost"
           color="secondary"
           onclick={() => (optionsOpen = true)}>Options</Button
-        ><Button
-          variant="ghost"
-          color="secondary"
-          onclick={() => (preview = true)}>Preview</Button
+        ><Button variant="ghost" color="secondary" onclick={openPreview}
+          >Preview</Button
         ><Button
           shape="round"
           disabled={busy || conflict || saved?.status === 'error'}
@@ -358,6 +490,12 @@
         >
       </div>
     </header>
+    {#if saved?.status === 'published' && saved.publishedSlug}
+      <PublishedView
+        slug={saved.publishedSlug}
+        hasPassword={saved.hasPassword}
+      />
+    {/if}
     {#if message && !optionsOpen && !photoKind}<div
         class="notice error"
         role="alert"
@@ -391,35 +529,13 @@
         onremove={() => void branding('banner', null).catch(() => {})}
       />
     </div>
-    <section class="page-heading">
-      <Textarea
-        variant="ghost"
-        class="page-title"
-        aria-label="Title"
-        placeholder="Add a title"
-        maxlength={160}
-        disabled={busy}
-        bind:value={fields.title}
-        oninput={(event) => {
-          const title = event.currentTarget.value.replaceAll('\n', ' ');
-          event.currentTarget.value = title;
-          if (!slugLocked)
-            fields.slug = title
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, '-')
-              .replace(/^-|-$/g, '')
-              .slice(0, 80);
-        }}
-      /><Textarea
-        variant="ghost"
-        class="page-description"
-        aria-label="Description"
-        placeholder="Add a description"
-        maxlength={2000}
-        disabled={busy}
-        bind:value={fields.description}
-      />
-    </section>
+    <Gallery
+      page={previewPage}
+      editorHeader
+      editDisabled={busy}
+      onTitleInput={editTitle}
+      onDescriptionInput={(description) => (fields.description = description)}
+    />
     {#if selected.length}<section class="selected-albums">
         <div class="bar">
           <h2>
@@ -494,6 +610,12 @@
         onClose={() => (photoKind = null)}
         onchoose={(id) => branding(photoKind!, id)}
       />{/if}
+    {#if publicationReview}<PublicationReview
+        review={publicationReview}
+        albums={data.albums}
+        onClose={cancelPublicationReview}
+        onConfirm={publishReviewed}
+      />{/if}
   </main>
 {/if}
 
@@ -531,41 +653,6 @@
     grid-template-columns: 300px minmax(0, 1fr);
     gap: 28px;
     margin-top: 40px;
-  }
-  .page-heading {
-    padding-top: 40px;
-    max-width: 1300px;
-  }
-  .page-heading :global(.page-title) {
-    border: 0;
-    border-radius: 0;
-    padding: 0 0 8px;
-    background: transparent;
-    font-size: 60px;
-    line-height: 1.2;
-    font-weight: 410;
-    color: #accbfa;
-  }
-  .page-heading :global(.page-title::placeholder) {
-    color: #53647c;
-    opacity: 1;
-  }
-  .page-heading :global(.page-description) {
-    border: 0;
-    border-radius: 0;
-    padding: 12px 0 8px;
-    background: transparent;
-    font-size: 16px;
-    line-height: 1.5;
-    font-weight: 410;
-  }
-  .page-heading :global(.page-description::placeholder) {
-    color: #777;
-    opacity: 1;
-  }
-  .page-heading :global(textarea:focus-visible) {
-    outline: none;
-    box-shadow: 0 2px #accbfa;
   }
   .empty-albums {
     margin-top: 80px;
@@ -645,6 +732,13 @@
     font-size: 14px;
     margin-top: 4px;
   }
+  .responsive-preview {
+    block-size: 100dvh;
+    min-block-size: 360px;
+    display: flex;
+    flex-direction: column;
+    background: #191b20;
+  }
   .preview-toolbar {
     padding: 12px 24px;
     display: flex;
@@ -652,10 +746,67 @@
     justify-content: space-between;
     gap: 16px;
     background: #101114;
-    position: sticky;
-    top: 0;
-    z-index: 2;
     font-size: 13px;
+  }
+  .preview-note {
+    margin: 0 auto;
+    color: #d4d7de;
+    text-align: center;
+  }
+  .preview-sizes {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    padding: 3px;
+    border: 1px solid #41434b;
+    border-radius: 8px;
+  }
+  .preview-sizes :global(button[aria-pressed='true']) {
+    background: #343741;
+    color: #fff;
+  }
+  .preview-stage {
+    display: flex;
+    flex: 1 1 auto;
+    min-block-size: 0;
+    justify-content: center;
+    padding: 16px;
+    overflow: auto;
+  }
+  .preview-stage iframe {
+    display: block;
+    flex: 0 1 auto;
+    box-sizing: content-box;
+    inline-size: calc(100% - 2px);
+    min-inline-size: 0;
+    block-size: 100%;
+    min-block-size: 320px;
+    border: 1px solid #4b4d55;
+    border-radius: 8px;
+    background: #000;
+    transition: inline-size 150ms ease;
+  }
+  .preview-stage iframe.tablet {
+    inline-size: min(768px, 100%);
+  }
+  .preview-stage iframe.phone {
+    inline-size: min(390px, 100%);
+  }
+  .preview-stage.tablet,
+  .preview-stage.phone {
+    padding: 0;
+  }
+  .preview-stage.tablet iframe,
+  .preview-stage.phone iframe {
+    border: 0;
+    outline: 1px solid #4b4d55;
+    outline-offset: -1px;
+    border-radius: 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .preview-stage iframe {
+      transition: none;
+    }
   }
   @media (max-width: 900px) {
     .editor-toolbar {
@@ -679,12 +830,6 @@
       grid-template-columns: 1fr;
       margin-top: 24px;
     }
-    .page-heading {
-      padding-top: 28px;
-    }
-    .page-heading :global(.page-title) {
-      font-size: 36px;
-    }
     .editor-toolbar :global(button) {
       font-size: 12px;
       padding-inline: 10px;
@@ -698,6 +843,18 @@
     }
     .preview-toolbar {
       flex-wrap: wrap;
+      justify-content: center;
+      padding: 12px 16px;
+    }
+    .preview-note {
+      order: 1;
+      flex-basis: 100%;
+    }
+    .preview-sizes {
+      margin-inline-start: auto;
+    }
+    .preview-stage {
+      padding: 8px;
     }
   }
 </style>

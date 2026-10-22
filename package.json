@@ -5,7 +5,7 @@
   "private": true,
   "type": "module",
   "license": "AGPL-3.0-only",
-  "repository": "github:wispdevon/ImmichPager",
+  "repository": "git+https://gitlab.com/wispd/ImmichPager.git",
   "keywords": [
     "immich",
     "immich-extension",
@@ -28,12 +28,14 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:compat": "node scripts/check-compatibility.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "dependencies": {
     "@immich/ui": "0.86.0",
+    "@mdi/js": "7.4.47",
     "@sveltejs/adapter-node": "5.5.7",
     "@sveltejs/kit": "2.70.2",
     "css-tree": "^3.2.1",
@@ -56,7 +58,7 @@
     "tailwindcss": "4.1.17",
     "typescript": "5.9.3",
     "typescript-eslint": "8.71.2",
-    "vite": "7.3.5",
-    "vitest": "4.1.11"
+    "vite": "7.3.7",
+    "vitest": "4.1.12"
   }
 }

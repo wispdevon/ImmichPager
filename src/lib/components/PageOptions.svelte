@@ -1,5 +1,21 @@
 <script lang="ts">
   import { compileCustomCss, CUSTOM_CSS_LIMIT } from '$lib/custom-css';
+  import {
+    APPEARANCE_FILE_MAX_BYTES,
+    parseAppearanceFile,
+    serializeAppearanceFile,
+    type AppearanceSettings,
+  } from '$lib/appearance-file';
+  import {
+    albumOrderGroups,
+    moveAlbumBy,
+    moveAlbumRelative,
+  } from '$lib/album-order';
+  import {
+    applyHeaderPreset,
+    headerPresets,
+    type HeaderPreset,
+  } from '$lib/appearance-presets';
   import { labelDialog } from '$lib/actions/dialog-label';
   import {
     Modal,
@@ -38,13 +54,82 @@
     onSlugEdit: () => void;
   } = $props();
   let editUrl = $state(false);
+  let appearanceFileError = $state('');
+  let appearanceFileStatus = $state('');
+  let drag = $state<{ albumId: string; pointerId: number } | null>(null);
+  let orderStatus = $state('');
+  const orderGroups = $derived(albumOrderGroups(fields.albumIds, albums));
   const cssValidation = $derived(
     compileCustomCss(fields.customCss, saved?.id ?? 'preview'),
+  );
+  const bannerCropPreview = $derived(
+    saved?.banner ? `/page/media/${saved.id}/branding/banner?preview=1` : null,
   );
   const protectedPage = $derived(
     fields.passwordMode === 'set' ||
       (fields.passwordMode === 'keep' && !!saved?.hasPassword),
   );
+  function bannerCropDrag(node: HTMLDivElement) {
+    let drag: {
+      pointerId: number;
+      startY: number;
+      startPosition: number;
+      overflowY: number;
+    } | null = null;
+
+    function start(event: PointerEvent) {
+      if (!event.isPrimary || event.button !== 0) return;
+      const image = node.querySelector('img');
+      if (!image?.naturalWidth || !image.naturalHeight) return;
+
+      const scale = Math.max(
+        node.clientWidth / image.naturalWidth,
+        node.clientHeight / image.naturalHeight,
+      );
+      const overflowY = image.naturalHeight * scale - node.clientHeight;
+      if (overflowY <= 0) return;
+
+      drag = {
+        pointerId: event.pointerId,
+        startY: event.clientY,
+        startPosition: fields.bannerPosition,
+        overflowY,
+      };
+      node.setPointerCapture(event.pointerId);
+      node.classList.add('dragging');
+      event.preventDefault();
+    }
+
+    function move(event: PointerEvent) {
+      if (drag?.pointerId !== event.pointerId) return;
+      const position =
+        drag.startPosition -
+        ((event.clientY - drag.startY) / drag.overflowY) * 100;
+      fields.bannerPosition = Math.max(0, Math.min(100, Math.round(position)));
+    }
+
+    function stop(event: PointerEvent) {
+      if (drag?.pointerId !== event.pointerId) return;
+      drag = null;
+      node.classList.remove('dragging');
+    }
+
+    node.addEventListener('pointerdown', start);
+    node.addEventListener('pointermove', move);
+    node.addEventListener('pointerup', stop);
+    node.addEventListener('pointercancel', stop);
+    node.addEventListener('lostpointercapture', stop);
+
+    return {
+      destroy() {
+        node.removeEventListener('pointerdown', start);
+        node.removeEventListener('pointermove', move);
+        node.removeEventListener('pointerup', stop);
+        node.removeEventListener('pointercancel', stop);
+        node.removeEventListener('lostpointercapture', stop);
+      },
+    };
+  }
   function changeUrl() {
     if (
       !saved?.publishedSlug ||
@@ -54,12 +139,134 @@
     )
       editUrl = true;
   }
-  function move(index: number, by: number) {
-    const next = index + by;
-    if (next < 0 || next >= fields.albumIds.length) return;
-    const ids = [...fields.albumIds];
-    [ids[index], ids[next]] = [ids[next], ids[index]];
-    fields.albumIds = ids;
+  function applyOrder(next: string[], albumId: string) {
+    if (next === fields.albumIds) return;
+    fields.albumIds = next;
+    const name =
+      albums.find((album) => album.id === albumId)?.albumName ??
+      'Unavailable album';
+    const group = albumOrderGroups(next, albums).find(([, ids]) =>
+      ids.includes(albumId),
+    );
+    if (group)
+      orderStatus = `Moved ${name} to position ${group[1].indexOf(albumId) + 1} of ${group[1].length} in ${group[0]}.`;
+  }
+  function move(albumId: string, by: number) {
+    applyOrder(moveAlbumBy(fields.albumIds, albums, albumId, by), albumId);
+  }
+  function startDrag(albumId: string, event: PointerEvent) {
+    if (!event.isPrimary || event.button !== 0) return;
+    (event.currentTarget as HTMLButtonElement).setPointerCapture(
+      event.pointerId,
+    );
+    drag = { albumId, pointerId: event.pointerId };
+  }
+  function updateDrag(albumId: string, event: PointerEvent) {
+    if (drag?.albumId !== albumId || drag.pointerId !== event.pointerId) return;
+    const year = orderGroups.find(([, ids]) => ids.includes(albumId))?.[0];
+    if (!year) return;
+    const rows = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-album-order-row]'),
+    ).filter(
+      (row) =>
+        row.dataset.orderYear === year && row.dataset.albumId !== albumId,
+    );
+    if (!rows.length) return;
+    for (const row of rows) {
+      const bounds = row.getBoundingClientRect();
+      if (event.clientY < bounds.top + bounds.height / 2) {
+        const targetId = row.dataset.albumId;
+        if (targetId)
+          applyOrder(
+            moveAlbumRelative(
+              fields.albumIds,
+              albums,
+              albumId,
+              targetId,
+              'before',
+            ),
+            albumId,
+          );
+        return;
+      }
+    }
+    const targetId = rows.at(-1)?.dataset.albumId;
+    if (targetId)
+      applyOrder(
+        moveAlbumRelative(fields.albumIds, albums, albumId, targetId, 'after'),
+        albumId,
+      );
+  }
+  function endDrag(event: PointerEvent) {
+    if (drag?.pointerId === event.pointerId) drag = null;
+  }
+  function handleReorderKey(event: KeyboardEvent, albumId: string) {
+    const by = event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0;
+    if (by) {
+      event.preventDefault();
+      move(albumId, by);
+    }
+  }
+  function currentAppearance(): AppearanceSettings {
+    return {
+      theme: fields.theme,
+      background: fields.background,
+      foreground: fields.foreground,
+      accent: fields.accent,
+      alignment: fields.alignment,
+      bannerPosition: fields.bannerPosition,
+      headerLayout: fields.headerLayout,
+      headerSize: fields.headerSize,
+      logoSize: fields.logoSize,
+      titleSize: fields.titleSize,
+      descriptionSize: fields.descriptionSize,
+      headerSpacing: fields.headerSpacing,
+      customCss: fields.customCss,
+    };
+  }
+  function exportAppearance() {
+    appearanceFileError = '';
+    appearanceFileStatus = '';
+    try {
+      const file = new Blob([serializeAppearanceFile(currentAppearance())], {
+        type: 'application/json;charset=utf-8',
+      });
+      const url = URL.createObjectURL(file);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'immichpager-appearance.json';
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      appearanceFileStatus = 'Appearance file downloaded.';
+    } catch (cause) {
+      appearanceFileError =
+        cause instanceof Error ? cause.message : 'Could not export appearance.';
+    }
+  }
+  async function importAppearance(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    appearanceFileError = '';
+    appearanceFileStatus = '';
+    try {
+      if (file.size > APPEARANCE_FILE_MAX_BYTES)
+        throw new Error('This appearance file is too large.');
+      const imported = parseAppearanceFile(await file.text());
+      Object.assign(fields, imported);
+      appearanceFileStatus =
+        'Appearance imported into this private draft. Publish when you are ready to share it.';
+    } catch (cause) {
+      appearanceFileError =
+        cause instanceof Error ? cause.message : 'Could not import appearance.';
+    } finally {
+      input.value = '';
+    }
+  }
+  function applyPreset(preset: HeaderPreset) {
+    fields = applyHeaderPreset(fields, preset);
   }
 </script>
 
@@ -69,6 +276,32 @@
       {#if message}<div role="alert" class="notice error">{message}</div>{/if}
       <section>
         <h2>Appearance</h2>
+        <ul
+          class="preset-list"
+          role="list"
+          aria-label="Header composition presets"
+          aria-describedby="preset-description"
+        >
+          {#each headerPresets as preset (preset.id)}
+            <li>
+              <button
+                class="preset-card"
+                type="button"
+                onclick={() => applyPreset(preset)}
+              >
+                <strong>{preset.label}</strong>
+                <span>{preset.description}</span>
+              </button>
+            </li>
+          {/each}
+        </ul>
+        <p id="preset-description" class="hint">
+          A preset changes only header layout, alignment, banner and logo size,
+          title and description size, and spacing. It keeps your title,
+          description, theme, colors, banner crop, CSS, albums, password, and
+          page URL. Changes autosave privately; publish when ready. Google Sans
+          remains the default.
+        </p>
         <Field label="Appearance"
           ><Select
             bind:value={fields.theme}
@@ -96,19 +329,116 @@
             ]}
           /></Field
         >
+        <Field label="Header size"
+          ><Select
+            bind:value={fields.headerSize}
+            options={[
+              { value: 'compact', label: 'Compact' },
+              { value: 'standard', label: 'Standard' },
+              { value: 'tall', label: 'Tall' },
+            ]}
+          /></Field
+        >
+        {#if !saved?.banner}<p class="hint">
+            Banner height applies when you add a banner.
+          </p>{/if}
+        <label class="range-setting"
+          >Logo size
+          <div class="range-control">
+            <input
+              type="range"
+              min="48"
+              max="160"
+              step="8"
+              aria-label="Logo size"
+              bind:value={fields.logoSize}
+            />
+            <output>{fields.logoSize}px</output>
+          </div>
+        </label>
+        {#if !saved?.logo}<p class="hint">
+            Logo size applies when you add a logo.
+          </p>{/if}
+        <label class="range-setting"
+          >Title size
+          <div class="range-control">
+            <input
+              type="range"
+              min="1.5"
+              max="4"
+              step="0.125"
+              aria-label="Title size"
+              bind:value={fields.titleSize}
+            />
+            <output>{fields.titleSize}rem</output>
+          </div>
+        </label>
+        <label class="range-setting"
+          >Description size
+          <div class="range-control">
+            <input
+              type="range"
+              min="0.875"
+              max="1.5"
+              step="0.0625"
+              aria-label="Description size"
+              bind:value={fields.descriptionSize}
+            />
+            <output>{fields.descriptionSize}rem</output>
+          </div>
+        </label>
+        <label class="range-setting"
+          >Header spacing
+          <div class="range-control">
+            <input
+              type="range"
+              min="1.5"
+              max="5"
+              step="0.25"
+              aria-label="Header spacing"
+              bind:value={fields.headerSpacing}
+            />
+            <output>{fields.headerSpacing}rem</output>
+          </div>
+        </label>
         {#if fields.headerLayout === 'overlay' && !saved?.banner}<p
             class="hint"
           >
             Add a banner to place your logo, title and description over it.
           </p>{/if}
-        {#if saved?.banner}<label
-            >Banner crop position<input
+        {#if bannerCropPreview}<div class="banner-crop-control">
+            <span class="crop-label">Banner crop preview</span>
+            <div
+              class="banner-crop-preview"
+              role="group"
+              aria-label="Banner crop preview"
+              aria-describedby="banner-crop-hint"
+              use:bannerCropDrag
+            >
+              <img
+                src={bannerCropPreview}
+                alt=""
+                draggable="false"
+                style:object-position={`center ${fields.bannerPosition}%`}
+              />
+              <span class="crop-guides" aria-hidden="true"></span>
+            </div>
+            <small id="banner-crop-hint" class="hint">
+              Drag the image up or down to choose the crop. The slider supports
+              keyboard controls.
+            </small>
+            <label for="banner-crop-position">Banner crop position</label>
+            <input
+              id="banner-crop-position"
               type="range"
               min="0"
               max="100"
+              step="1"
+              aria-describedby="banner-crop-hint"
+              aria-valuetext={`${fields.bannerPosition}% from top`}
               bind:value={fields.bannerPosition}
-            /></label
-          >{/if}
+            />
+          </div>{/if}
         <details>
           <summary>Custom colors</summary>
           <div class="colors">
@@ -141,6 +471,41 @@
               fields.foreground = null;
             }}>Reset colors</Button
           >
+        </details>
+        <details class="appearance-file">
+          <summary>Import or export appearance</summary>
+          <p class="hint">
+            Move visual settings between pages. Files contain colors, header
+            composition, sizing, typography, spacing, banner crop, and custom
+            CSS; they do not contain page content or branding images.
+          </p>
+          <Button variant="ghost" onclick={exportAppearance} disabled={busy}
+            >Export appearance JSON</Button
+          >
+          <label for="appearance-file">Import appearance JSON</label>
+          <input
+            id="appearance-file"
+            type="file"
+            accept="application/json,.json"
+            aria-describedby="appearance-file-help appearance-file-status"
+            onchange={importAppearance}
+            disabled={busy}
+          />
+          <small id="appearance-file-help">
+            Choose an ImmichPager appearance file up to 96 KiB. Imported
+            settings autosave privately; this does not publish the page.
+          </small>
+          <p
+            id="appearance-file-status"
+            class:error={!!appearanceFileError}
+            role={appearanceFileError
+              ? 'alert'
+              : appearanceFileStatus
+                ? 'status'
+                : undefined}
+          >
+            {appearanceFileError || appearanceFileStatus}
+          </p>
         </details>
       </section>
       <section>
@@ -177,7 +542,7 @@
           </p>
           <div class="css-actions">
             <a
-              href="https://github.com/wispdevon/ImmichPager/blob/dev/docs/customization.md"
+              href="https://gitlab.com/wispd/ImmichPager/-/blob/dev/docs/customization.md"
               target="_blank"
               rel="noreferrer">CSS guide and examples ↗</a
             ><Button
@@ -199,27 +564,55 @@
             ]}
           /></Field
         >
-        {#if fields.order === 'manual'}<p class="hint">
-            Albums remain grouped by year.
+        {#if fields.order === 'manual'}<p id="album-order-help" class="hint">
+            Drag albums within a year, or use the arrow controls. Year groups
+            stay in chronological order.
           </p>
-          {#each fields.albumIds as id, index}<div class="order-row">
-              <span
-                >{albums.find((a) => a.id === id)?.albumName ||
-                  'Unavailable album'}</span
-              ><Button
-                size="small"
-                variant="ghost"
-                disabled={index === 0}
-                aria-label={`Move album ${index + 1} up`}
-                onclick={() => move(index, -1)}>↑</Button
-              ><Button
-                size="small"
-                variant="ghost"
-                disabled={index === fields.albumIds.length - 1}
-                aria-label={`Move album ${index + 1} down`}
-                onclick={() => move(index, 1)}>↓</Button
-              >
-            </div>{/each}{/if}
+          {#each orderGroups as [year, ids] (year)}<div class="order-year">
+              <h3>{year}</h3>
+              {#each ids as id, index (id)}{@const name =
+                  albums.find((a) => a.id === id)?.albumName ||
+                  'Unavailable album'}
+                <div
+                  class="order-row"
+                  class:dragging={drag?.albumId === id}
+                  data-album-order-row
+                  data-album-id={id}
+                  data-order-year={year}
+                >
+                  <button
+                    type="button"
+                    class="drag-handle"
+                    aria-label={`Reorder ${name}. Use arrow keys or the adjacent move buttons.`}
+                    aria-describedby="album-order-help"
+                    onpointerdown={(event) => startDrag(id, event)}
+                    onpointermove={(event) => updateDrag(id, event)}
+                    onpointerup={endDrag}
+                    onpointercancel={endDrag}
+                    onlostpointercapture={endDrag}
+                    onkeydown={(event) => handleReorderKey(event, id)}
+                    ><span aria-hidden="true">⠿</span></button
+                  >
+                  <span>{name}</span>
+                  <Button
+                    size="small"
+                    variant="ghost"
+                    disabled={index === 0}
+                    aria-label={`Move ${name} up within ${year}`}
+                    onclick={() => move(id, -1)}>↑</Button
+                  ><Button
+                    size="small"
+                    variant="ghost"
+                    disabled={index === ids.length - 1}
+                    aria-label={`Move ${name} down within ${year}`}
+                    onclick={() => move(id, 1)}>↓</Button
+                  >
+                </div>
+              {/each}
+            </div>{/each}
+          <p class="visually-hidden" role="status" aria-live="polite">
+            {orderStatus}
+          </p>{/if}
       </section>
       <section>
         <h2>Sharing</h2>
@@ -333,6 +726,20 @@
   .advanced-css summary {
     cursor: pointer;
   }
+  .appearance-file[open] {
+    display: grid;
+    gap: 12px;
+  }
+  .appearance-file p {
+    margin: 0;
+  }
+  .appearance-file #appearance-file-status.error {
+    color: #ffb4ab;
+  }
+  .appearance-file input[type='file'] {
+    max-width: 100%;
+    font-size: 13px;
+  }
   .css-editor {
     width: 100%;
     box-sizing: border-box;
@@ -385,6 +792,39 @@
     font-size: 18px;
     margin: 0;
   }
+  .preset-list {
+    display: grid;
+    gap: 8px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .preset-card {
+    display: grid;
+    gap: 4px;
+    min-height: 44px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ffffff24;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .preset-card:hover {
+    background: #ffffff0d;
+  }
+  .preset-card:focus-visible {
+    outline: 2px solid #accbfa;
+    outline-offset: 2px;
+  }
+  .preset-card span {
+    color: #9aa0a6;
+    font-size: 12px;
+    line-height: 1.45;
+  }
   .options-body label {
     font-size: 13px;
     margin: 0;
@@ -393,6 +833,83 @@
     font-size: 12px;
     color: #9aa0a6;
     line-height: 1.6;
+  }
+  .banner-crop-control {
+    display: grid;
+    gap: 8px;
+  }
+  .crop-label {
+    font-size: 13px;
+  }
+  .banner-crop-preview {
+    position: relative;
+    width: 100%;
+    max-block-size: 10rem;
+    aspect-ratio: 16 / 5;
+    overflow: hidden;
+    border: 1px solid #49505b;
+    border-radius: 8px;
+    background: #171c24;
+    cursor: grab;
+    touch-action: pan-x pinch-zoom;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .banner-crop-preview:global(.dragging) {
+    cursor: grabbing;
+  }
+  .banner-crop-preview img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+  }
+  .crop-guides {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(
+        to right,
+        transparent calc(33.333% - 0.5px),
+        rgb(255 255 255 / 58%) 33.333%,
+        transparent calc(33.333% + 0.5px),
+        transparent calc(66.666% - 0.5px),
+        rgb(255 255 255 / 58%) 66.666%,
+        transparent calc(66.666% + 0.5px)
+      ),
+      linear-gradient(
+        to bottom,
+        transparent calc(33.333% - 0.5px),
+        rgb(255 255 255 / 58%) 33.333%,
+        transparent calc(33.333% + 0.5px),
+        transparent calc(66.666% - 0.5px),
+        rgb(255 255 255 / 58%) 66.666%,
+        transparent calc(66.666% + 0.5px)
+      );
+  }
+  .range-setting {
+    display: grid;
+    gap: 6px;
+    margin-block: 12px;
+  }
+  .range-control {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 4.5rem;
+    align-items: center;
+    gap: 12px;
+  }
+  .range-control input {
+    width: 100%;
+    min-height: 32px;
+    accent-color: #accbfa;
+  }
+  .range-control output {
+    color: #9aa0a6;
+    font-size: 12px;
+    text-align: end;
+    font-variant-numeric: tabular-nums;
   }
   .colors {
     display: grid;
@@ -457,8 +974,57 @@
     gap: 6px;
     font-size: 13px;
   }
+  .order-year {
+    display: grid;
+    gap: 8px;
+  }
+  .order-year h3 {
+    margin: 0;
+    color: #9aa0a6;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .drag-handle {
+    display: grid;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 1px solid #ffffff24;
+    border-radius: 6px;
+    color: #e5e7eb;
+    background: #ffffff08;
+    cursor: grab;
+    touch-action: pan-x pinch-zoom;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .drag-handle:active,
+  .order-row.dragging .drag-handle {
+    cursor: grabbing;
+  }
+  .drag-handle:focus-visible {
+    outline: 2px solid #accbfa;
+    outline-offset: 2px;
+  }
+  .order-row.dragging {
+    opacity: 0.65;
+  }
   .order-row > span {
     flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
   .danger-zone {
     display: flex !important;

@@ -91,6 +91,69 @@ it('rejects stale revisions and another owner', async () => {
     }),
   ).rejects.toThrow('another tab');
 });
+it('reviews changes only for the owner and the expected saved draft revision', async () => {
+  const { store, drafts } = setup();
+  let page = await drafts.save('alice', null, values);
+  store.changeDraftBranding(
+    store.draft(page.id, 'alice'),
+    'logo',
+    new Uint8Array([1]),
+  );
+  page = store.editor(page.id, 'alice');
+  page = await drafts.publish('alice', page.id, {
+    password: '',
+    passwordMode: 'keep',
+    expectedDraftRevision: page.draftRevision,
+  });
+  store.changeDraftBranding(
+    store.draft(page.id, 'alice'),
+    'logo',
+    new Uint8Array([2]),
+  );
+  page = store.editor(page.id, 'alice');
+  page = await drafts.save('alice', page.id, {
+    ...values,
+    title: 'Updated title',
+    albumIds: ['a', 'new-album'],
+    expectedDraftRevision: page.draftRevision,
+  });
+
+  const review = drafts.review('alice', page.id, page.draftRevision);
+  expect(review).toMatchObject({
+    currentlyPublished: true,
+    previousSlug: 'client',
+    addedAlbumIds: ['new-album'],
+    removedAlbumIds: [],
+    appearanceChanges: ['title', 'logo'],
+  });
+  expect(JSON.stringify(review)).not.toMatch(
+    /passwordHash|password|shareId|native-cookie/,
+  );
+  expect(() => drafts.review('bob', page.id, page.draftRevision)).toThrow(
+    'not found',
+  );
+  expect(() => drafts.review('alice', page.id, page.draftRevision - 1)).toThrow(
+    'another tab',
+  );
+  const publishInput = {
+    password: '',
+    passwordMode: 'keep' as const,
+    expectedDraftRevision: review.draftRevision,
+    expectedPublishedRevision: review.expectedPublishedRevision,
+  };
+  await drafts.publish('alice', page.id, publishInput);
+  await drafts.operation('alice', page.id, 'unpublish');
+  const unpublished = store.editor(page.id, 'alice');
+  await drafts.publish('alice', page.id, {
+    password: '',
+    passwordMode: 'keep',
+    expectedDraftRevision: unpublished.draftRevision,
+    expectedPublishedRevision: null,
+  });
+  await expect(drafts.publish('alice', page.id, publishInput)).rejects.toThrow(
+    'live page changed since this review',
+  );
+});
 it('never stores password values in a draft', async () => {
   const { store, drafts } = setup();
   const d = await drafts.save('alice', null, {
@@ -99,6 +162,117 @@ it('never stores password values in a draft', async () => {
     passwordMode: 'set',
   });
   expect(JSON.stringify(store.draft(d.id, 'alice'))).not.toContain('secret');
+});
+
+it('duplicates only an owned page design into an empty private draft', async () => {
+  const { store, drafts, upstream } = setup();
+  let source = await drafts.save('alice', null, {
+    title: 'Acme monthly work',
+    slug: 'acme-monthly-work',
+    description: 'Client-specific copy',
+    albumIds: ['a'],
+    theme: 'light',
+    background: '#112233',
+    foreground: '#ddeeff',
+    accent: '#abcdef',
+    alignment: 'center',
+    headerLayout: 'overlay',
+    headerSize: 'tall',
+    logoSize: 112,
+    titleSize: 3.5,
+    descriptionSize: 1.25,
+    headerSpacing: 3.5,
+    customCss: ':scope { --pager-accent: #abcdef; }',
+    bannerPosition: 28,
+    order: 'manual',
+  });
+  store.changeDraftBranding(
+    store.draft(source.id, 'alice'),
+    'logo',
+    new Uint8Array([1, 2, 3]),
+  );
+  store.changeDraftBranding(
+    store.draft(source.id, 'alice'),
+    'banner',
+    new Uint8Array([4, 5, 6]),
+  );
+  source = store.editor(source.id, 'alice');
+  source = await drafts.publish('alice', source.id, {
+    password: 'source-pin',
+    passwordMode: 'set',
+    expectedDraftRevision: source.draftRevision,
+  });
+
+  const duplicate = await drafts.duplicateDesign('alice', source.id);
+
+  expect(duplicate.id).not.toBe(source.id);
+  expect(duplicate).toMatchObject({
+    ownerId: 'alice',
+    title: '',
+    description: '',
+    slug: '',
+    albumIds: [],
+    order: 'newest',
+    theme: 'light',
+    background: '#112233',
+    foreground: '#ddeeff',
+    accent: '#abcdef',
+    alignment: 'center',
+    headerLayout: 'overlay',
+    headerSize: 'tall',
+    logoSize: 112,
+    titleSize: 3.5,
+    descriptionSize: 1.25,
+    headerSpacing: 3.5,
+    customCss: ':scope { --pager-accent: #abcdef; }',
+    bannerPosition: 28,
+    logo: true,
+    banner: true,
+    status: 'draft',
+    publishedSlug: null,
+    publishedRevision: null,
+    hasPassword: false,
+    hasUnpublishedChanges: true,
+  });
+  expect(store.get(duplicate.id)).toBeNull();
+  expect(store.shares(duplicate.id)).toEqual([]);
+  expect(store.draftBranding(duplicate.id, 'logo')).toEqual(
+    new Uint8Array([1, 2, 3]),
+  );
+  expect(store.draftBranding(duplicate.id, 'banner')).toEqual(
+    new Uint8Array([4, 5, 6]),
+  );
+  expect(upstream.createShare).toHaveBeenCalledTimes(1);
+  expect(JSON.stringify(duplicate)).not.toContain('source-pin');
+  expect(JSON.stringify(duplicate)).not.toContain('key-a');
+
+  store.changeDraftBranding(
+    store.draft(duplicate.id, 'alice'),
+    'logo',
+    new Uint8Array([9]),
+  );
+  store.changeDraftBranding(store.draft(duplicate.id, 'alice'), 'banner', null);
+  expect(store.draftBranding(source.id, 'logo')).toEqual(
+    new Uint8Array([1, 2, 3]),
+  );
+  expect(store.draftBranding(source.id, 'banner')).toEqual(
+    new Uint8Array([4, 5, 6]),
+  );
+  expect(store.draftBranding(duplicate.id, 'logo')).toEqual(
+    new Uint8Array([9]),
+  );
+  expect(store.draftBranding(duplicate.id, 'banner')).toBeNull();
+});
+
+it('does not duplicate another owner’s private page design', async () => {
+  const { store, drafts } = setup();
+  const source = await drafts.save('alice', null, values);
+
+  await expect(drafts.duplicateDesign('bob', source.id)).rejects.toThrow(
+    'Page not found',
+  );
+
+  expect(store.editors('bob')).toEqual([]);
 });
 
 it('migrates v1 published pages, branding, and sessions without changing the live version', async () => {
@@ -187,13 +361,23 @@ it('defaults older JSON records and publishes appearance changes only explicitly
     import('../src/lib/contracts').DraftRecord
   >;
   delete old.headerLayout;
+  delete old.titleSize;
+  delete old.descriptionSize;
+  delete old.headerSpacing;
   delete old.customCss;
+  delete old.headerSize;
+  delete old.logoSize;
   store.db
     .prepare('UPDATE drafts SET document=? WHERE id=?')
     .run(JSON.stringify(old), d.id);
   expect(store.draft(d.id, 'alice')).toMatchObject({
     headerLayout: 'below',
+    titleSize: 3,
+    descriptionSize: 1.125,
+    headerSpacing: 2.5,
     customCss: '',
+    headerSize: 'standard',
+    logoSize: 80,
   });
   d = await drafts.publish('alice', d.id, {
     password: '',
@@ -210,13 +394,23 @@ it('defaults older JSON records and publishes appearance changes only explicitly
     import('../src/lib/contracts').PageRecord
   >;
   delete oldLive.headerLayout;
+  delete oldLive.titleSize;
+  delete oldLive.descriptionSize;
+  delete oldLive.headerSpacing;
   delete oldLive.customCss;
+  delete oldLive.headerSize;
+  delete oldLive.logoSize;
   store.db
     .prepare('UPDATE pages SET document=? WHERE id=?')
     .run(JSON.stringify(oldLive), d.id);
   expect(store.publicPage('client')).toMatchObject({
     headerLayout: 'below',
+    titleSize: 3,
+    descriptionSize: 1.125,
+    headerSpacing: 2.5,
     customCss: '',
+    headerSize: 'standard',
+    logoSize: 80,
   });
   d = await drafts.publish('alice', d.id, {
     password: '',
@@ -252,4 +446,79 @@ it('defaults older JSON records and publishes appearance changes only explicitly
     expectedDraftRevision: d.draftRevision,
   });
   expect(store.publicPage('client')?.customCss).toBe('');
+});
+
+it('keeps header composition, sizing, and typography private until the page is published', async () => {
+  const { store, drafts } = setup();
+  let d = await drafts.save('alice', null, values);
+  d = await drafts.publish('alice', d.id, {
+    password: '',
+    passwordMode: 'keep',
+    expectedDraftRevision: d.draftRevision,
+  });
+
+  d = await drafts.save('alice', d.id, {
+    ...values,
+    headerSize: 'tall',
+    logoSize: 112,
+    titleSize: 3.5,
+    descriptionSize: 1.25,
+    headerSpacing: 3.5,
+    expectedDraftRevision: d.draftRevision,
+  });
+
+  expect(store.draft(d.id, 'alice')).toMatchObject({
+    headerSize: 'tall',
+    logoSize: 112,
+    titleSize: 3.5,
+    descriptionSize: 1.25,
+    headerSpacing: 3.5,
+  });
+  expect(store.publicPage('client')).toMatchObject({
+    headerSize: 'standard',
+    logoSize: 80,
+    titleSize: 3,
+    descriptionSize: 1.125,
+    headerSpacing: 2.5,
+  });
+
+  d = await drafts.publish('alice', d.id, {
+    password: '',
+    passwordMode: 'keep',
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(store.publicPage('client')).toMatchObject({
+    headerSize: 'tall',
+    logoSize: 112,
+    titleSize: 3.5,
+    descriptionSize: 1.25,
+    headerSpacing: 3.5,
+  });
+  expect(d.hasUnpublishedChanges).toBe(false);
+});
+
+it('rejects header settings outside their supported ranges', async () => {
+  const { drafts } = setup();
+  const invalidSettings = [
+    { headerSize: 'extra-wide' },
+    { logoSize: 47 },
+    { logoSize: 161 },
+    { titleSize: 1.4 },
+    { titleSize: 4.1 },
+    { descriptionSize: 0.8 },
+    { descriptionSize: 1.6 },
+    { headerSpacing: 1.4 },
+    { headerSpacing: 5.1 },
+  ];
+
+  for (const appearance of invalidSettings) {
+    await expect(
+      drafts.save('alice', null, {
+        title: '',
+        slug: '',
+        albumIds: [],
+        ...appearance,
+      }),
+    ).rejects.toThrow();
+  }
 });

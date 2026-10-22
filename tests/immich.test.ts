@@ -34,6 +34,7 @@ it('normalizes v3 album ownership without treating a collaborator as owner', asy
     {
       id: 'owned',
       albumName: 'My work',
+      createdAt: '2026-10-01T12:00:00.000Z',
       albumUsers: [{ user: { id: 'alice' }, role: 'owner' }],
     },
     {
@@ -62,10 +63,16 @@ it('normalizes v3 album ownership without treating a collaborator as owner', asy
       ),
   );
   const client = new Immich('http://immich:2283');
-  expect(
-    (await client.albums())
-      .filter((a) => a.ownerId === 'alice')
-      .map((a) => a.id),
-  ).toEqual(['owned', 'legacy']);
+  const listed = await client.albums();
+  expect(listed.filter((a) => a.ownerId === 'alice').map((a) => a.id)).toEqual([
+    'owned',
+    'legacy',
+  ]);
+  expect(listed.find((a) => a.id === 'owned')?.createdAt).toBe(
+    '2026-10-01T12:00:00.000Z',
+  );
   expect((await client.album('owned')).ownerId).toBe('alice');
+  expect((await client.album('owned')).createdAt).toBe(
+    '2026-10-01T12:00:00.000Z',
+  );
 });

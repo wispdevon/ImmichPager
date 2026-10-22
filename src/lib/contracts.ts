@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DEFAULT_PAGE_ACCENT } from './gallery';
 
 export const reservedSlugs = new Set([
   'manage',
@@ -8,6 +9,7 @@ export const reservedSlugs = new Set([
   'health',
   'ready',
 ]);
+export const MAX_PAGE_ALBUMS = 500;
 const color = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, 'Use a six-digit hex color');
@@ -24,14 +26,19 @@ export const pageInputSchema = z
     theme: z.enum(['dark', 'light', 'system']).default('dark'),
     background: color.nullable().default(null),
     foreground: color.nullable().default(null),
-    accent: color.default('#accbfa'),
+    accent: color.default(DEFAULT_PAGE_ACCENT),
     alignment: z.enum(['left', 'center']).default('left'),
     headerLayout: z.enum(['below', 'overlay']).default('below'),
+    headerSize: z.enum(['compact', 'standard', 'tall']).default('standard'),
+    logoSize: z.number().int().min(48).max(160).default(80),
+    titleSize: z.number().min(1.5).max(4).default(3),
+    descriptionSize: z.number().min(0.875).max(1.5).default(1.125),
+    headerSpacing: z.number().min(1.5).max(5).default(2.5),
     customCss: z.string().max(20_000).default(''),
     bannerPosition: z.number().int().min(0).max(100).default(50),
     albumIds: z
       .array(z.string().min(1).max(100))
-      .max(500)
+      .max(MAX_PAGE_ALBUMS)
       .default([])
       .refine((a) => new Set(a).size === a.length, 'Albums must be unique'),
     order: z.enum(['newest', 'manual']).default('newest'),
@@ -69,6 +76,7 @@ export type Album = {
   albumName: string;
   ownerId: string;
   assetCount: number;
+  createdAt?: string;
   startDate?: string;
   endDate?: string;
   albumThumbnailAssetId?: string | null;
@@ -95,6 +103,11 @@ export type GalleryPage = Pick<
   | 'alignment'
   | 'bannerPosition'
   | 'headerLayout'
+  | 'headerSize'
+  | 'logoSize'
+  | 'titleSize'
+  | 'descriptionSize'
+  | 'headerSpacing'
   | 'customCss'
   | 'order'
 > & {
@@ -148,6 +161,31 @@ export type Photo = {
 /** Additive JSON settings: old records keep their original appearance. */
 export function appearanceDefaults<T extends object>(
   record: T,
-): T & { headerLayout: 'below' | 'overlay'; customCss: string } {
-  return { headerLayout: 'below', customCss: '', ...record };
+): T & {
+  headerLayout: 'below' | 'overlay';
+  headerSize: 'compact' | 'standard' | 'tall';
+  logoSize: number;
+  titleSize: number;
+  descriptionSize: number;
+  headerSpacing: number;
+  customCss: string;
+} {
+  return {
+    headerLayout: 'below',
+    headerSize: 'standard',
+    logoSize: 80,
+    titleSize: 3,
+    descriptionSize: 1.125,
+    headerSpacing: 2.5,
+    customCss: '',
+    ...record,
+  } as T & {
+    headerLayout: 'below' | 'overlay';
+    headerSize: 'compact' | 'standard' | 'tall';
+    logoSize: number;
+    titleSize: number;
+    descriptionSize: number;
+    headerSpacing: number;
+    customCss: string;
+  };
 }

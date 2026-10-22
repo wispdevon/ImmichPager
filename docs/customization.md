@@ -4,9 +4,57 @@ Open **Pages → your page → Options**. All appearance settings belong to this
 
 This feature is being developed on the **dev branch**. The current main release and live deployment remain unchanged.
 
+## Check what clients see
+
+After publishing, choose **Open published page** in the editor to open the actual published URL in a new tab. It shows the published version while your working edits remain private. The editor explains whether the published version has a password, independently of any pending password changes in Options. A previously unlocked browser may skip the page prompt; use a private window to check a first visit. Immich can ask for the password again in its native album viewer. Private Preview still shows draft changes.
+
 ## Colors and accent
 
 Choose Dark, Light, or System under Appearance. Expand **Custom colors** to override background, text, and accent colors. The default accent is Immich blue (`#accbfa`). Currently, accent changes **album-title text on hover**; it does not recolor the page title, banner, management buttons, or native Immich album viewer. CSS can use the same accent for other gallery elements.
+
+## Move a design between pages
+
+In **Options → Import or export appearance**, download the current visual settings
+as `immichpager-appearance.json` or choose a file to import. The version 1 file
+contains the theme, custom colors, header alignment and layout, banner and logo
+size, title and description sizes, header spacing, banner crop position, and
+custom CSS. Older version 1 files that omit these five header settings import
+with the current defaults: Standard, 80 px, 3 rem, 1.125 rem, and 2.5 rem. It
+does not contain the page title or description,
+URL, album names or identifiers, album order, passwords, share links, or logo
+and banner images. Choose branding separately on each page.
+
+Import applies only the visual settings to the current page's private draft.
+The page's content, URL, albums, and password remain unchanged, and clients see
+the design only after you publish. Files are limited to 96 KiB and must use the
+supported version 1 format. Unknown fields and invalid settings are rejected.
+Custom CSS goes through the same gallery compiler used by preview and
+publication, so imports cannot add external resources or styles outside the
+gallery.
+
+The file is a plain JSON object with a strict, versioned shape:
+
+```json
+{
+  "format": "immichpager-appearance",
+  "version": 1,
+  "appearance": {
+    "theme": "dark",
+    "background": null,
+    "foreground": null,
+    "accent": "#accbfa",
+    "alignment": "left",
+    "bannerPosition": 50,
+    "headerLayout": "below",
+    "headerSize": "standard",
+    "logoSize": 80,
+    "titleSize": 3,
+    "descriptionSize": 1.125,
+    "headerSpacing": 2.5,
+    "customCss": ""
+  }
+}
+```
 
 ## Compose the header over a banner
 
@@ -15,6 +63,22 @@ Add a banner using **Choose from Immich**, an upload, or a file drop. In Options
 Overlay mode uses white text and a dark gradient to keep the header readable. The banner grows to fit longer text on narrow screens. If you remove the banner, the header returns to the normal layout; the saved overlay choice takes effect when you add a banner again. Existing pages default to Below banner.
 
 ![Header composed over a banner, with custom title typography](screenshots/banner-overlay.png)
+
+## Set header size
+
+In **Options → Appearance**, choose **Compact**, **Standard**, or **Tall** for the banner composition. Standard keeps the existing responsive banner height. Compact and Tall give you shorter or deeper compositions in both Below banner and Over banner layouts. Use the logo-size slider to choose a size from 48–160 px; existing and new pages default to 80 px.
+
+Changes autosave to the private draft, appear in Preview, and only update your client page after you publish. Existing pages receive these defaults without a database migration.
+
+## Set typography and spacing
+
+In **Options → Appearance**, use the sliders to set title size (1.5–4 rem), description size (0.875–1.5 rem), and header spacing (1.5–5 rem). The title scales with page width while preserving the selected size at phone widths, and spacing adjusts on narrow screens. Google Sans remains the default font. Existing and new pages start with a 3 rem title, 1.125 rem description, and 2.5 rem header spacing.
+
+Changes autosave to the private draft and appear in Preview. Your client page changes only after you publish. Existing pages receive defaults without a database migration.
+
+## Apply a header preset
+
+Choose **Classic**, **Centered**, or **Editorial** in **Options → Appearance** to start with a complete header composition. Each preset sets only layout, alignment, banner size, logo size, title size, description size, and header spacing for the current page. It keeps your title and description text, theme and colors, banner crop, CSS, logo and banner images, albums and their order, password, and page URL. Presets are private draft edits until you publish; Google Sans remains the default font.
 
 ## Add CSS
 
@@ -119,7 +183,7 @@ Use installed system fonts, including the gallery's bundled Google Sans, without
 
 ## Contributor implementation notes
 
-`headerLayout` (`below` or `overlay`) and `customCss` (raw CSS text) are additive settings on working drafts, published records, and gallery DTOs. Missing fields in older stored JSON receive defaults on read; the SQLite schema stays at version 2. Draft writes preserve invalid CSS text so an unfinished edit is recoverable. Publication validates the stylesheet before changing any live data or native shares.
+`headerLayout`, `headerSize`, `logoSize`, `titleSize`, `descriptionSize`, `headerSpacing`, and `customCss` (raw CSS text) are additive settings on working drafts, published records, and gallery DTOs. Missing fields in older stored JSON receive defaults on read; the SQLite schema stays at version 2. Draft writes preserve invalid CSS text so an unfinished edit is recoverable. Publication validates the stylesheet before changing any live data or native shares.
 
 The shared compiler uses CSS Tree to parse, validate supported constructs, and add a page-specific guard to each selector's target, including selectors with pseudo-elements. `:scope` maps to the gallery root. A separate, untargetable layout/paint containment wrapper isolates positioned descendants. The renderer only serializes compiled CSS and escapes `<` as a CSS escape before placing it in a style element; raw author text is never inserted as HTML. Existing CSP directives remain unchanged. Browser tests cover style-closing strings, selector escape attempts, containment, private drafts, publication and resetting.
 

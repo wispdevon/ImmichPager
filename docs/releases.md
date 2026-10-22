@@ -13,7 +13,7 @@ The [release downloads](https://github.com/wispdevon/ImmichPager/releases/tag/v0
 
 Local verification covers type checking, lint, formatting, dependency audit, 55 domain tests, 7 production-browser tests, and the production build. The ARM64 image receives an isolated startup and health smoke check; publishing does not change an existing deployment.
 
-GitHub rejected workflow dispatch with `Actions has been disabled for this user`. The available publishing credential also lacks `write:packages`, so this release has no GHCR image. Use the downloadable image or source/runtime build until registry publication is available.
+GitHub rejected workflow dispatch with `Actions has been disabled for this user`. The available publishing credential also lacks `write:packages`, so this release has no GHCR image. Use the downloadable image or source/runtime build until a GitLab release image is published.
 
 ## Release process
 

@@ -2,6 +2,17 @@ import http from 'node:http';
 import { randomUUID, createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
+const albumCreatedAt = [
+  '2026-08-15T12:00:00.000Z',
+  '2026-10-20T12:00:00.000Z',
+  '2026-09-02T12:00:00.000Z',
+  '2026-05-01T12:00:00.000Z',
+  '2026-06-22T12:00:00.000Z',
+  '2026-03-08T12:00:00.000Z',
+  '2026-02-05T12:00:00.000Z',
+  '2026-01-01T12:00:00.000Z',
+  '2025-12-01T12:00:00.000Z',
+];
 export const albums = [
   ['Liberty Family Camp ’26', '2026-05-01', '2026-05-31', 552, 'earthrise'],
   ['Captured by Me', '2026-08-01', '2026-10-01', 374, 'astronaut'],
@@ -15,6 +26,7 @@ export const albums = [
 ].map(([albumName, startDate, endDate, assetCount, photo], i) => ({
   id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
   albumName,
+  createdAt: albumCreatedAt[i],
   startDate,
   endDate,
   assetCount,
@@ -53,6 +65,35 @@ const encode = (value) =>
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('"', '&quot;');
+const navigationItems = [
+  ['/photos', 'Photos'],
+  ['/albums', 'Albums'],
+  ['/sharing', 'Sharing'],
+];
+function renderSidebar(pathname) {
+  const items = navigationItems
+    .map(([href, label]) => {
+      const active = pathname.startsWith(href);
+      const current = active ? ' aria-current="page"' : '';
+      const classes = active ? ' class="bg-primary/10 text-primary"' : '';
+      return (
+        '<div data-navbar-item><div class="navbar-row"><a href="' +
+        href +
+        '"' +
+        current +
+        classes +
+        '><span>' +
+        label +
+        '</span></a></div></div>'
+      );
+    })
+    .join('');
+  return (
+    '<nav id="sidebar" aria-label="Primary navigation" tabindex="-1" data-testid="sidebar-parent">' +
+    items +
+    '</nav>'
+  );
+}
 export function createFixture() {
   const shares = new Map();
   const token = (share) =>
@@ -272,8 +313,57 @@ export function createFixture() {
       if (url.pathname.startsWith('/api/'))
         return json({ method: req.method, path: req.url }, 200);
       res.setHeader('content-type', 'text/html');
+      const sidebar = renderSidebar(url.pathname);
       res.end(
-        `<!doctype html><html><head><title>Immich fixture</title><style>body{margin:0;background:#111;color:#eee;font:15px system-ui}header{padding:24px;border-bottom:1px solid #333}aside{width:220px;float:left;padding:20px;box-sizing:border-box}aside a{color:inherit;display:block;width:100%;box-sizing:border-box;padding:16px;text-decoration:none}.navbar-row{display:flex;align-items:center}main{margin-left:220px}a{color:#a3bfff}.demo{padding:40px}</style></head><body><header>✿ IMMICH <span style="float:right;font-size:12px">Local development fixture</span></header><aside id="sidebar"><a href="/photos">Photos</a><a href="/albums">Albums</a><div data-navbar-item><div class="navbar-row"><a href="/sharing"><span>Sharing</span></a></div></div></aside><main><div class="demo"><h1>Your library, connected.</h1><p>This is a local Immich fixture. No real photo library is connected.</p><p>Sign in as <a href="/dev-login/alice">Alex</a> or <a href="/dev-login/bob">Bob</a>, then choose Pages.</p><p><a href="/page/acme">Open the example client page →</a></p></div></main></body></html>`,
+        '<!doctype html><html class="dark"><head><meta charset="utf-8"><title>Immich fixture</title><style>' +
+          'body{margin:0;background:#111;color:#eee;font:15px system-ui}' +
+          'header{padding:24px;border-bottom:1px solid #333}' +
+          '#sidebar{width:220px;float:left;padding:20px;box-sizing:border-box;background:#111}' +
+          '#sidebar a{color:inherit;display:block;width:100%;box-sizing:border-box;padding:16px;text-decoration:none}' +
+          '.navbar-row{display:flex;align-items:center}' +
+          '#sidebar a[aria-current="page"]{background:rgba(200,200,255,.1);color:#a3bfff}' +
+          'main{margin-left:220px}a{color:#a3bfff}.demo{padding:40px}' +
+          '#top-menu-button{display:none;border:0;background:transparent;color:inherit;font:inherit;padding:0;margin-right:12px}' +
+          '@media(max-width:700px){#top-menu-button{display:inline-flex}' +
+          '#sidebar{position:fixed;top:70px;left:0;bottom:0;z-index:2;width:0;float:none;padding:0;overflow-x:hidden;transition:width .2s}' +
+          'body.mobile-sidebar-open #sidebar{width:min(100vw,16rem);padding:8px}' +
+          'main{margin-left:0}}</style></head><body>' +
+          '<header><button type="button" id="top-menu-button" aria-label="Main menu" aria-expanded="false">☰</button>' +
+          '✿ IMMICH <span style="float:right;font-size:12px">Local development fixture</span></header>' +
+          sidebar +
+          '<main id="main"><div class="demo"><h1>Your library, connected.</h1>' +
+          '<p>This is a local Immich fixture. No real photo library is connected.</p>' +
+          '<p>Sign in as <a href="/dev-login/alice">Alex</a> or <a href="/dev-login/bob">Bob</a>, then choose Pages.</p>' +
+          '<p><a href="/page/acme">Open the example client page →</a></p></div></main>' +
+          '<script>const sidebar = document.querySelector("#sidebar");' +
+          'const menu = document.querySelector("#top-menu-button");' +
+          'const isMobile = () => matchMedia("(max-width:700px)").matches;' +
+          'function syncSidebar() {' +
+          'const open = document.body.classList.contains("mobile-sidebar-open");' +
+          'sidebar.inert = isMobile() && !open;' +
+          'menu.setAttribute("aria-expanded", String(isMobile() && open));' +
+          '}' +
+          'menu.addEventListener("click", () => {' +
+          'const open = !document.body.classList.contains("mobile-sidebar-open");' +
+          'document.body.classList.toggle("mobile-sidebar-open", open);' +
+          'syncSidebar();' +
+          'if (isMobile()) {' +
+          'if (open) sidebar.querySelector("a[href]")?.focus();' +
+          'else menu.focus();' +
+          '}' +
+          '});' +
+          'sidebar.addEventListener("keydown", (event) => {' +
+          'if (!isMobile() || sidebar.inert || event.key !== "Tab") return;' +
+          'const links = [...sidebar.querySelectorAll("a[href]")];' +
+          'if (!links.length) return;' +
+          'if (event.shiftKey && document.activeElement === links[0]) {' +
+          'event.preventDefault(); links.at(-1).focus();' +
+          '} else if (!event.shiftKey && document.activeElement === links.at(-1)) {' +
+          'event.preventDefault(); links[0].focus();' +
+          '}' +
+          '});' +
+          'window.addEventListener("resize", syncSidebar);' +
+          'syncSidebar();</script></body></html>',
       );
     } catch {
       json({ message: 'Fixture request failed' }, 500);

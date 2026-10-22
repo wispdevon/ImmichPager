@@ -31,7 +31,7 @@ These real-use screenshots were supplied by the project maintainer for publicati
 
 <p align="center">
   <img src="docs/screenshots/gallery-desktop.png" width="75%" alt="ImmichPager desktop client page with an Immich-style album grid and year headings" />
-  <img src="docs/screenshots/gallery-mobile.png" width="23%" alt="The same client page in a responsive two-column mobile layout" />
+  <img src="docs/screenshots/gallery-mobile.png" width="23%" alt="The same client page in a single-column phone layout" />
 </p>
 
 Screenshots use attributed [NASA Apollo photographs](fixtures/photos/README.md) and illustrative album data, not a live client library.
@@ -42,13 +42,14 @@ Screenshots use attributed [NASA Apollo photographs](fixtures/photos/README.md) 
 
 - **Persistent client links:** one `/page/custom-slug` URL across months of work.
 - **Immich-style albums:** square covers, dates, item counts, collapsible years, and manual or chronological ordering.
-- **Per-page branding:** choose a logo/banner from Immich Photos, drop an image, or upload; adjust crop, alignment, and colors.
+- **Per-page branding:** choose a logo/banner from Immich Photos, drop an image, or upload; adjust crop, alignment, banner and logo size, title and description sizes, header spacing, and colors.
 - **Private autosaved drafts:** edit freely without changing the live page; publish updates explicitly.
+- **Publication review (dev):** see albums being added or removed and page appearance changes before updating the live page.
 - **Easy sharing:** Copy link on each published page, with an Immich-style Options panel for configuration.
 - **Password protection:** optional page password/PIN applied to dedicated Immich album shares too. The native viewer may prompt again.
 - **Inside Immich:** a Pages sidebar entry and existing session authentication; each photographer manages their own pages.
 - **Dedicated share links:** existing shares remain untouched. Interrupted operations are tracked and can be retried.
-- **Docker companion:** one container and SQLite volume; amd64/arm64 image workflow, no changes to Immich's image or database.
+- **Docker companion:** one container and SQLite volume; GitLab release workflow prepares amd64/arm64 images for manual publication, with no changes to Immich's image or database.
 - **Contributor-friendly:** typed boundaries, local Immich fixtures, browser tests, CI, issue forms, and architecture documentation.
 
 <details>
@@ -68,7 +69,7 @@ Start with **Add a title**, **Add a description**, and **Select albums**. Brandi
 
 ## Gallery customization (dev)
 
-Choose **Below banner** or **Over banner** to compose your logo, title, and description. Advanced per-page CSS supports typography, cover corners, responsive spacing, and theme variables. Changes remain private until published. See the [customization guide and CSS examples](docs/customization.md). These additions are on `dev`; `main` and the current live deployment retain the existing UI.
+Choose **Below banner** or **Over banner** to compose your logo, title, and description, or start with a Classic, Centered, or Editorial header preset. Set compact, standard, or tall banners; tune logo size, title and description sizes, and header spacing per page while keeping Google Sans as the default. Advanced per-page CSS supports further typography, cover corners, responsive spacing, and theme variables. Changes remain private until published. See the [customization guide and CSS examples](docs/customization.md). These additions are on `dev`; `main` and the current live deployment retain the existing UI.
 
 ## Quick start
 
@@ -117,6 +118,8 @@ pnpm dev:demo
 
 Open `http://127.0.0.1:3000/page/acme` for the sample page. Visit `/dev-login/alice` on that local demo to open the editor with a fixture account. If the ports are occupied, use `DEMO_PORT=3300 pnpm dev:demo`.
 
+To run the fixture demo in Docker without installing Node or connecting to Immich, use `docker compose -f compose.dev.yaml up --build`. See [development setup](docs/development.md#fixture-only-docker-compose-demo) for port selection, reset, and validation steps.
+
 ```sh
 pnpm check
 pnpm lint
@@ -131,14 +134,15 @@ See [development setup](docs/development.md) for all commands, browser requireme
 
 ## Documentation
 
-| Guide                                | Contents                                                         |
-| ------------------------------------ | ---------------------------------------------------------------- |
-| [Deployment](docs/deployment.md)     | Docker, environment variables, proxy chaining, backups, rollback |
-| [Development](docs/development.md)   | Fresh-clone setup, fixtures, tests, contributor workflow         |
-| [Architecture](docs/architecture.md) | Module boundaries, authentication, sharing recovery, storage     |
-| [API](docs/api.md)                   | Routes, typed inputs, errors, retry behavior                     |
-| [Validation](docs/validation.md)     | Tested behavior, visual checks, compatibility limits             |
-| [Releases](docs/releases.md)         | Versions, image publishing, and release checks                   |
+| Guide                                              | Contents                                                         |
+| -------------------------------------------------- | ---------------------------------------------------------------- |
+| [Deployment](docs/deployment.md)                   | Docker, environment variables, proxy chaining, backups, rollback |
+| [Development](docs/development.md)                 | Fresh-clone setup, fixtures, tests, contributor workflow         |
+| [Architecture](docs/architecture.md)               | Module boundaries, authentication, sharing recovery, storage     |
+| [GitLab distribution](docs/gitlab-distribution.md) | CI, protected release publishing, and migration steps            |
+| [API](docs/api.md)                                 | Routes, typed inputs, errors, retry behavior                     |
+| [Validation](docs/validation.md)                   | Tested behavior, visual checks, compatibility limits             |
+| [Releases](docs/releases.md)                       | Versions, image publishing, and release checks                   |
 
 ## Contributing
 

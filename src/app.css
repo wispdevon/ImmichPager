@@ -40,8 +40,12 @@ button,
 summary {
   cursor: pointer;
 }
+@layer base {
+  a {
+    color: inherit;
+  }
+}
 a {
-  color: inherit;
   text-underline-offset: 4px;
 }
 :focus-visible {

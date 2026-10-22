@@ -17,6 +17,62 @@ The demo starts a loopback-only fixture on port 3001, Vite on 3002, and the gate
 
 If a system-wide libvips installation causes Sharp to attempt a source build, install with `SHARP_IGNORE_GLOBAL_LIBVIPS=1 pnpm install --frozen-lockfile`. Docker uses prebuilt Sharp binaries.
 
+## Fixture-only Docker Compose demo
+
+You can run the same development demo in Docker without installing Node or connecting to an Immich server. It uses the synthetic accounts and albums from `fixtures/immich.mjs` and the attributed sample photos under `fixtures/photos/`. It does not read `.env`, mount an Immich volume, or need real Immich credentials or client photos.
+
+Start it from the repository root:
+
+```sh
+docker compose -f compose.dev.yaml up --build
+```
+
+The app prints its local URL when ready. Open `http://127.0.0.1:3000/page/acme` for the example gallery or `http://127.0.0.1:3000/dev-login/alice` to open the editor as the fixture photographer. The gateway is published only on `127.0.0.1`; the synthetic Immich fixture and Vite server are not published.
+
+If host port `3000` is in use, choose another gateway port. The fixture and Vite use the next two ports inside the container and are not published to the host:
+
+```sh
+PAGER_DEV_PORT=3300 docker compose -f compose.dev.yaml up --build
+```
+
+Use the same `PAGER_DEV_PORT` value for later `exec` or `down` commands if needed; Compose applies it to the host and container gateway ports. Stop the demo with `Ctrl+C` or `docker compose -f compose.dev.yaml down`. To reset the demo database and installed dependency volume, run:
+
+```sh
+docker compose -f compose.dev.yaml down -v
+```
+
+### Validate the setup
+
+Check the Compose file and start the demo:
+
+```sh
+docker compose -f compose.dev.yaml config --quiet
+docker compose -f compose.dev.yaml up --build
+```
+
+In another terminal, confirm the gateway and example page respond:
+
+```sh
+curl --fail --silent --show-error http://127.0.0.1:3000/page/health
+curl --fail --silent --show-error --output /dev/null http://127.0.0.1:3000/page/acme
+```
+
+For a non-default port, replace `3000` with the selected port. To run static checks in a one-off container without starting the demo, use `docker compose -f compose.dev.yaml run --rm demo pnpm check` and replace `check` with `test`, `lint`, or `build`. The host-based commands below remain available too.
+
+The selected source directories and configuration files are bind-mounted read-only; edit them on the host to use Vite's live reload. Environment files such as `.env` are not copied into the image or mounted into the container. If `package.json` or `pnpm-lock.yaml` changes, recreate the dependency volume with `docker compose -f compose.dev.yaml down -v`, then run `up --build` again. This also clears the demo data.
+
+## Starter tasks
+
+The following roadmap items can be explored with the local fixture; no live Immich server is needed. Their IDs and acceptance checklists are in [TODO.md](../TODO.md). Pick one item for a focused feature branch and pull request to `dev`.
+
+- **VIS-01 — Edit the finished header directly:** use the fixture page to edit its title and description in place, keeping private drafts and explicit publishing.
+- **VIS-02 — Drag the banner focal point:** use a fixture banner to try mouse and touch positioning while retaining the keyboard-accessible slider.
+- **VIS-05 — Preview desktop, tablet, and phone layouts:** use the same fixture page to check each responsive preview size.
+- **WRK-03 — Drag albums to reorder them:** preserve year grouping and keyboard-accessible ordering.
+- **WRK-04 — Find albums by name, month, or year:** exercise search and filters against the fixture albums.
+
+Before opening a pull request, run the relevant checks from [Commands](#commands), add tests for behavior changes, and include a short description of what the change lets a photographer or client do.
+
 ## Commands
 
 | Command             | Purpose                                                                      |
@@ -35,6 +91,10 @@ If a system-wide libvips installation causes Sharp to attempt a source build, in
 Before browser tests, run `pnpm build` and `pnpm exec playwright install chromium`. On Linux CI, use `pnpm exec playwright install --with-deps chromium`. An installed browser can be selected with `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/absolute/path/to/chromium`.
 
 Browser tests start their own production gateway at `127.0.0.1:3200`, fixture at 3201, and a disposable database in the operating system's temporary directory. Test screenshots/traces go into ignored `test-results/`. Never point test scripts at a real library.
+
+## Compatibility checks
+
+Run `pnpm test:compat` for a focused API, sharing, gateway, and production-browser integration check against the local fixture. See [Immich compatibility](compatibility.md) for the version evidence table and upgrade review procedure.
 
 ## Working against Immich
 
