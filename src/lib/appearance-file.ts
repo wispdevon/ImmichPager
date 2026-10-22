@@ -1,13 +1,19 @@
 import { z } from 'zod';
+import {
+  clientUiSchema,
+  DEFAULT_CLIENT_UI,
+  DEFAULT_GALLERY_STYLE,
+  galleryStyleSchema,
+} from './contracts';
 import { compileCustomCss } from './custom-css';
 
 export const APPEARANCE_FILE_FORMAT = 'immichpager-appearance';
-export const APPEARANCE_FILE_VERSION = 1;
+export const APPEARANCE_FILE_VERSION = 2;
 export const APPEARANCE_FILE_MAX_BYTES = 96 * 1024;
 
 const color = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 
-export const appearanceSettingsSchema = z
+const appearanceV1Schema = z
   .object({
     theme: z.enum(['dark', 'light', 'system']),
     background: color.nullable(),
@@ -25,21 +31,52 @@ export const appearanceSettingsSchema = z
   })
   .strict();
 
-export const appearanceFileSchema = z
+export const appearanceSettingsSchema = z
+  .object({
+    theme: z.enum(['dark', 'light', 'system']),
+    background: color.nullable(),
+    foreground: color.nullable(),
+    accent: color,
+    alignment: z.enum(['left', 'center']),
+    bannerPosition: z.number().int().min(0).max(100),
+    headerLayout: z.enum(['below', 'overlay']),
+    headerSize: z.enum(['compact', 'standard', 'tall']),
+    logoSize: z.number().int().min(48).max(160),
+    titleSize: z.number().min(1.5).max(4),
+    descriptionSize: z.number().min(0.875).max(1.5),
+    headerSpacing: z.number().min(1.5).max(5),
+    customCss: z.string().max(20_000),
+    clientUi: clientUiSchema,
+    galleryStyle: galleryStyleSchema,
+  })
+  .strict();
+
+const appearanceFileV1Schema = z
   .object({
     format: z.literal(APPEARANCE_FILE_FORMAT),
-    version: z.literal(APPEARANCE_FILE_VERSION),
+    version: z.literal(1),
+    appearance: appearanceV1Schema,
+  })
+  .strict();
+
+const appearanceFileV2Schema = z
+  .object({
+    format: z.literal(APPEARANCE_FILE_FORMAT),
+    version: z.literal(2),
     appearance: appearanceSettingsSchema,
   })
   .strict();
 
+export const appearanceFileSchema = z.discriminatedUnion('version', [
+  appearanceFileV1Schema,
+  appearanceFileV2Schema,
+]);
+
 export type AppearanceSettings = z.infer<typeof appearanceSettingsSchema>;
+export type LegacyAppearanceSettings = z.infer<typeof appearanceV1Schema>;
 
 function assertFileSize(text: string) {
-  if (
-    text.length > APPEARANCE_FILE_MAX_BYTES ||
-    new TextEncoder().encode(text).byteLength > APPEARANCE_FILE_MAX_BYTES
-  )
+  if (new TextEncoder().encode(text).byteLength > APPEARANCE_FILE_MAX_BYTES)
     throw new Error('This appearance file is too large.');
 }
 
@@ -64,7 +101,10 @@ export function serializeAppearanceFile(settings: AppearanceSettings) {
   return text;
 }
 
-export function parseAppearanceFile(text: string): AppearanceSettings {
+export function parseAppearanceFile(
+  text: string,
+  current?: AppearanceSettings,
+): AppearanceSettings {
   assertFileSize(text);
 
   let input: unknown;
@@ -77,9 +117,20 @@ export function parseAppearanceFile(text: string): AppearanceSettings {
   const result = appearanceFileSchema.safeParse(input);
   if (!result.success)
     throw new Error(
-      'This is not a supported ImmichPager appearance file (version 1).',
+      'This is not a supported ImmichPager appearance file (version 1 or 2).',
     );
 
   assertSafeCss(result.data.appearance.customCss);
-  return result.data.appearance;
+  if (result.data.version === 2) return result.data.appearance;
+
+  // Version 1 predates client visibility and gallery style. Keep the current
+  // draft values for those settings, then apply the fields that v1 can express.
+  return appearanceSettingsSchema.parse({
+    ...{
+      clientUi: current?.clientUi ?? DEFAULT_CLIENT_UI,
+      galleryStyle: current?.galleryStyle ?? DEFAULT_GALLERY_STYLE,
+    },
+    ...current,
+    ...result.data.appearance,
+  });
 }
