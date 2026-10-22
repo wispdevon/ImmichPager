@@ -1,5 +1,11 @@
 # Releases
 
+## v0.2.0
+
+The [GitLab v0.2.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.2.0) packages the verified roadmap and Immich UI parity work from MR !26. It adds header composition and custom CSS, responsive previews, appearance transfer and design duplication, client browsing, publication review, and management improvements. See [the changelog](../CHANGELOG.md). The newer Customize panel and portable design tokens remain separate follow-up work.
+
+The release is tagged from `dev`; `main` and existing deployments are unchanged. Storage remains schema version 2, with additive JSON appearance defaults. Follow the [backup and rollback instructions](deployment.md#schema-upgrades) before upgrading. GitLab provides tagged source downloads; compiled runtime assets are attached to the release.
+
 ## v0.1.0
 
 The first stable release packages the current `main` application: private autosaved drafts, branding from Immich Photos, native Options and album pickers, and Copy link sharing. The schema version is 2; follow the [backup and rollback instructions](deployment.md#schema-upgrades) when upgrading an existing Pager volume.
@@ -19,7 +25,7 @@ GitHub rejected workflow dispatch with `Actions has been disabled for this user`
 
 Use semantic versions. Keep `CHANGELOG.md` current and bump `package.json` in a reviewed commit. Verify type checks, linting, tests, browser flows, formatting, production build, dependency audit, and Docker smoke tests before tagging.
 
-Create and push a `vMAJOR.MINOR.PATCH` tag only when releasing a verified version. GitLab is now the source and review host. The proposed CI configuration in merge request !6, also included in draft !26, verifies the application and Docker smoke test before allowing a maintainer to manually publish amd64/arm64 images from a protected semantic-version tag to `registry.gitlab.com/wispd/immichpager`. That configuration remains under review; no image was published during migration. GitLab currently prevents pipelines from starting jobs because the account is not verified. Historical v0.1.0 release downloads remain on GitHub; existing GitHub workflows are retained as historical configuration.
+Create and push a `vMAJOR.MINOR.PATCH` tag only when releasing a verified version. GitLab is now the source and review host. The GitLab CI configuration verifies the application and Docker smoke test before allowing a maintainer to manually publish amd64/arm64 images from a protected semantic-version tag to `registry.gitlab.com/wispd/immichpager`. Account verification is complete, and MR !26 passed both hosted verification and Docker smoke jobs. Registry publication is a separate manual release action; a source release alone does not imply a published image. Historical v0.1.0 release downloads remain on GitHub; existing GitHub workflows are retained as historical configuration.
 
 Container builds execute for PRs without publishing. Do not add credentials to workflow files or broaden pull-request permissions. Contributors' PRs use read-only repository permissions.
 
