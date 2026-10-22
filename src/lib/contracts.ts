@@ -13,6 +13,79 @@ export const MAX_PAGE_ALBUMS = 500;
 const color = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, 'Use a six-digit hex color');
+
+const fontFamily = z.enum(['google-sans', 'system']);
+
+export const galleryStyleSchema = z.object({
+  fontFamily: fontFamily.default('google-sans'),
+  titleFontWeight: z.number().int().min(400).max(800).default(650),
+  bodyFontSize: z.number().min(0.75).max(1.5).default(1),
+  bodyFontWeight: z.number().int().min(300).max(700).default(400),
+  cardTitleSize: z.number().min(0.75).max(2).default(1.125),
+  cardTitleWeight: z.number().int().min(400).max(800).default(600),
+  contentWidth: z.number().int().min(640).max(1920).default(1600),
+  pagePadding: z.number().int().min(0).max(80).default(40),
+  gridMinWidth: z.number().int().min(160).max(360).default(224),
+  gridRowGap: z.number().int().min(0).max(80).default(16),
+  gridColumnGap: z.number().int().min(0).max(80).default(0),
+  coverAspectRatio: z.number().min(0.5).max(2).default(1),
+  cardRadius: z.number().int().min(0).max(40).default(16),
+  hoverTreatment: z
+    .enum(['surface', 'underline', 'lift', 'none'])
+    .default('surface'),
+});
+export type GalleryStyle = z.infer<typeof galleryStyleSchema>;
+export const DEFAULT_GALLERY_STYLE = galleryStyleSchema.parse({});
+
+const clientUiShape = {
+  showBanner: z.boolean().default(true),
+  showLogo: z.boolean().default(true),
+  showTitle: z.boolean().default(true),
+  showDescription: z.boolean().default(true),
+  showBrowsingControls: z.boolean().default(true),
+  showAlbumSearch: z.boolean().default(true),
+  showMonthFilter: z.boolean().default(true),
+  showYearNavigation: z.boolean().default(true),
+  showResultsCount: z.boolean().default(true),
+  showAlbums: z.boolean().default(true),
+  showAlbumCovers: z.boolean().default(true),
+  showAlbumTitles: z.boolean().default(true),
+  showAlbumDates: z.boolean().default(true),
+  showAlbumItemCounts: z.boolean().default(true),
+  showSharedLabels: z.boolean().default(true),
+  showYearHeadings: z.boolean().default(true),
+  showYearCounts: z.boolean().default(true),
+  allowYearCollapse: z.boolean().default(true),
+  showBranding: z.boolean().default(true),
+};
+
+export const clientUiSchema = z
+  .object(clientUiShape)
+  .refine(
+    (settings) =>
+      !settings.showAlbums ||
+      settings.showAlbumCovers ||
+      settings.showAlbumTitles,
+    {
+      message:
+        'Show album covers or album titles when the album section is visible.',
+      path: ['showAlbumTitles'],
+    },
+  );
+export type ClientUi = z.infer<typeof clientUiSchema>;
+export const DEFAULT_CLIENT_UI = clientUiSchema.parse({});
+export const NEW_PAGE_CLIENT_UI = clientUiSchema.parse({
+  showBrowsingControls: false,
+});
+
+export function normalizeClientUi(value: unknown): ClientUi {
+  return clientUiSchema.parse(value ?? {});
+}
+
+export function normalizeGalleryStyle(value: unknown): GalleryStyle {
+  return galleryStyleSchema.parse(value ?? {});
+}
+
 export const pageInputSchema = z
   .object({
     title: z.string().trim().min(1).max(160),
@@ -35,6 +108,8 @@ export const pageInputSchema = z
     descriptionSize: z.number().min(0.875).max(1.5).default(1.125),
     headerSpacing: z.number().min(1.5).max(5).default(2.5),
     customCss: z.string().max(20_000).default(''),
+    clientUi: clientUiSchema.default(NEW_PAGE_CLIENT_UI),
+    galleryStyle: galleryStyleSchema.default(DEFAULT_GALLERY_STYLE),
     bannerPosition: z.number().int().min(0).max(100).default(50),
     albumIds: z
       .array(z.string().min(1).max(100))
@@ -109,6 +184,8 @@ export type GalleryPage = Pick<
   | 'descriptionSize'
   | 'headerSpacing'
   | 'customCss'
+  | 'clientUi'
+  | 'galleryStyle'
   | 'order'
 > & {
   logo: string | null;
@@ -169,6 +246,8 @@ export function appearanceDefaults<T extends object>(
   descriptionSize: number;
   headerSpacing: number;
   customCss: string;
+  clientUi: ClientUi;
+  galleryStyle: GalleryStyle;
 } {
   return {
     headerLayout: 'below',
@@ -179,6 +258,10 @@ export function appearanceDefaults<T extends object>(
     headerSpacing: 2.5,
     customCss: '',
     ...record,
+    clientUi: normalizeClientUi((record as { clientUi?: unknown }).clientUi),
+    galleryStyle: normalizeGalleryStyle(
+      (record as { galleryStyle?: unknown }).galleryStyle,
+    ),
   } as T & {
     headerLayout: 'below' | 'overlay';
     headerSize: 'compact' | 'standard' | 'tall';
@@ -187,5 +270,7 @@ export function appearanceDefaults<T extends object>(
     descriptionSize: number;
     headerSpacing: number;
     customCss: string;
+    clientUi: ClientUi;
+    galleryStyle: GalleryStyle;
   };
 }
