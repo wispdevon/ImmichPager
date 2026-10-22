@@ -1,6 +1,6 @@
 {
   "name": "immichpager",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Persistent, customizable client album pages for Immich. Self-hosted with Docker.",
   "private": true,
   "type": "module",

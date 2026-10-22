@@ -9,3 +9,7 @@ GitLab's default branch remains `main`. Its stable commit `3f47be810a8cf95e59947
 Historical v0.1.0 release downloads remain on GitHub so existing installation links work. This transfer does not publish images, create release tags, deploy the app, or approve a feature merge. The GitLab CI and registry configuration remains proposed in !6 and included in !26, pending feature approval. GitLab's registry destination is `registry.gitlab.com/wispd/immichpager`.
 
 The fixture-only preview remains [client gallery](http://127.0.0.1:4400/page/acme) and [editor login](http://127.0.0.1:4400/dev-login/alice) on the review workstation. It uses no real client library.
+
+## 2026-10-23 follow-up
+
+Account verification is complete. MR !26 passed [GitLab pipeline #2976211992](https://gitlab.com/wispd/ImmichPager/-/pipelines/2976211992), including all verification checks and Docker startup/health smoke. With maintainer authorization, !26 and all 25 included prerequisite branches are now merged into `dev`. Release v0.2.0 is prepared from that verified feature set. `main` and the live deployment are unchanged. This supersedes the initial pipeline restriction and unmerged status above; the earlier paragraphs preserve the migration history.
