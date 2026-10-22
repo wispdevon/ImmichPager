@@ -8,3 +8,4 @@ data
 .deploy
 test-results
 playwright-report
+.pnpm-store/

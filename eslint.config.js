@@ -4,6 +4,7 @@ import globals from 'globals';
 export default ts.config(
   {
     ignores: [
+      '.pnpm-store/**',
       'build/**',
       '.svelte-kit/**',
       '.demo/**',
