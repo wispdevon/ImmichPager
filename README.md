@@ -97,7 +97,7 @@ The [v0.1.0 release](https://github.com/wispdevon/ImmichPager/releases/tag/v0.1.
 
 Initial source review targets **Immich v3.3.1**, with an ARM64 runtime deployment and public HTTP smoke checks verified on **v3.3.3** alongside Immichinko and a RAW/JPEG companion. Authenticated editing and publishing tests use an isolated fixture; the signed-in live workflow remains to be checked. This is an early implementation, not a claim of compatibility with every Immich release.
 
-The stable release was verified locally with 55 domain tests and 7 browser tests. GitHub Actions is disabled for the maintainer account, and no GHCR image is available. The downloadable ARM64 Docker image remains available from the GitHub release; source builds support amd64 and arm64. GitLab CI and registry publishing are prepared for review, but no GitLab image will be published until the repository migration is approved and a maintainer manually runs the job for a protected release tag.
+The stable release was verified locally with 55 domain tests and 7 browser tests. Source and active reviews now live on [GitLab](https://gitlab.com/wispd/ImmichPager); see the [migration record](docs/gitlab-migration.md). Historical v0.1.0 downloads remain on GitHub. GitLab CI and manual registry publishing are proposed in merge request !6 and the combined candidate !26; images have not been published by this migration. Source builds support amd64 and arm64.
 
 The sidebar bridge is a maintained DOM integration rather than an official Immich plugin API. Use one Pager container per database. When upstream revocation fails, the overview is hidden; existing native links remain subject to Immich until the owner finishes synchronization. See [validation notes](docs/validation.md).
 
