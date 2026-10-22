@@ -222,6 +222,8 @@
       descriptionSize: fields.descriptionSize,
       headerSpacing: fields.headerSpacing,
       customCss: fields.customCss,
+      clientUi: fields.clientUi,
+      galleryStyle: fields.galleryStyle,
     };
   }
   function exportAppearance() {
@@ -254,7 +256,10 @@
     try {
       if (file.size > APPEARANCE_FILE_MAX_BYTES)
         throw new Error('This appearance file is too large.');
-      const imported = parseAppearanceFile(await file.text());
+      const imported = parseAppearanceFile(
+        await file.text(),
+        currentAppearance(),
+      );
       Object.assign(fields, imported);
       appearanceFileStatus =
         'Appearance imported into this private draft. Publish when you are ready to share it.';

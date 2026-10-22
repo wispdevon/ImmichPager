@@ -1,0 +1,400 @@
+import { expect, it } from 'vitest';
+import {
+  previewDesignTokensFile,
+  serializeDesignTokensFile,
+} from '../src/lib/design-tokens';
+
+const style = {
+  fontFamily: 'google-sans',
+  titleFontWeight: 650,
+  bodyFontSize: 1,
+  bodyFontWeight: 400,
+  cardTitleSize: 1.125,
+  cardTitleWeight: 600,
+  contentWidth: 1600,
+  pagePadding: 40,
+  gridMinWidth: 224,
+  gridRowGap: 16,
+  gridColumnGap: 0,
+  coverAspectRatio: 1,
+  cardRadius: 16,
+  hoverTreatment: 'surface',
+} as const;
+
+it('imports documented Pager paths and inherited DTCG types', () => {
+  const preview = previewDesignTokensFile(
+    JSON.stringify({
+      pager: {
+        colors: {
+          $type: 'color',
+          accent: {
+            $value: {
+              colorSpace: 'srgb',
+              components: [0.2, 0.4, 0.8],
+            },
+          },
+        },
+        galleryStyle: {
+          $type: 'dimension',
+          contentWidth: { $value: { value: 1200, unit: 'px' } },
+        },
+      },
+    }),
+  );
+
+  expect(preview).toMatchObject({
+    galleryStyle: { contentWidth: 1200 },
+    colors: { accent: '#3366cc' },
+    hasApplicableTokens: true,
+  });
+  expect(preview.recognized.map(({ path }) => path)).toEqual([
+    'pager.colors.accent',
+    'pager.galleryStyle.contentWidth',
+  ]);
+});
+
+it('resolves local aliases and inherited alias types', () => {
+  const preview = previewDesignTokensFile(
+    JSON.stringify({
+      palette: {
+        blue: {
+          $type: 'color',
+          $value: {
+            colorSpace: 'srgb',
+            components: [0.1, 0.2, 0.3],
+          },
+        },
+      },
+      pager: {
+        colors: {
+          $type: 'color',
+          accent: { $value: '{palette.blue}' },
+        },
+        galleryStyle: {
+          fontFamily: {
+            $type: 'fontFamily',
+            $value: ['Google Sans', 'sans-serif'],
+          },
+          bodyFontSize: {
+            $type: 'dimension',
+            $value: { value: 1.25, unit: 'rem' },
+          },
+          titleFontWeight: { $type: 'fontWeight', $value: 'semi-bold' },
+          pagePadding: {
+            $type: 'dimension',
+            $value: { value: 2, unit: 'rem' },
+          },
+        },
+      },
+    }),
+  );
+
+  expect(preview).toMatchObject({
+    colors: { accent: '#1a334d' },
+    galleryStyle: {
+      fontFamily: 'google-sans',
+      bodyFontSize: 1.25,
+      titleFontWeight: 600,
+      pagePadding: 32,
+    },
+  });
+});
+
+it('resolves aliases that target a DTCG group root token', () => {
+  const preview = previewDesignTokensFile(
+    JSON.stringify({
+      palette: {
+        brand: {
+          $type: 'color',
+          $root: {
+            $value: {
+              colorSpace: 'srgb',
+              components: [0.2, 0.4, 0.8],
+            },
+          },
+        },
+      },
+      pager: {
+        colors: {
+          accent: { $type: 'color', $value: '{palette.brand.$root}' },
+        },
+      },
+    }),
+  );
+
+  expect(preview.colors.accent).toBe('#3366cc');
+});
+
+it('resolves DTCG JSON Pointer aliases locally', () => {
+  const preview = previewDesignTokensFile(
+    JSON.stringify({
+      palette: {
+        blue: {
+          $type: 'color',
+          $value: {
+            colorSpace: 'srgb',
+            components: [0.2, 0.4, 0.8],
+          },
+        },
+      },
+      pager: {
+        colors: {
+          accent: { $type: 'color', $ref: '#/palette/blue/$value' },
+        },
+        header: {
+          titleSize: {
+            $type: 'dimension',
+            $ref: '#/pager/header/large/$value',
+          },
+          large: {
+            $type: 'dimension',
+            $value: { value: 3.5, unit: 'rem' },
+          },
+        },
+      },
+    }),
+  );
+
+  expect(preview).toMatchObject({
+    colors: { accent: '#3366cc' },
+    appearance: { titleSize: 3.5 },
+  });
+});
+
+it('reports unsupported paths and exposes an empty summary when nothing applies', () => {
+  const preview = previewDesignTokensFile(
+    JSON.stringify({
+      pager: {
+        galleryStyle: {
+          animation: { $type: 'duration', $value: { value: 200, unit: 'ms' } },
+        },
+        extra: { token: { $type: 'number', $value: 3 } },
+      },
+    }),
+  );
+
+  expect(preview).toMatchObject({
+    galleryStyle: {},
+    appearance: {},
+    colors: {},
+    recognized: [],
+    unsupported: ['pager.galleryStyle.animation', 'pager.extra.token'],
+    hasApplicableTokens: false,
+  });
+});
+
+it('rejects recognized tokens that are missing a value even beside valid tokens', () => {
+  expect(() =>
+    previewDesignTokensFile(
+      JSON.stringify({
+        pager: {
+          colors: {
+            accent: {
+              $type: 'color',
+              $value: {
+                colorSpace: 'srgb',
+                components: [0.2, 0.4, 0.8],
+              },
+            },
+          },
+          galleryStyle: {
+            contentWidth: {},
+          },
+        },
+      }),
+    ),
+  ).toThrow(/pager\.galleryStyle\.contentWidth.*\$value/i);
+
+  expect(() =>
+    previewDesignTokensFile(
+      JSON.stringify({ pager: { galleryStyle: { contentWidth: 1200 } } }),
+    ),
+  ).toThrow(/pager\.galleryStyle\.contentWidth.*token object/i);
+});
+
+it('treats inherited object property names as unsupported token paths', () => {
+  const preview = previewDesignTokensFile(
+    JSON.stringify({ toString: { $type: 'number', $value: 3 } }),
+  );
+
+  expect(preview.unsupported).toEqual(['toString']);
+  expect(preview.hasApplicableTokens).toBe(false);
+});
+
+it('rejects DTCG group composition instead of silently omitting inherited tokens', () => {
+  expect(() =>
+    previewDesignTokensFile(
+      JSON.stringify({
+        base: { colors: { accent: { $type: 'color', $value: {} } } },
+        pager: { $extends: '{base}' },
+      }),
+    ),
+  ).toThrow(/\$extends.*not supported/i);
+});
+
+it.each([
+  [
+    'invalid recognized values',
+    {
+      pager: {
+        galleryStyle: {
+          $type: 'dimension',
+          contentWidth: { $value: { value: 40, unit: 'em' } },
+        },
+      },
+    },
+  ],
+  [
+    'invalid recognized font weights',
+    {
+      pager: {
+        galleryStyle: {
+          titleFontWeight: { $type: 'fontWeight', $value: 'toString' },
+        },
+      },
+    },
+  ],
+  [
+    'out-of-range color components with a fallback',
+    {
+      pager: {
+        colors: {
+          accent: {
+            $type: 'color',
+            $value: {
+              colorSpace: 'srgb',
+              components: [-1, 0, 0],
+              hex: '#000000',
+            },
+          },
+        },
+      },
+    },
+  ],
+  [
+    'unresolved aliases',
+    {
+      pager: {
+        colors: {
+          $type: 'color',
+          accent: { $value: '{missing.token}' },
+        },
+      },
+    },
+  ],
+  [
+    'circular aliases',
+    {
+      pager: {
+        galleryStyle: {
+          $type: 'dimension',
+          bodyFontSize: { $value: '{pager.galleryStyle.cardTitleSize}' },
+          cardTitleSize: { $value: '{pager.galleryStyle.bodyFontSize}' },
+        },
+      },
+    },
+  ],
+  [
+    'unsupported external references',
+    {
+      pager: {
+        colors: {
+          accent: {
+            $type: 'color',
+            $ref: 'https://example.com/tokens.json#/blue',
+          },
+        },
+      },
+    },
+  ],
+  [
+    'unresolved aliases in unsupported tokens',
+    {
+      pager: {
+        galleryStyle: {
+          animation: {
+            $type: 'duration',
+            $value: '{missing.animation}',
+          },
+        },
+      },
+    },
+  ],
+  [
+    'circular references in unsupported tokens',
+    {
+      custom: {
+        first: { $type: 'number', $value: '{custom.second}' },
+        second: { $type: 'number', $value: '{custom.first}' },
+      },
+    },
+  ],
+  [
+    'unresolved JSON pointers in unsupported tokens',
+    {
+      custom: {
+        something: { $type: 'number', $ref: '#/missing/$value' },
+      },
+    },
+  ],
+])('rejects %s before a style patch can be applied', (_name, input) => {
+  expect(() => previewDesignTokensFile(JSON.stringify(input))).toThrow();
+});
+
+it('enforces the 96 KiB import limit and valid JSON', () => {
+  expect(() => previewDesignTokensFile(' '.repeat(96 * 1024 + 1))).toThrow(
+    /too large/i,
+  );
+  expect(() => previewDesignTokensFile('{')).toThrow(/valid json/i);
+});
+
+it('exports concrete self-contained DTCG tokens that import back to the same settings', () => {
+  const text = serializeDesignTokensFile({
+    galleryStyle: style,
+    titleSize: 3,
+    descriptionSize: 1.125,
+    logoSize: 80,
+    headerSpacing: 2.5,
+    bannerPosition: 50,
+    background: '#101112',
+    foreground: null,
+    accent: '#accbfa',
+  });
+  const file = JSON.parse(text);
+
+  expect(file.pager.colors.background.$value).toMatchObject({
+    colorSpace: 'srgb',
+    hex: '#101112',
+  });
+  expect(file.pager.colors).not.toHaveProperty('foreground');
+  expect(file.pager.galleryStyle.contentWidth).toEqual({
+    $type: 'dimension',
+    $value: { value: 1600, unit: 'px' },
+  });
+  expect(file.pager.galleryStyle.bodyFontSize).toEqual({
+    $type: 'dimension',
+    $value: { value: 1, unit: 'rem' },
+  });
+  expect(file.pager.header.titleSize).toEqual({
+    $type: 'dimension',
+    $value: { value: 3, unit: 'rem' },
+  });
+  expect(file.pager.header.bannerPosition).toEqual({
+    $type: 'number',
+    $value: 50,
+  });
+  expect(text).not.toContain('"$ref"');
+  expect(text).not.toMatch(/"\$value":\s*"\{[^}]+\}"/);
+  expect(previewDesignTokensFile(text)).toMatchObject({
+    galleryStyle: style,
+    appearance: {
+      titleSize: 3,
+      descriptionSize: 1.125,
+      logoSize: 80,
+      headerSpacing: 2.5,
+      bannerPosition: 50,
+    },
+    colors: { background: '#101112', accent: '#accbfa' },
+    hasApplicableTokens: true,
+  });
+});

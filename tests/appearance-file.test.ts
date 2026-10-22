@@ -1,9 +1,11 @@
 import { expect, it } from 'vitest';
+import { DEFAULT_CLIENT_UI, DEFAULT_GALLERY_STYLE } from '../src/lib/contracts';
 import {
   appearanceFileSchema,
   parseAppearanceFile,
   serializeAppearanceFile,
   type AppearanceSettings,
+  type LegacyAppearanceSettings,
 } from '../src/lib/appearance-file';
 
 const appearance: AppearanceSettings = {
@@ -20,43 +22,82 @@ const appearance: AppearanceSettings = {
   descriptionSize: 1.25,
   headerSpacing: 3.5,
   customCss: '.ip-title { color: #abc123 !important; }',
+  clientUi: { ...DEFAULT_CLIENT_UI, showAlbumDates: false },
+  galleryStyle: {
+    ...DEFAULT_GALLERY_STYLE,
+    cardRadius: 21,
+    fontFamily: 'system',
+  },
 };
 
-it('round-trips only versioned appearance settings', () => {
+function version1Appearance(): LegacyAppearanceSettings {
+  return {
+    theme: appearance.theme,
+    background: appearance.background,
+    foreground: appearance.foreground,
+    accent: appearance.accent,
+    alignment: appearance.alignment,
+    bannerPosition: appearance.bannerPosition,
+    headerLayout: appearance.headerLayout,
+    headerSize: appearance.headerSize,
+    logoSize: appearance.logoSize,
+    titleSize: appearance.titleSize,
+    descriptionSize: appearance.descriptionSize,
+    headerSpacing: appearance.headerSpacing,
+    customCss: appearance.customCss,
+  };
+}
+
+function version1File(legacy = version1Appearance()) {
+  return JSON.stringify({
+    format: 'immichpager-appearance',
+    version: 1,
+    appearance: legacy,
+  });
+}
+
+it('round-trips complete version 2 design settings', () => {
   const exported = serializeAppearanceFile(appearance);
 
   expect(JSON.parse(exported)).toEqual({
     format: 'immichpager-appearance',
-    version: 1,
+    version: 2,
     appearance,
   });
   expect(parseAppearanceFile(exported)).toEqual(appearance);
 });
 
-it('imports existing version 1 files with the current header defaults', () => {
-  const legacyAppearance = { ...appearance };
-  delete (legacyAppearance as Partial<AppearanceSettings>).headerSize;
-  delete (legacyAppearance as Partial<AppearanceSettings>).logoSize;
-  delete (legacyAppearance as Partial<AppearanceSettings>).titleSize;
-  delete (legacyAppearance as Partial<AppearanceSettings>).descriptionSize;
-  delete (legacyAppearance as Partial<AppearanceSettings>).headerSpacing;
+it('imports version 1 files with compatibility defaults and current new settings', () => {
+  const current: AppearanceSettings = {
+    ...appearance,
+    clientUi: { ...DEFAULT_CLIENT_UI, showDescription: false },
+    galleryStyle: { ...DEFAULT_GALLERY_STYLE, cardRadius: 4 },
+  };
+  const legacy = version1Appearance();
+  delete (legacy as Partial<LegacyAppearanceSettings>).headerSize;
+  delete (legacy as Partial<LegacyAppearanceSettings>).logoSize;
+  delete (legacy as Partial<LegacyAppearanceSettings>).titleSize;
+  delete (legacy as Partial<LegacyAppearanceSettings>).descriptionSize;
+  delete (legacy as Partial<LegacyAppearanceSettings>).headerSpacing;
 
-  expect(
-    parseAppearanceFile(
-      JSON.stringify({
-        format: 'immichpager-appearance',
-        version: 1,
-        appearance: legacyAppearance,
-      }),
-    ),
-  ).toEqual({
-    ...legacyAppearance,
+  const imported = parseAppearanceFile(version1File(legacy), current);
+  expect(imported).toEqual({
+    ...legacy,
     headerSize: 'standard',
     logoSize: 80,
     titleSize: 3,
     descriptionSize: 1.125,
     headerSpacing: 2.5,
+    clientUi: current.clientUi,
+    galleryStyle: current.galleryStyle,
   });
+
+  expect(parseAppearanceFile(version1File()).clientUi).toEqual(
+    DEFAULT_CLIENT_UI,
+  );
+  expect(parseAppearanceFile(version1File()).galleryStyle).toEqual(
+    DEFAULT_GALLERY_STYLE,
+  );
 });
 
 it.each(['albumIds', 'title', 'slug', 'password', 'shareToken', 'ownerId'])(
@@ -64,7 +105,7 @@ it.each(['albumIds', 'title', 'slug', 'password', 'shareToken', 'ownerId'])(
   (field) => {
     const input = {
       format: 'immichpager-appearance',
-      version: 1,
+      version: 2,
       appearance: { ...appearance, [field]: 'private-value' },
     };
 
@@ -78,7 +119,7 @@ it('rejects unsupported versions and malformed JSON', () => {
     parseAppearanceFile(
       JSON.stringify({
         format: 'immichpager-appearance',
-        version: 2,
+        version: 3,
         appearance,
       }),
     ),
@@ -91,7 +132,7 @@ it('rejects unknown envelope keys and out-of-range appearance values', () => {
     parseAppearanceFile(
       JSON.stringify({
         format: 'immichpager-appearance',
-        version: 1,
+        version: 2,
         accountToken: 'must not be portable',
         appearance,
       }),
@@ -101,7 +142,7 @@ it('rejects unknown envelope keys and out-of-range appearance values', () => {
     parseAppearanceFile(
       JSON.stringify({
         format: 'immichpager-appearance',
-        version: 1,
+        version: 2,
         appearance: { ...appearance, bannerPosition: 101 },
       }),
     ),
@@ -123,15 +164,25 @@ it('rejects oversized files before validating their contents', () => {
   expect(() => parseAppearanceFile(oversized)).toThrow(/too large/i);
 });
 
-it('rejects custom CSS that fails the gallery compiler', () => {
-  const input = JSON.stringify({
-    format: 'immichpager-appearance',
-    version: 1,
-    appearance: {
-      ...appearance,
-      customCss: '@import "https://example.com/a.css";',
-    },
-  });
+it('rejects custom CSS that fails the gallery compiler in both file versions', () => {
+  const css = '@import "https://example.com/a.css";';
 
-  expect(() => parseAppearanceFile(input)).toThrow(/custom css/i);
+  expect(() =>
+    parseAppearanceFile(
+      JSON.stringify({
+        format: 'immichpager-appearance',
+        version: 1,
+        appearance: { ...version1Appearance(), customCss: css },
+      }),
+    ),
+  ).toThrow(/custom css/i);
+  expect(() =>
+    parseAppearanceFile(
+      JSON.stringify({
+        format: 'immichpager-appearance',
+        version: 2,
+        appearance: { ...appearance, customCss: css },
+      }),
+    ),
+  ).toThrow(/custom css/i);
 });
