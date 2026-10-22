@@ -31,6 +31,7 @@ type ResolvedToken = {
 type ResolveState = {
   records: Map<string, TokenRecord>;
   recordsByPointer: Map<string, TokenRecord>;
+  recordsByNode: WeakMap<object, TokenRecord>;
   document: JsonObject;
   tokenStack: string[];
   pointerStack: string[];
@@ -286,6 +287,7 @@ function parseJson(text: string): JsonObject {
 function collectTokens(document: JsonObject) {
   const records = new Map<string, TokenRecord>();
   const recordsByPointer = new Map<string, TokenRecord>();
+  const recordsByNode = new WeakMap<object, TokenRecord>();
 
   function pointerKey(segments: string[]) {
     return JSON.stringify(segments);
@@ -312,6 +314,7 @@ function collectTokens(document: JsonObject) {
       const record = { path, node, inheritedType, pointerSegments };
       records.set(path, record);
       recordsByPointer.set(pointerKey(pointerSegments), record);
+      recordsByNode.set(node, record);
       return;
     }
 
@@ -332,11 +335,11 @@ function collectTokens(document: JsonObject) {
   }
 
   visit(document, '', undefined, []);
-  return { records, recordsByPointer };
+  return { records, recordsByPointer, recordsByNode };
 }
 
 function getPointerPath(pointer: string): string[] {
-  if (pointer === '#') return [];
+  if (pointer === '#' || pointer === '#/') return [];
   if (!pointer.startsWith('#/'))
     throw new Error('Only local JSON Pointer references are supported.');
 
@@ -407,6 +410,9 @@ function resolveCompositeValue(value: unknown, state: ResolveState): unknown {
   if (Array.isArray(value))
     return value.map((item) => resolveCompositeValue(item, state));
   if (!isObject(value)) return value;
+
+  const record = state.recordsByNode.get(value);
+  if (record) return resolveToken(record, state).value;
 
   if (Object.hasOwn(value, '$ref')) {
     if (typeof value.$ref !== 'string' || Object.keys(value).length !== 1)
@@ -943,10 +949,11 @@ export function previewDesignTokensFile(
   text: string,
 ): DesignTokenImportPreview {
   const document = parseJson(text);
-  const { records, recordsByPointer } = collectTokens(document);
+  const { records, recordsByPointer, recordsByNode } = collectTokens(document);
   const resolution: ResolveState = {
     records,
     recordsByPointer,
+    recordsByNode,
     document,
     tokenStack: [],
     pointerStack: [],

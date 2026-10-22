@@ -198,6 +198,20 @@ it('resolves DTCG JSON Pointer aliases locally', () => {
   });
 });
 
+it('interprets the DTCG #/ pointer as the document root', () => {
+  expect(() =>
+    previewDesignTokensFile(
+      JSON.stringify({
+        pager: {
+          colors: {
+            accent: { $type: 'color', $ref: '#/' },
+          },
+        },
+      }),
+    ),
+  ).toThrow(/circular (json pointer|token) reference/i);
+});
+
 it('resolves local JSON Pointer references inside color and dimension values', () => {
   const preview = previewDesignTokensFile(
     JSON.stringify({
