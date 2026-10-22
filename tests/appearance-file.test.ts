@@ -149,6 +149,34 @@ it('rejects unknown envelope keys and out-of-range appearance values', () => {
   ).toThrow(/supported ImmichPager appearance/i);
 });
 
+it('rejects unknown fields inside version 2 client UI and gallery style settings', () => {
+  const badClientUi = {
+    ...appearance,
+    clientUi: { ...appearance.clientUi, showYearHeadig: false },
+  };
+  const badGalleryStyle = {
+    ...appearance,
+    galleryStyle: { ...appearance.galleryStyle, cardRaduis: 12 },
+  };
+
+  expect(
+    appearanceFileSchema.safeParse({
+      format: 'immichpager-appearance',
+      version: 2,
+      appearance: badClientUi,
+    }).success,
+  ).toBe(false);
+  expect(() =>
+    parseAppearanceFile(
+      JSON.stringify({
+        format: 'immichpager-appearance',
+        version: 2,
+        appearance: badGalleryStyle,
+      }),
+    ),
+  ).toThrow(/supported ImmichPager appearance/i);
+});
+
 it('does not serialize extra private properties supplied at runtime', () => {
   expect(() =>
     serializeAppearanceFile({
