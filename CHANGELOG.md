@@ -11,6 +11,7 @@
 
 ### Improved
 
+- Page-list actions use Immich Material Design icons; Duplicate design is a compact icon button with a hover and keyboard-focus tooltip.
 - Design presents everyday controls first, with fine header, typography, and gallery layout settings in a final Advanced design section.
 - Preview updates preserve the editing caret through acknowledged saves, and failed saves retain unfinished text.
 - Importing a partial token file preserves styling values that the file does not specify.

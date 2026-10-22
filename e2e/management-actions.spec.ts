@@ -275,3 +275,50 @@ test('management actions stay compact and work by touch and keyboard', async ({
     await context.close();
   }
 });
+
+test('desktop page actions use native icon buttons with hover and focus tooltips', async ({
+  page,
+}) => {
+  await page.goto('/dev-login/alice');
+  await page.goto('/page/manage');
+  const row = page
+    .getByTestId('management-page-row')
+    .filter({ hasText: 'A collection of our work' });
+  const duplicate = row.getByRole('button', {
+    name: 'Duplicate design for A collection of our work',
+    exact: true,
+  });
+  await expect(duplicate).toBeVisible();
+  await expect(duplicate).toHaveText('');
+  await expect(duplicate.locator('svg')).toBeVisible();
+  await duplicate.hover();
+  await expect(
+    page.locator('.tooltip-content').filter({ hasText: /^Duplicate design$/ }),
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.tooltip-content')).toHaveCount(0);
+  await page.mouse.move(0, 0);
+  await row.getByRole('button', { name: 'Copy link', exact: true }).focus();
+  await page.keyboard.press('Tab');
+  await expect(duplicate).toBeFocused();
+  await expect(
+    page.locator('.tooltip-content').filter({ hasText: /^Duplicate design$/ }),
+  ).toBeVisible();
+  await expect(
+    row
+      .getByRole('link', { name: 'Open A collection of our work', exact: true })
+      .locator('svg'),
+  ).toBeVisible();
+  await expect(
+    row
+      .getByRole('link', {
+        name: 'Options for A collection of our work',
+        exact: true,
+      })
+      .locator('svg'),
+  ).toBeVisible();
+  await expect(
+    row.getByRole('button', { name: 'Copy link', exact: true }).locator('svg'),
+  ).toBeVisible();
+  await row.screenshot({ path: 'test-results/management-native-icons.png' });
+});
