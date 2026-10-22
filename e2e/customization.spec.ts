@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { setHeaderText } from './header-editor';
 import { confirmPublication } from './publication-helper';
+import { closeCustomize, openCustomize } from './customize-helper';
 
 test('banner composition and scoped CSS autosave privately, preview and publish', async ({
   page,
@@ -31,7 +32,7 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
     .getByLabel('Logo', { exact: true })
     .setInputFiles('fixtures/photos/earthrise.webp');
   await expect(page.getByAltText('Logo preview')).toBeVisible();
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
+  await openCustomize(page);
   await page
     .getByRole('button', { name: 'Header layout', exact: true })
     .click();
@@ -40,7 +41,7 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
     .getByRole('button', { name: 'Header alignment', exact: true })
     .click();
   await page.getByRole('option', { name: 'Centered', exact: true }).click();
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await closeCustomize(page);
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await page.getByRole('button', { name: 'Preview', exact: true }).click();
   let gallery = page.frameLocator('[data-testid="responsive-preview-frame"]');
@@ -82,18 +83,20 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
   await expect(gallery.locator('.ip-title')).toHaveCSS('font-size', '30px');
   await page.getByRole('button', { name: 'Desktop preview' }).click();
   await page.getByRole('button', { name: 'Back to editor' }).click();
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
+  await openCustomize(page);
   await page.getByRole('button', { name: 'Header size', exact: true }).click();
   await page.getByRole('option', { name: 'Tall', exact: true }).click();
   await page.getByRole('slider', { name: 'Logo size' }).press('ArrowRight');
-  await page.getByRole('slider', { name: 'Title size' }).press('End');
+  await page
+    .getByRole('slider', { name: 'Title size', exact: true })
+    .press('End');
   await page
     .getByRole('slider', { name: 'Description size' })
     .press('ArrowRight');
   await page
     .getByRole('slider', { name: 'Header spacing' })
     .press('ArrowRight');
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await closeCustomize(page);
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await page.getByRole('button', { name: 'Preview', exact: true }).click();
   gallery = page.frameLocator('[data-testid="responsive-preview-frame"]');
@@ -104,17 +107,18 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
   await page.getByRole('button', { name: 'Phone preview' }).click();
   await expect(gallery.locator('.ip-title')).toHaveCSS('font-size', '40px');
   await page.getByRole('button', { name: 'Back to editor' }).click();
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
-  await page.getByText('Advanced · Custom CSS', { exact: true }).click();
+  await openCustomize(page, 'CSS');
   const source =
     ':scope { --pager-accent: #ff6600; } .ip-title { color: rgb(240, 182, 127) !important; font-family: Georgia, serif; } .ip-cover { border-radius: 4px; } @media (max-width:600px) { .ip-title { color: rgb(30, 200, 120) !important; } }';
   await page.getByLabel('Custom CSS', { exact: true }).fill(source);
-  await expect(page.locator('#css-feedback')).toContainText('Use Preview');
+  await expect(page.locator('#css-feedback')).toContainText(
+    'External resources',
+  );
   await page.screenshot({
     path: 'test-results/custom-css.png',
     fullPage: true,
   });
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await closeCustomize(page);
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await page.reload();
   const anonymous = await browser.newContext();
@@ -203,13 +207,12 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
     '44px',
   );
   // CSS remains a working change until explicit publication, even when invalid.
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
-  await page.getByText('Advanced · Custom CSS', { exact: true }).click();
+  await openCustomize(page, 'CSS');
   await page
     .getByLabel('Custom CSS', { exact: true })
     .fill('@import "https://example.com/style.css";');
   await expect(page.locator('#css-feedback')).toContainText('Only @media');
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await closeCustomize(page);
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await confirmPublication(page, 'Update live page');
   await expect(page.getByRole('alert')).toContainText('Custom CSS');
@@ -218,10 +221,9 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
     'color',
     'rgb(240, 182, 127)',
   );
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
-  await page.getByText('Advanced · Custom CSS', { exact: true }).click();
+  await openCustomize(page, 'CSS');
   await page.getByRole('button', { name: 'Clear custom CSS' }).click();
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await closeCustomize(page);
   await confirmPublication(page, 'Update live page');
   await expect(page.getByRole('status')).toContainText('Page published');
   await client.reload();
@@ -282,9 +284,9 @@ test('header presets stay per-page and private until publication', async ({
   );
   await expect(live.locator('.ip-logo')).toHaveCSS('width', '80px');
 
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
+  await openCustomize(page);
   await page.getByRole('button', { name: /^Editorial/ }).click();
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await closeCustomize(page);
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await page.reload();
   await page.getByRole('button', { name: 'Preview', exact: true }).click();
@@ -367,23 +369,23 @@ test('CSS cannot style editor siblings, escape paint containment, or inject HTML
   await page.goto('/page/manage/new');
   await setHeaderText(page, 'Title', 'CSS containment');
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
+  await openCustomize(page);
   await page
     .getByRole('button', { name: 'Header layout', exact: true })
     .click();
   await page.getByRole('option', { name: 'Over banner', exact: true }).click();
   await expect(
     page.getByText(
-      'Add a banner to place your logo, title and description over it.',
+      'Add a banner to place your logo, title, and description over it.',
     ),
   ).toBeVisible();
-  await page.getByText('Advanced · Custom CSS', { exact: true }).click();
+  await page.getByRole('tab', { name: 'CSS', exact: true }).click();
   await page
     .getByLabel('Custom CSS', { exact: true })
     .fill(
       'body, button, :scope + .preview-toolbar { display: none !important; } .ip-title::after { content: "</style><img src=x onerror=alert(1)>"; position: fixed; inset: 0; z-index: 9999999; background: red; }',
     );
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await closeCustomize(page);
   await page.getByRole('button', { name: 'Preview', exact: true }).click();
   await expect(
     page.getByRole('button', { name: 'Back to editor' }),
@@ -480,22 +482,28 @@ test('long header text, missing images, themes, and keyboard controls stay usabl
   for (let step = 0; step < 3; step++) await page.keyboard.press('Shift+Tab');
   await expect(back).toBeFocused();
   await page.keyboard.press('Enter');
-  const options = page.getByRole('button', { name: 'Options', exact: true });
-  await options.focus();
-  await page.keyboard.press('Enter');
-  await expect(page.getByRole('dialog', { name: 'Options' })).toBeVisible();
-  const appearance = page.getByRole('button', {
-    name: 'Appearance',
+  const customize = page.getByRole('button', {
+    name: 'Customize',
     exact: true,
   });
-  await appearance.press('Enter');
-  await page.keyboard.press('ArrowDown');
+  await customize.focus();
   await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog', { name: 'Customize' })).toBeVisible();
+  const design = page.getByRole('tab', { name: 'Design', exact: true });
+  await expect(design).toBeFocused();
+  await design.press('ArrowRight');
+  await expect(
+    page.getByRole('tab', { name: 'Elements', exact: true }),
+  ).toBeFocused();
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog', { name: 'Options' })).toHaveCount(0);
-  await expect(options).toBeFocused();
-  await page.keyboard.press('Tab');
+  await expect(page.getByRole('dialog', { name: 'Customize' })).toHaveCount(0);
+  await expect(customize).toBeFocused();
+  await openCustomize(page);
+  await page.getByRole('button', { name: 'Appearance', exact: true }).click();
+  await page.getByRole('option', { name: 'Light', exact: true }).click();
+  await closeCustomize(page);
   const preview = page.getByRole('button', { name: 'Preview', exact: true });
+  await preview.focus();
   await expect(preview).toBeFocused();
   await page.keyboard.press('Enter');
   await page.getByRole('button', { name: 'Phone preview' }).click();

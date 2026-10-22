@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { closeCustomize, openCustomize } from './customize-helper';
 
 test('reviews album and appearance changes before they replace the live page', async ({
   page,
@@ -53,13 +54,15 @@ test('reviews album and appearance changes before they replace the live page', a
   const title = page.getByLabel('Title', { exact: true });
   await title.fill('Acme autumn season');
   await title.press('Tab');
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
+  await openCustomize(page);
   await page.getByRole('button', { name: 'Header size', exact: true }).click();
   await page.getByRole('option', { name: 'Tall', exact: true }).click();
   for (let step = 0; step < 4; step++)
     await page.getByRole('slider', { name: 'Logo size' }).press('ArrowRight');
   for (let step = 0; step < 4; step++)
-    await page.getByRole('slider', { name: 'Title size' }).press('ArrowRight');
+    await page
+      .getByRole('slider', { name: 'Title size', exact: true })
+      .press('ArrowRight');
   for (let step = 0; step < 2; step++)
     await page
       .getByRole('slider', { name: 'Description size' })
@@ -68,7 +71,7 @@ test('reviews album and appearance changes before they replace the live page', a
     await page
       .getByRole('slider', { name: 'Header spacing' })
       .press('ArrowRight');
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await closeCustomize(page);
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
 
   await page

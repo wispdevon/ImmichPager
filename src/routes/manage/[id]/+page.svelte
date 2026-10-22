@@ -1,13 +1,15 @@
 <script lang="ts">
   import { goto, replaceState, beforeNavigate } from '$app/navigation';
-  import { untrack, onMount } from 'svelte';
-  import { Button } from '@immich/ui';
+  import { untrack, onMount, tick } from 'svelte';
+  import { Button, Modal, ModalBody } from '@immich/ui';
   import Gallery from '$lib/components/Gallery.svelte';
   import AlbumPicker from '$lib/components/AlbumPicker.svelte';
   import BrandingSlot from '$lib/components/BrandingSlot.svelte';
   import PhotoPicker from '$lib/components/PhotoPicker.svelte';
   import PageOptions from '$lib/components/PageOptions.svelte';
+  import CustomizePanel from '$lib/components/CustomizePanel.svelte';
   import PublicationReview from '$lib/components/PublicationReview.svelte';
+  import { labelDialog } from '$lib/actions/dialog-label';
   import CopyLink from '$lib/components/CopyLink.svelte';
   import PublishedView from '$lib/components/PublishedView.svelte';
   import { readApiResponse } from '$lib/api-response';
@@ -39,9 +41,9 @@
     titleSize: initial?.titleSize ?? 3,
     descriptionSize: initial?.descriptionSize ?? 1.125,
     headerSpacing: initial?.headerSpacing ?? 2.5,
-    customCss: initial?.customCss ?? '',
     clientUi: initial?.clientUi ?? NEW_PAGE_CLIENT_UI,
     galleryStyle: initial?.galleryStyle ?? DEFAULT_GALLERY_STYLE,
+    customCss: initial?.customCss ?? '',
     albumIds: [...(initial?.albumIds ?? [])],
     order: initial?.order ?? 'newest',
     passwordMode: 'keep',
@@ -52,6 +54,8 @@
     message = $state(''),
     success = $state(''),
     preview = $state(false),
+    customizing = $state(false),
+    customizeMobilePreview = $state(false),
     previewSize = $state<'desktop' | 'tablet' | 'phone'>('desktop'),
     optionsOpen = $state(false),
     albumsOpen = $state(false),
@@ -102,8 +106,19 @@
     })),
   });
   const previewUrl = $derived(
-    saved ? `/page/manage/${saved.id}/preview` : null,
+    saved
+      ? `/page/manage/${saved.id}/preview?draft=${saved.draftRevision}&branding=${brandingVersion}`
+      : null,
   );
+  let customizeTrigger = $state<HTMLElement | null>(null);
+  let customizePreviewFrame = $state<HTMLIFrameElement | null>(null);
+  function focusCustomizePanel() {
+    document
+      .querySelector<HTMLElement>(
+        '.customize-panel [role="tab"][aria-selected="true"]',
+      )
+      ?.focus();
+  }
   let queue: Promise<unknown> = Promise.resolve();
   function enqueue<T>(work: () => Promise<T>): Promise<T> {
     const next = queue.catch(() => {}).then(work);
@@ -215,6 +230,39 @@
     } catch {
       /* Keep the editor open when the private draft cannot be saved. */
     }
+  }
+  async function openCustomize() {
+    try {
+      await flush(true);
+      previewSize = 'desktop';
+      customizeMobilePreview = false;
+      customizing = true;
+      await tick();
+      focusCustomizePanel();
+    } catch {
+      /* Keep the editor open when the private draft cannot be saved. */
+    }
+  }
+  async function closeCustomize() {
+    customizing = false;
+    customizeMobilePreview = false;
+    await tick();
+    customizeTrigger?.focus();
+  }
+  async function openCustomizePreview() {
+    try {
+      await flush(true);
+      customizeMobilePreview = true;
+      await tick();
+      customizePreviewFrame?.focus();
+    } catch {
+      /* Keep settings visible when the private draft cannot be saved. */
+    }
+  }
+  async function returnToCustomizeSettings() {
+    customizeMobilePreview = false;
+    await tick();
+    focusCustomizePanel();
   }
   function select(id: string) {
     fields.albumIds = fields.albumIds.includes(id)
@@ -402,7 +450,114 @@
 <svelte:head
   ><title>{fields.title || 'New page'} · ImmichPager</title></svelte:head
 >
-{#if preview && previewUrl}<main class="responsive-preview">
+{#if customizing && previewUrl}<Modal
+    size="full"
+    class="customize-dialog"
+    onClose={closeCustomize}
+    focusOnOpen
+  >
+    <ModalBody class="customize-modal-body">
+      <div class="customize-editor" use:labelDialog={'Customize'}>
+        <header class="customize-toolbar">
+          {#if customizeMobilePreview}
+            <Button variant="ghost" onclick={returnToCustomizeSettings}
+              >← Settings</Button
+            >
+          {:else}
+            <Button variant="ghost" onclick={closeCustomize}
+              >← Back to editor</Button
+            >
+          {/if}
+          <div class="draft-status">
+            <span
+              >{saved?.publishedSlug
+                ? 'Live'
+                : 'Draft'}{#if saved?.publishedSlug && (dirty || saved.hasUnpublishedChanges)}
+                · Draft changes{/if}</span
+            >
+            <small aria-live="polite" data-testid="save-state"
+              >{saving
+                ? 'Saving…'
+                : failedSnapshot
+                  ? 'Couldn’t save'
+                  : dirty
+                    ? 'Unsaved changes'
+                    : 'All changes saved'}</small
+            >
+          </div>
+          <div class="customize-actions">
+            {#if failedSnapshot && !conflict}<Button
+                variant="ghost"
+                onclick={() => {
+                  failedSnapshot = null;
+                  void flush().catch(() => {});
+                }}>Retry save</Button
+              >{/if}
+            <CopyLink slug={saved?.publishedSlug ?? null} />
+          </div>
+        </header>
+        {#if message}<div class="notice error customize-notice" role="alert">
+            {message}
+          </div>{/if}
+        <div
+          class="customize-workspace"
+          class:mobile-preview={customizeMobilePreview}
+        >
+          <CustomizePanel
+            bind:fields
+            {saved}
+            {busy}
+            onPreview={openCustomizePreview}
+          />
+          <section class="customize-preview" aria-label="Client page preview">
+            <div class="preview-toolbar">
+              <p class="preview-note">
+                Private preview · shows the last saved draft
+              </p>
+              <div class="preview-sizes" role="group" aria-label="Preview size">
+                <Button
+                  variant="ghost"
+                  color="secondary"
+                  aria-label="Desktop preview"
+                  aria-pressed={previewSize === 'desktop'}
+                  onclick={() => (previewSize = 'desktop')}>Desktop</Button
+                >
+                <Button
+                  variant="ghost"
+                  color="secondary"
+                  aria-label="Tablet preview"
+                  aria-pressed={previewSize === 'tablet'}
+                  onclick={() => (previewSize = 'tablet')}>Tablet</Button
+                >
+                <Button
+                  variant="ghost"
+                  color="secondary"
+                  aria-label="Phone preview"
+                  aria-pressed={previewSize === 'phone'}
+                  onclick={() => (previewSize = 'phone')}>Phone</Button
+                >
+              </div>
+            </div>
+            <div
+              class="preview-stage"
+              class:tablet={previewSize === 'tablet'}
+              class:phone={previewSize === 'phone'}
+            >
+              <iframe
+                bind:this={customizePreviewFrame}
+                data-testid="responsive-preview-frame"
+                class:tablet={previewSize === 'tablet'}
+                class:phone={previewSize === 'phone'}
+                title={`${previewSize[0].toUpperCase()}${previewSize.slice(1)} preview of ${fields.title || 'your client page'}`}
+                src={previewUrl}
+              ></iframe>
+            </div>
+          </section>
+        </div>
+      </div>
+    </ModalBody>
+  </Modal>
+{:else if preview && previewUrl}<main class="responsive-preview">
     <header class="preview-toolbar">
       <Button variant="ghost" onclick={() => (preview = false)}
         >← Back to editor</Button
@@ -486,6 +641,11 @@
           onclick={() => (optionsOpen = true)}>Options</Button
         ><Button variant="ghost" color="secondary" onclick={openPreview}
           >Preview</Button
+        ><Button
+          bind:ref={customizeTrigger}
+          variant="ghost"
+          color="secondary"
+          onclick={openCustomize}>Customize</Button
         ><Button
           shape="round"
           disabled={busy || conflict || saved?.status === 'error'}
@@ -628,6 +788,85 @@
 {/if}
 
 <style>
+  :global(.customize-dialog) {
+    inline-size: 100%;
+    block-size: 100%;
+    min-block-size: 0;
+    border: 0;
+    border-radius: 0;
+    color: var(--pager-management-text, inherit);
+    background: var(--pager-management-background, #000);
+    box-shadow: none;
+  }
+  :global(.customize-dialog > div > div:first-child) {
+    display: none;
+  }
+  :global(.customize-modal-body) {
+    display: flex;
+    flex: 1 1 auto;
+    min-block-size: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  .customize-editor {
+    display: flex;
+    flex-direction: column;
+    inline-size: 100%;
+    block-size: 100%;
+    min-block-size: 0;
+  }
+  .customize-toolbar {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 14px;
+    min-block-size: 64px;
+    padding-inline: 20px;
+    border-bottom: 1px solid var(--pager-management-border, #292a2d);
+    background: var(--pager-management-background, #000);
+  }
+  .customize-toolbar .draft-status {
+    color: var(--pager-management-text-secondary, #9aa0a6);
+  }
+  .customize-toolbar .draft-status small {
+    color: var(--pager-management-text-secondary, #78818d);
+  }
+  .customize-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-inline-start: auto;
+  }
+  .customize-workspace {
+    display: grid;
+    flex: 1 1 auto;
+    grid-template-columns: minmax(320px, 390px) minmax(0, 1fr);
+    min-block-size: 0;
+  }
+  .customize-preview {
+    display: flex;
+    flex-direction: column;
+    min-inline-size: 0;
+    min-block-size: 0;
+    background: var(--pager-management-surface, #191b20);
+  }
+  .customize-preview .preview-toolbar {
+    flex: 0 0 auto;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--pager-management-border, #292a2d);
+    background: var(--pager-management-background, #101114);
+  }
+  .customize-preview .preview-note {
+    margin-inline: 0 auto;
+  }
+  .customize-preview .preview-stage {
+    flex: 1 1 auto;
+    min-block-size: 0;
+  }
+  .customize-notice {
+    flex: 0 0 auto;
+    margin: 8px 16px;
+  }
   .editor {
     padding: 0 40px 56px;
     max-width: 1800px;
@@ -828,6 +1067,57 @@
     .branding-grid {
       grid-template-columns: 240px minmax(0, 1fr);
       gap: 16px;
+    }
+  }
+  @media (max-width: 760px) {
+    .customize-toolbar {
+      min-block-size: 56px;
+      gap: 8px;
+      padding-inline: 8px;
+    }
+    .customize-toolbar :global(button) {
+      font-size: 12px;
+      padding-inline: 8px;
+    }
+    .customize-toolbar .draft-status {
+      font-size: 11px;
+    }
+    .customize-toolbar .draft-status small {
+      font-size: 10px;
+    }
+    .customize-workspace {
+      display: block;
+      flex: 1 1 0;
+      block-size: 0;
+    }
+    :global(.customize-panel) {
+      block-size: 100%;
+    }
+    .customize-preview {
+      display: none;
+      block-size: 100%;
+    }
+    .customize-workspace.mobile-preview .customize-preview {
+      display: flex;
+    }
+    .customize-workspace.mobile-preview :global(.customize-panel) {
+      display: none;
+    }
+    .customize-preview .preview-toolbar {
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 8px;
+    }
+    .customize-preview .preview-note {
+      order: 1;
+      flex-basis: 100%;
+      text-align: center;
+    }
+    .customize-preview .preview-sizes {
+      margin-inline-start: auto;
+    }
+    .customize-preview .preview-stage {
+      padding: 0;
     }
   }
   @media (max-width: 600px) {

@@ -5,6 +5,7 @@ import {
   type Locator,
   type Page,
 } from '@playwright/test';
+import { closeCustomize, openCustomize } from './customize-helper';
 
 const origin = 'http://127.0.0.1:3200';
 
@@ -29,16 +30,14 @@ async function setPageTheme(
   management: FrameLocator,
   theme: 'light' | 'dark' | 'system',
 ) {
-  await management
-    .getByRole('button', { name: 'Options', exact: true })
-    .click();
+  await openCustomize(management, 'Design');
   await management
     .getByRole('button', { name: 'Appearance', exact: true })
     .click();
   await management
     .getByRole('option', { name: new RegExp(`^${theme}$`, 'i') })
     .click();
-  await management.getByRole('button', { name: 'Done', exact: true }).click();
+  await closeCustomize(management);
   await expect(management.getByTestId('save-state')).toHaveText(
     'All changes saved',
   );

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { setHeaderText } from './header-editor';
 import { confirmPublication } from './publication-helper';
+import { closeCustomize, openCustomize } from './customize-helper';
 
 test('client album grid, year collapse, native viewer and mobile layout', async ({
   page,
@@ -490,7 +491,7 @@ test('autosave recovers from an empty proxy error and rejects oversized branding
   expect(uploads).toBe(0);
 });
 
-test('dropped branding creates an untitled draft, Options work on mobile, and stale tabs cannot overwrite edits', async ({
+test('dropped branding creates an untitled draft, Customize works on mobile, and stale tabs cannot overwrite edits', async ({
   page,
   context,
 }) => {
@@ -520,7 +521,7 @@ test('dropped branding creates an untitled draft, Options work on mobile, and st
   await setHeaderText(page, 'Title', 'Drop and configure');
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
+  await openCustomize(page);
   await page.getByRole('button', { name: 'Appearance', exact: true }).click();
   await page.getByRole('option', { name: 'Light', exact: true }).click();
   expect(
@@ -529,10 +530,10 @@ test('dropped branding creates an untitled draft, Options work on mobile, and st
     ),
   ).toBe(true);
   await page.screenshot({
-    path: 'test-results/options-mobile.png',
+    path: 'test-results/customize-mobile.png',
     fullPage: true,
   });
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await closeCustomize(page);
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await page.reload();
   await expect(page.getByAltText('Logo preview')).toBeVisible();
