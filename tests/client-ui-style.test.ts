@@ -96,7 +96,7 @@ describe('gallery style defaults and CSS variables', () => {
   });
 
   it('emits low-specificity scoped defaults so authored CSS can override them', () => {
-    const css = galleryStyleStylesheet({
+    const page = {
       id: 'page-1',
       theme: 'light',
       background: '#ffffff',
@@ -113,17 +113,38 @@ describe('gallery style defaults and CSS variables', () => {
       banner: '/page/media/page-1/banner',
       clientUi: DEFAULT_CLIENT_UI,
       galleryStyle: DEFAULT_GALLERY_STYLE,
+    } satisfies Parameters<typeof galleryStyleStylesheet>[0];
+    const css = galleryStyleStylesheet(page);
+    const foregroundCss = galleryStyleStylesheet({
+      ...page,
+      foreground: '#112233',
+    });
+    const customAccentCss = galleryStyleStylesheet({
+      ...page,
+      accent: '#ff6633',
     });
 
     expect(css).toContain(':where([data-pager-gallery="page-1"])');
     expect(css).toContain('--pager-background: #ffffff');
+    expect(css).toContain('--custom-bg: #ffffff');
     expect(css).toContain('--pager-font-family: "GoogleSans", sans-serif');
     expect(css).toContain('--pager-cover-aspect-ratio: 1');
+    expect(css).toContain('--pager-logo-size: 80px');
+    expect(css).toContain('--logo-size: var(--pager-logo-size)');
+    expect(css).toContain('--pager-title-size: 3rem');
+    expect(css).toContain('--title-max-size: var(--pager-title-size)');
+    expect(css).toContain('--pager-header-spacing: 2.5rem');
+    expect(css).toContain('--header-spacing: var(--pager-header-spacing)');
     expect(css).toContain('--pager-banner-height: clamp(180px, 26vw, 360px)');
     expect(css).toContain('--pager-hero-display: grid');
     expect(css).not.toContain('--pager-header-layout:');
     expect(css).not.toContain('--pager-banner-size:');
     expect(css).not.toContain('--pager-foreground:');
+    expect(css).not.toContain('--gallery-hover-accent:');
     expect(css).not.toContain('!important');
+    expect(foregroundCss).toContain('--pager-foreground: #112233');
+    expect(foregroundCss).toContain('--custom-fg: #112233');
+    expect(customAccentCss).toContain('--pager-accent: #ff6633');
+    expect(customAccentCss).toContain('--gallery-hover-accent: #ff6633');
   });
 });

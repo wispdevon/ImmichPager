@@ -137,10 +137,22 @@ export function galleryStyleVariables(
     '--pager-description-size': `${page.descriptionSize}rem`,
     '--pager-header-spacing': `${page.headerSpacing}rem`,
     '--pager-mobile-header-spacing': `${Math.max(1.5, page.headerSpacing * 0.8)}rem`,
+    // Preserve the former root properties for integrations that inspect them.
+    // Gallery styling consumes the authoritative --pager-* variables above.
+    '--logo-size': 'var(--pager-logo-size)',
+    '--title-min-size': 'var(--pager-title-min-size)',
+    '--title-fluid-size': 'var(--pager-title-fluid-size)',
+    '--title-max-size': 'var(--pager-title-size)',
+    '--description-size': 'var(--pager-description-size)',
+    '--header-spacing': 'var(--pager-header-spacing)',
+    '--mobile-header-spacing': 'var(--pager-mobile-header-spacing)',
     '--pager-color-scheme': page.theme === 'system' ? 'light dark' : page.theme,
     '--accent': page.accent,
   };
+  if (page.background) variables['--custom-bg'] = page.background;
   if (page.foreground) variables['--pager-foreground'] = page.foreground;
+  if (page.foreground) variables['--custom-fg'] = page.foreground;
+  if (!baseAccent) variables['--gallery-hover-accent'] = page.accent;
   return variables;
 }
 
