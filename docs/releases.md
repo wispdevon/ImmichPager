@@ -19,7 +19,7 @@ GitHub rejected workflow dispatch with `Actions has been disabled for this user`
 
 Use semantic versions. Keep `CHANGELOG.md` current and bump `package.json` in a reviewed commit. Verify type checks, linting, tests, browser flows, formatting, production build, dependency audit, and Docker smoke tests before tagging.
 
-Create and push a `vMAJOR.MINOR.PATCH` tag only when releasing a verified version. When GitHub Actions is available, the image workflow builds Linux amd64/arm64 images and publishes version and major.minor tags to GHCR. Main branch pushes publish the rolling `main` image. Image metadata records the source commit and license.
+Create and push a `vMAJOR.MINOR.PATCH` tag only when releasing a verified version. GitLab is now the source and review host. The proposed CI configuration in merge request !6, also included in draft !26, verifies the application and Docker smoke test before allowing a maintainer to manually publish amd64/arm64 images from a protected semantic-version tag to `registry.gitlab.com/wispd/immichpager`. That configuration remains under review; no image was published during migration. GitLab currently prevents pipelines from starting jobs because the account is not verified. Historical v0.1.0 release downloads remain on GitHub; existing GitHub workflows are retained as historical configuration.
 
 Container builds execute for PRs without publishing. Do not add credentials to workflow files or broaden pull-request permissions. Contributors' PRs use read-only repository permissions.
 

@@ -5,7 +5,7 @@
 Build the stable version from source, or import the prebuilt ARM64 package below. GHCR images have not yet been published because GitHub Actions is disabled for the maintainer account. The image workflow is configured for publication after validation once Actions is available.
 
 ```sh
-git clone --branch v0.1.0 --depth 1 https://github.com/wispdevon/ImmichPager.git
+git clone --branch v0.1.0 --depth 1 https://gitlab.com/wispd/ImmichPager.git
 cd ImmichPager
 cp .env.example .env
 # Edit IMMICH_URL and ORIGIN, plus IMMICH_NETWORK if necessary.

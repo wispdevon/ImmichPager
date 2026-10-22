@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping improve ImmichPager. Small, focused pull requests are welcome.
+Thank you for helping improve ImmichPager. Small, focused merge requests are welcome. Use [GitLab](https://gitlab.com/wispd/ImmichPager) for project issues and merge requests; hosted CLI operations use `glab`.
 
 ## Local setup
 

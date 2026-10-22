@@ -2,7 +2,7 @@
 
 **One link. Every shoot.**
 
-[![CI](https://github.com/wispdevon/ImmichPager/actions/workflows/ci.yml/badge.svg)](https://github.com/wispdevon/ImmichPager/actions/workflows/ci.yml)
+[![CI](https://gitlab.com/wispd/ImmichPager/badges/main/pipeline.svg)](https://gitlab.com/wispd/ImmichPager/-/pipelines)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![Docker: amd64 + arm64](https://img.shields.io/badge/docker-amd64%20%7C%20arm64-2496ED?logo=docker&logoColor=white)](docs/deployment.md)
 
@@ -14,7 +14,7 @@ https://photos.example.com/page/acme
 
 An independent, self-hosted community companion. Photos stay in Immich; albums open in its native shared viewer. No client account or global API key required.
 
-[Docker setup](#quick-start) · [Development](#development) · [Documentation](#documentation) · [Report a bug](https://github.com/wispdevon/ImmichPager/issues/new/choose)
+[Docker setup](#quick-start) · [Development](#development) · [Documentation](#documentation) · [Report a bug](https://gitlab.com/wispd/ImmichPager/-/issues/new)
 
 ## A familiar album overview
 
@@ -75,7 +75,7 @@ Choose **Below banner** or **Over banner** to compose your logo, title, and desc
 Requires Docker Compose v2, an existing Immich installation, and control of its HTTPS reverse proxy.
 
 ```sh
-git clone --branch v0.1.0 --depth 1 https://github.com/wispdevon/ImmichPager.git
+git clone --branch v0.1.0 --depth 1 https://gitlab.com/wispd/ImmichPager.git
 cd ImmichPager
 cp .env.example .env
 ```
@@ -96,7 +96,7 @@ The [v0.1.0 release](https://github.com/wispdevon/ImmichPager/releases/tag/v0.1.
 
 Initial source review targets **Immich v3.3.1**, with an ARM64 runtime deployment and public HTTP smoke checks verified on **v3.3.3** alongside Immichinko and a RAW/JPEG companion. Authenticated editing and publishing tests use an isolated fixture; the signed-in live workflow remains to be checked. This is an early implementation, not a claim of compatibility with every Immich release.
 
-The stable release was verified locally with 55 domain tests and 7 browser tests. GitHub Actions is currently disabled for the maintainer account, and GHCR publication is pending. The downloadable ARM64 Docker image is available from the release; source builds support amd64 and arm64. The committed workflows can publish registry images when Actions is available.
+The stable release was verified locally with 55 domain tests and 7 browser tests. Source and active reviews now live on [GitLab](https://gitlab.com/wispd/ImmichPager); see the [migration record](docs/gitlab-migration.md). Historical v0.1.0 downloads remain on GitHub. GitLab CI and manual registry publishing are proposed in merge request !6 and the combined candidate !26; images have not been published by this migration. Source builds support amd64 and arm64.
 
 The sidebar bridge is a maintained DOM integration rather than an official Immich plugin API. Use one Pager container per database. When upstream revocation fails, the overview is hidden; existing native links remain subject to Immich until the owner finishes synchronization. See [validation notes](docs/validation.md).
 

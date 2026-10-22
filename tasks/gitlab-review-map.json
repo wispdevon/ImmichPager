@@ -1,0 +1,241 @@
+{
+  "project": "https://gitlab.com/wispd/ImmichPager",
+  "authenticated_account": "wispd",
+  "target_branch": "dev",
+  "reviews": [
+    {
+      "github_pr": 1,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/1",
+      "gitlab_mr": 1,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/1",
+      "branch": "test/immich-compatibility-contracts",
+      "source_commit": "e27a842644bc9658dbd0f5fec99554c0d6eefb4c",
+      "draft": false
+    },
+    {
+      "github_pr": 2,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/2",
+      "gitlab_mr": 2,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/2",
+      "branch": "feat/published-client-view",
+      "source_commit": "5c51f28d473324a1709cc0ad8805cf73238f94a8",
+      "draft": false
+    },
+    {
+      "github_pr": 3,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/3",
+      "gitlab_mr": 3,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/3",
+      "branch": "feat/banner-focal-drag",
+      "source_commit": "1b991f1f0c0c5e3a40c0e9c8771b65e5ceb0e9cc",
+      "draft": false
+    },
+    {
+      "github_pr": 4,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/4",
+      "gitlab_mr": 4,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/4",
+      "branch": "test/customization-release-verification",
+      "source_commit": "0230e1e714d6bc16052f0482fa41ca916c22dcf8",
+      "draft": false
+    },
+    {
+      "github_pr": 5,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/5",
+      "gitlab_mr": 5,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/5",
+      "branch": "docs/contributor-compose-setup",
+      "source_commit": "3d537799e99f0f14252477e296ed14a347810747",
+      "draft": false
+    },
+    {
+      "github_pr": 6,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/6",
+      "gitlab_mr": 6,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/6",
+      "branch": "chore/gitlab-distribution",
+      "source_commit": "e91c6dc0e45cb55ca8f7dade8e10212bda8ea8ba",
+      "draft": false
+    },
+    {
+      "github_pr": 7,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/7",
+      "gitlab_mr": 7,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/7",
+      "branch": "feat/appearance-import-export",
+      "source_commit": "f93e2d7dd1eee171fce97087f392a5ebcf8c8ac9",
+      "draft": false
+    },
+    {
+      "github_pr": 8,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/8",
+      "gitlab_mr": 8,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/8",
+      "branch": "feat/visual-inline-header",
+      "source_commit": "244e485d40d8823f8b540753250d6121735fd0af",
+      "draft": false
+    },
+    {
+      "github_pr": 9,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/9",
+      "gitlab_mr": 9,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/9",
+      "branch": "feat/client-album-browsing",
+      "source_commit": "a6d1aea80eb7772977967218568f1ad5c616cce6",
+      "draft": false
+    },
+    {
+      "github_pr": 10,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/10",
+      "gitlab_mr": 10,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/10",
+      "branch": "feat/header-sizing",
+      "source_commit": "cec31b078b884b97651c24054e2d1221b8381979",
+      "draft": false
+    },
+    {
+      "github_pr": 11,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/11",
+      "gitlab_mr": 11,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/11",
+      "branch": "feat/publication-change-summary",
+      "source_commit": "8c0c425795cb830400455911c40a9d8991154c85",
+      "draft": false
+    },
+    {
+      "github_pr": 12,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/12",
+      "gitlab_mr": 12,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/12",
+      "branch": "feat/responsive-preview",
+      "source_commit": "c87ddfe0182f1f8d8b876a4e88cdfc36fefcea6c",
+      "draft": false
+    },
+    {
+      "github_pr": 13,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/13",
+      "gitlab_mr": 13,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/13",
+      "branch": "feat/duplicate-page-design",
+      "source_commit": "eb6cb36d5b7d1c527db280338640cabf9f02181c",
+      "draft": false
+    },
+    {
+      "github_pr": 14,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/14",
+      "gitlab_mr": 14,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/14",
+      "branch": "feat/monthly-album-selection",
+      "source_commit": "892a56e7e5e60ebcdbded160e88047d254a430d2",
+      "draft": false
+    },
+    {
+      "github_pr": 15,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/15",
+      "gitlab_mr": 15,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/15",
+      "branch": "feat/drag-album-order",
+      "source_commit": "647bed457fb9ddc52505d8549b73acd23cbba3bc",
+      "draft": false
+    },
+    {
+      "github_pr": 16,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/16",
+      "gitlab_mr": 16,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/16",
+      "branch": "feat/header-typography",
+      "source_commit": "25a06c1c6b4b8dcc2f0f96197af263ec257040a7",
+      "draft": false
+    },
+    {
+      "github_pr": 17,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/17",
+      "gitlab_mr": 17,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/17",
+      "branch": "feat/page-management-filters",
+      "source_commit": "2f11efa11393a50611a6aa0b6b3798167871d542",
+      "draft": false
+    },
+    {
+      "github_pr": 18,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/18",
+      "gitlab_mr": 18,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/18",
+      "branch": "feat/page-design-presets",
+      "source_commit": "891961a2ab2588a761d6bbba0f97458f8d39c0c8",
+      "draft": false
+    },
+    {
+      "github_pr": 19,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/19",
+      "gitlab_mr": 19,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/19",
+      "branch": "qa/roadmap-integration",
+      "source_commit": "c771373fc88c9db74770e76c004815b5b2426b73",
+      "draft": true
+    },
+    {
+      "github_pr": 20,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/20",
+      "gitlab_mr": 20,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/20",
+      "branch": "fix/native-button-link-contrast",
+      "source_commit": "3a6eaf2f416c8c3f6d250362c167d1770dbbf5fc",
+      "draft": false
+    },
+    {
+      "github_pr": 21,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/21",
+      "gitlab_mr": 21,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/21",
+      "branch": "feat/native-gallery-parity",
+      "source_commit": "f62d771785583cf9f7557aeaa0c49c07b615d7ba",
+      "draft": false
+    },
+    {
+      "github_pr": 22,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/22",
+      "gitlab_mr": 22,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/22",
+      "branch": "feat/native-sidebar-active-state",
+      "source_commit": "b1403d9e95dbea43af0ff179fcaffdbbf9944606",
+      "draft": true
+    },
+    {
+      "github_pr": 23,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/23",
+      "gitlab_mr": 23,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/23",
+      "branch": "fix/inline-header-keyboard",
+      "source_commit": "aad419accccadf09e5b120766bf6245d388de784",
+      "draft": false
+    },
+    {
+      "github_pr": 24,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/24",
+      "gitlab_mr": 24,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/24",
+      "branch": "feat/native-management-actions",
+      "source_commit": "62712e6ba774d5b1944ba6fb9d059748b9f6974f",
+      "draft": false
+    },
+    {
+      "github_pr": 25,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/25",
+      "gitlab_mr": 25,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/25",
+      "branch": "feat/host-theme-parity",
+      "source_commit": "6dcfd186aa10d46324a5885f46b06a4c0ad64b6d",
+      "draft": false
+    },
+    {
+      "github_pr": 26,
+      "github_url": "https://github.com/wispdevon/ImmichPager/pull/26",
+      "gitlab_mr": 26,
+      "gitlab_url": "https://gitlab.com/wispd/ImmichPager/-/merge_requests/26",
+      "branch": "qa/immich-ui-parity",
+      "source_commit": "04380c9c192b623474db08e589c698808e211b7f",
+      "draft": true
+    }
+  ]
+}
