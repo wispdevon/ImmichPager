@@ -21,6 +21,17 @@ describe('client UI settings', () => {
     expect(page.galleryStyle).toEqual(DEFAULT_GALLERY_STYLE);
   });
 
+  it('keeps browsing controls off when a new page supplies only partial visibility settings', () => {
+    const page = parsePageInput({
+      title: 'Partial settings',
+      slug: 'partial-settings',
+      clientUi: { showTitle: false },
+    });
+
+    expect(page.clientUi.showTitle).toBe(false);
+    expect(page.clientUi.showBrowsingControls).toBe(false);
+  });
+
   it('hydrates legacy records with the current visible layout', () => {
     const legacy = appearanceDefaults({ title: 'Legacy page' });
 
@@ -36,6 +47,15 @@ describe('client UI settings', () => {
       showAlbums: true,
       showAlbumCovers: true,
       showAlbumTitles: true,
+      showBranding: true,
+    });
+  });
+
+  it('defaults partial new-page visibility settings from the new-page baseline', () => {
+    expect(clientUiSchema.parse({ showTitle: false })).toMatchObject({
+      showTitle: false,
+      showBrowsingControls: false,
+      showAlbums: true,
       showBranding: true,
     });
   });
@@ -90,6 +110,8 @@ describe('gallery style defaults and CSS variables', () => {
       descriptionSize: 1.125,
       headerSpacing: 2.5,
       bannerPosition: 50,
+      banner: '/page/media/page-1/banner',
+      clientUi: DEFAULT_CLIENT_UI,
       galleryStyle: DEFAULT_GALLERY_STYLE,
     });
 
@@ -97,7 +119,11 @@ describe('gallery style defaults and CSS variables', () => {
     expect(css).toContain('--pager-background: #ffffff');
     expect(css).toContain('--pager-font-family: "GoogleSans", sans-serif');
     expect(css).toContain('--pager-cover-aspect-ratio: 1');
-    expect(css).toContain('--pager-header-layout: overlay');
+    expect(css).toContain('--pager-banner-height: clamp(180px, 26vw, 360px)');
+    expect(css).toContain('--pager-hero-display: grid');
+    expect(css).not.toContain('--pager-header-layout:');
+    expect(css).not.toContain('--pager-banner-size:');
+    expect(css).not.toContain('--pager-foreground:');
     expect(css).not.toContain('!important');
   });
 });
