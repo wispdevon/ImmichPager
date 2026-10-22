@@ -42,7 +42,7 @@ const clientUiShape = {
   showLogo: z.boolean().default(true),
   showTitle: z.boolean().default(true),
   showDescription: z.boolean().default(true),
-  showBrowsingControls: z.boolean().default(true),
+  showBrowsingControls: z.boolean().default(false),
   showAlbumSearch: z.boolean().default(true),
   showMonthFilter: z.boolean().default(true),
   showYearNavigation: z.boolean().default(true),
@@ -73,13 +73,15 @@ export const clientUiSchema = z
     },
   );
 export type ClientUi = z.infer<typeof clientUiSchema>;
-export const DEFAULT_CLIENT_UI = clientUiSchema.parse({});
-export const NEW_PAGE_CLIENT_UI = clientUiSchema.parse({
-  showBrowsingControls: false,
+export const DEFAULT_CLIENT_UI = clientUiSchema.parse({
+  showBrowsingControls: true,
 });
+export const NEW_PAGE_CLIENT_UI = clientUiSchema.parse({});
 
 export function normalizeClientUi(value: unknown): ClientUi {
-  return clientUiSchema.parse(value ?? {});
+  const storedSettings =
+    value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  return clientUiSchema.parse({ ...DEFAULT_CLIENT_UI, ...storedSettings });
 }
 
 export function normalizeGalleryStyle(value: unknown): GalleryStyle {

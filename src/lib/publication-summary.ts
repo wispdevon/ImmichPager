@@ -15,6 +15,8 @@ export type PublicationAppearanceChange =
   | 'headerSpacing'
   | 'bannerPosition'
   | 'customCss'
+  | 'visibility'
+  | 'galleryStyle'
   | 'albumOrder'
   | 'logo'
   | 'banner';
@@ -78,6 +80,13 @@ export function summarizePublicationChanges(
       appearanceChanges.push('bannerPosition');
     if (draft.customCss !== published.customCss)
       appearanceChanges.push('customCss');
+    if (JSON.stringify(draft.clientUi) !== JSON.stringify(published.clientUi))
+      appearanceChanges.push('visibility');
+    if (
+      JSON.stringify(draft.galleryStyle) !==
+      JSON.stringify(published.galleryStyle)
+    )
+      appearanceChanges.push('galleryStyle');
     if (
       draft.order !== published.order ||
       (draft.order === 'manual' &&

@@ -124,6 +124,8 @@ export class DraftService {
           descriptionSize: source.descriptionSize,
           headerSpacing: source.headerSpacing,
           customCss: source.customCss,
+          clientUi: source.clientUi,
+          galleryStyle: source.galleryStyle,
           bannerPosition: source.bannerPosition,
           revision: 1,
           publishedDraftRevision: null,

@@ -51,6 +51,8 @@ export async function gallery(
     descriptionSize,
     headerSpacing,
     customCss,
+    clientUi,
+    galleryStyle,
     order,
   } = page;
   const suffix = access.preview ? '?preview=1' : '';
@@ -71,6 +73,8 @@ export async function gallery(
     descriptionSize,
     headerSpacing,
     customCss,
+    clientUi,
+    galleryStyle,
     order,
     logo: page.logo ? `/page/media/${id}/branding/logo${suffix}` : null,
     banner: page.banner ? `/page/media/${id}/branding/banner${suffix}` : null,
