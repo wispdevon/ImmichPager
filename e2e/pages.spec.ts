@@ -795,6 +795,62 @@ test('mobile sidebar active state and focus stay usable across history', async (
   await expect(sidebar.locator('[data-pager-link]')).toBeFocused();
 });
 
+test('history iframe focus does not override host interaction during loading', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/dev-login/alice');
+  await page.goto('/sharing');
+  await page.evaluate(() => {
+    history.pushState({ pager: true }, '', '#client-pages');
+    history.back();
+  });
+  await expect(page).toHaveURL(/\/sharing$/);
+
+  let releaseResponse!: () => void;
+  let reportRequest!: () => void;
+  const responseGate = new Promise<void>((resolve) => {
+    releaseResponse = resolve;
+  });
+  const requestStarted = new Promise<void>((resolve) => {
+    reportRequest = resolve;
+  });
+  const delayManage = async (route: import('@playwright/test').Route) => {
+    reportRequest();
+    await responseGate;
+    await route.continue();
+  };
+  await page.route('**/page/manage', delayManage);
+
+  try {
+    await page.goForward();
+    await requestStarted;
+    const frame = page.locator('iframe[title="Client pages"]');
+    await expect(frame).toBeVisible();
+    const loadFrame = frame.evaluate(
+      (iframe) =>
+        new Promise<void>((resolve) =>
+          iframe.addEventListener('load', () => resolve(), { once: true }),
+        ),
+    );
+
+    const menu = page.getByRole('button', { name: 'Main menu' });
+    const sidebar = page.locator('#sidebar');
+    await menu.focus();
+    await page.keyboard.press('Enter');
+    await expect(sidebar).toBeVisible();
+    const firstLink = sidebar.locator('a[href="/photos"]');
+    await expect(firstLink).toBeFocused();
+
+    releaseResponse();
+    await loadFrame;
+    await expect(sidebar).toBeVisible();
+    await expect(firstLink).toBeFocused();
+  } finally {
+    releaseResponse();
+  }
+});
+
 test('Pages preserves modifier clicks and native share API navigation', async ({
   page,
   context,
