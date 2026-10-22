@@ -29,6 +29,16 @@ test('appearance files round-trip between private drafts without copying page da
       descriptionSize: 1.25,
       headerSpacing: 3.5,
       customCss: '.ip-title { color: #d26c42 !important; }',
+      clientUi: {
+        showBrowsingControls: true,
+        showAlbumDates: false,
+        showBranding: false,
+      },
+      galleryStyle: {
+        fontFamily: 'system',
+        cardRadius: 21,
+        contentWidth: 1440,
+      },
     },
   });
   expect(sourceResponse.ok()).toBe(true);
@@ -46,7 +56,7 @@ test('appearance files round-trip between private drafts without copying page da
   const exported = JSON.parse(exportedText);
   expect(exported).toEqual({
     format: 'immichpager-appearance',
-    version: 1,
+    version: 2,
     appearance: {
       theme: 'light',
       background: '#f4f2ef',
@@ -61,6 +71,8 @@ test('appearance files round-trip between private drafts without copying page da
       descriptionSize: 1.25,
       headerSpacing: 3.5,
       customCss: '.ip-title { color: #d26c42 !important; }',
+      clientUi: source.clientUi,
+      galleryStyle: source.galleryStyle,
     },
   });
 
@@ -116,6 +128,8 @@ test('appearance files round-trip between private drafts without copying page da
     descriptionSize: 1.25,
     headerSpacing: 3.5,
     customCss: '.ip-title { color: #d26c42 !important; }',
+    clientUi: source.clientUi,
+    galleryStyle: source.galleryStyle,
     status: 'draft',
     publishedSlug: null,
   });
@@ -129,6 +143,8 @@ test('appearance files round-trip between private drafts without copying page da
   delete legacyAppearance.titleSize;
   delete legacyAppearance.descriptionSize;
   delete legacyAppearance.headerSpacing;
+  delete legacyAppearance.clientUi;
+  delete legacyAppearance.galleryStyle;
   await page.getByLabel('Import appearance JSON').setInputFiles({
     name: 'immichpager-appearance-v1.json',
     mimeType: 'application/json',
@@ -156,6 +172,8 @@ test('appearance files round-trip between private drafts without copying page da
     title: 'Destination page',
     description: 'Keep this description',
     albumIds: [albums[1].id, albums[2].id],
+    clientUi: source.clientUi,
+    galleryStyle: source.galleryStyle,
   });
   expect(errors).toEqual([]);
 });
