@@ -1,5 +1,13 @@
 # Releases
 
+## v0.3.0
+
+The [GitLab v0.3.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.3.0) ships the per-page Customize workspace, individual element visibility, gallery styling, CodeMirror CSS editing, appearance v2, and DTCG token portability from MRs !28–!30. See [the changelog](../CHANGELOG.md) and [customization guide](customization.md).
+
+The release is tagged from `dev`. Storage remains schema version 2 with additive JSON defaults; existing pages preserve their appearance and share links. New pages start with browsing controls off. Follow the [backup and rollback instructions](deployment.md#schema-upgrades). Source and compiled runtime archives with SHA-256 checksums are attached to the release; runtime Docker builds install dependencies for the target architecture.
+
+The integrated feature set passed 160 unit tests, 45 Chromium browser tests, type checking, lint, formatting, audit, production build, independent review, and hosted Docker smoke checks. The release does not upgrade Immich itself.
+
 ## v0.2.0
 
 The [GitLab v0.2.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.2.0) packages the verified roadmap and Immich UI parity work from MR !26. It adds header composition and custom CSS, responsive previews, appearance transfer and design duplication, client browsing, publication review, and management improvements. See [the changelog](../CHANGELOG.md). The newer Customize panel and portable design tokens remain separate follow-up work.

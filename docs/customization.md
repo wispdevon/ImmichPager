@@ -2,7 +2,7 @@
 
 Open **Pages → your page → Customize**. All client appearance settings belong to this page. Changes autosave as a private working draft; use **Preview** to check them, then **Publish page** or **Update live page** to show them to clients. Your existing client URL stays the same.
 
-The Customize panel, element switches, gallery controls, and portable tokens are in draft review for the next update. They are separate from v0.2.0; deployments change only when their operator upgrades.
+The Customize panel, element switches, gallery controls, and portable tokens ship in v0.3.0. Deployments change only when their operator upgrades.
 
 ## Check what clients see
 
