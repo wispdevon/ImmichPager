@@ -100,6 +100,43 @@ it('resolves local aliases and inherited alias types', () => {
   });
 });
 
+it('rejects token aliases whose inherited type conflicts with the source type', () => {
+  expect(() =>
+    previewDesignTokensFile(
+      JSON.stringify({
+        base: {
+          width: { $type: 'number', $value: 1000 },
+        },
+        pager: {
+          galleryStyle: {
+            $type: 'dimension',
+            contentWidth: { $value: '{base.width}' },
+          },
+        },
+      }),
+    ),
+  ).toThrow(/references a value with a different type/i);
+
+  expect(() =>
+    previewDesignTokensFile(
+      JSON.stringify({
+        base: {
+          width: {
+            $type: 'dimension',
+            $value: { value: 800, unit: 'px' },
+          },
+        },
+        pager: {
+          colors: {
+            $type: 'color',
+            accent: { $value: '{base.width}' },
+          },
+        },
+      }),
+    ),
+  ).toThrow(/references a value with a different type/i);
+});
+
 it('resolves aliases that target a DTCG group root token', () => {
   const preview = previewDesignTokensFile(
     JSON.stringify({
@@ -158,6 +195,55 @@ it('resolves DTCG JSON Pointer aliases locally', () => {
   expect(preview).toMatchObject({
     colors: { accent: '#3366cc' },
     appearance: { titleSize: 3.5 },
+  });
+});
+
+it('resolves local JSON Pointer references inside color and dimension values', () => {
+  const preview = previewDesignTokensFile(
+    JSON.stringify({
+      base: {
+        blue: {
+          $type: 'color',
+          $value: {
+            colorSpace: 'srgb',
+            components: [0.2, 0.4, 0.9],
+          },
+        },
+        width: {
+          $type: 'dimension',
+          $value: { value: 1000, unit: 'px' },
+        },
+      },
+      pager: {
+        colors: {
+          accent: {
+            $type: 'color',
+            $value: {
+              colorSpace: 'srgb',
+              components: [
+                { $ref: '#/base/blue/$value/components/0' },
+                { $ref: '#/base/blue/$value/components/1' },
+                0.7,
+              ],
+            },
+          },
+        },
+        galleryStyle: {
+          contentWidth: {
+            $type: 'dimension',
+            $value: {
+              value: { $ref: '#/base/width/$value/value' },
+              unit: { $ref: '#/base/width/$value/unit' },
+            },
+          },
+        },
+      },
+    }),
+  );
+
+  expect(preview).toMatchObject({
+    colors: { accent: '#3366b3' },
+    galleryStyle: { contentWidth: 1000 },
   });
 });
 
@@ -330,10 +416,36 @@ it.each([
     },
   ],
   [
+    'circular nested JSON Pointer references in unsupported tokens',
+    {
+      custom: {
+        first: {
+          $type: 'shadow',
+          $value: { color: { $ref: '#/custom/second/$value/color' } },
+        },
+        second: {
+          $type: 'shadow',
+          $value: { color: { $ref: '#/custom/first/$value/color' } },
+        },
+      },
+    },
+  ],
+  [
     'unresolved JSON pointers in unsupported tokens',
     {
       custom: {
         something: { $type: 'number', $ref: '#/missing/$value' },
+      },
+    },
+  ],
+  [
+    'unresolved nested JSON Pointers in unsupported tokens',
+    {
+      custom: {
+        shadow: {
+          $type: 'shadow',
+          $value: { color: { $ref: '#/missing/color/$value' } },
+        },
       },
     },
   ],

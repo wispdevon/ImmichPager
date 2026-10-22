@@ -20,11 +20,20 @@ type TokenRecord = {
   path: string;
   node: JsonObject;
   inheritedType: string | undefined;
+  pointerSegments: string[];
 };
 
 type ResolvedToken = {
   type: string | undefined;
   value: unknown;
+};
+
+type ResolveState = {
+  records: Map<string, TokenRecord>;
+  recordsByPointer: Map<string, TokenRecord>;
+  document: JsonObject;
+  tokenStack: string[];
+  pointerStack: string[];
 };
 
 export type DesignTokenRecognition = {
@@ -276,12 +285,17 @@ function parseJson(text: string): JsonObject {
 
 function collectTokens(document: JsonObject) {
   const records = new Map<string, TokenRecord>();
-  const recordsByNode = new WeakMap<object, TokenRecord>();
+  const recordsByPointer = new Map<string, TokenRecord>();
+
+  function pointerKey(segments: string[]) {
+    return JSON.stringify(segments);
+  }
 
   function visit(
     node: JsonObject,
     path: string,
     inheritedType: string | undefined,
+    pointerSegments: string[],
   ) {
     if (Object.hasOwn(node, '$extends'))
       throw new Error(
@@ -295,9 +309,9 @@ function collectTokens(document: JsonObject) {
         `Recognized token ${path} must be a token object with $value or $ref.`,
       );
     if (tokenLike) {
-      const record = { path, node, inheritedType };
+      const record = { path, node, inheritedType, pointerSegments };
       records.set(path, record);
-      recordsByNode.set(node, record);
+      recordsByPointer.set(pointerKey(pointerSegments), record);
       return;
     }
 
@@ -313,12 +327,12 @@ function collectTokens(document: JsonObject) {
           `Recognized token ${childPath} must be a token object with $value or $ref.`,
         );
       if (!isObject(value)) continue;
-      visit(value, childPath, type);
+      visit(value, childPath, type, [...pointerSegments, key]);
     }
   }
 
-  visit(document, '', undefined);
-  return { records, recordsByNode };
+  visit(document, '', undefined, []);
+  return { records, recordsByPointer };
 }
 
 function getPointerPath(pointer: string): string[] {
@@ -356,22 +370,127 @@ function pointerValue(document: JsonObject, pointer: string): unknown {
   return current;
 }
 
-function tokenPathFromPointer(pointer: string): string | undefined {
-  const parts = getPointerPath(pointer);
-  if (parts.length >= 2 && parts.at(-1) === '$value') parts.pop();
-  return parts.join('.') || undefined;
+function valueAtPointerSegments(
+  value: unknown,
+  segments: string[],
+  pointer: string,
+) {
+  let current = value;
+  for (const segment of segments) {
+    if (Array.isArray(current) && /^(0|[1-9]\d*)$/.test(segment)) {
+      current = current[Number(segment)];
+      continue;
+    }
+    if (!isObject(current) || !Object.hasOwn(current, segment))
+      throw new Error(`The local reference ${pointer} cannot be resolved.`);
+    current = current[segment];
+  }
+  if (current === undefined)
+    throw new Error(`The local reference ${pointer} cannot be resolved.`);
+  return current;
 }
 
-function resolveToken(
-  token: TokenRecord,
-  records: Map<string, TokenRecord>,
-  recordsByNode: WeakMap<object, TokenRecord>,
-  document: JsonObject,
-  stack: string[],
+function recordForPointer(
+  segments: string[],
+  recordsByPointer: Map<string, TokenRecord>,
+) {
+  for (let length = segments.length; length >= 0; length--) {
+    const record = recordsByPointer.get(
+      JSON.stringify(segments.slice(0, length)),
+    );
+    if (record) return { record, length };
+  }
+  return undefined;
+}
+
+function resolveCompositeValue(value: unknown, state: ResolveState): unknown {
+  if (Array.isArray(value))
+    return value.map((item) => resolveCompositeValue(item, state));
+  if (!isObject(value)) return value;
+
+  if (Object.hasOwn(value, '$ref')) {
+    if (typeof value.$ref !== 'string' || Object.keys(value).length !== 1)
+      throw new Error('A property-level JSON Pointer reference is malformed.');
+    return resolvePointerReference(value.$ref, state).value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, child]) => [
+      key,
+      resolveCompositeValue(child, state),
+    ]),
+  );
+}
+
+function resolvePointerReference(
+  pointer: string,
+  state: ResolveState,
 ): ResolvedToken {
-  if (stack.includes(token.path))
+  if (state.pointerStack.includes(pointer))
+    throw new Error(`Circular JSON Pointer reference found at ${pointer}.`);
+  const nextState = {
+    ...state,
+    pointerStack: [...state.pointerStack, pointer],
+  };
+  const segments = getPointerPath(pointer);
+  const match = recordForPointer(segments, state.recordsByPointer);
+
+  if (match) {
+    const { record, length } = match;
+    const remainder = segments.slice(length);
+    if (remainder.length === 0) return resolveToken(record, nextState);
+    if (remainder[0] === '$type') {
+      const resolved = resolveToken(record, nextState);
+      return { type: undefined, value: resolved.type };
+    }
+    if (remainder[0] === '$value') {
+      const valueSegments = remainder.slice(1);
+      if (valueSegments.length === 0) return resolveToken(record, nextState);
+
+      const valueReference =
+        typeof record.node.$ref === 'string'
+          ? record.node.$ref
+          : typeof record.node.$value === 'string' &&
+              /^\{[^{}]+\}$/.test(record.node.$value)
+            ? record.node.$value
+            : null;
+      if (valueReference !== null) {
+        const resolved = resolveToken(record, nextState);
+        return {
+          type: undefined,
+          value: resolveCompositeValue(
+            valueAtPointerSegments(resolved.value, valueSegments, pointer),
+            nextState,
+          ),
+        };
+      }
+
+      return {
+        type: undefined,
+        value: resolveCompositeValue(
+          valueAtPointerSegments(record.node.$value, valueSegments, pointer),
+          nextState,
+        ),
+      };
+    }
+  }
+
+  return {
+    type: undefined,
+    value: resolveCompositeValue(
+      pointerValue(state.document, pointer),
+      nextState,
+    ),
+  };
+}
+
+function resolveToken(token: TokenRecord, state: ResolveState): ResolvedToken {
+  if (state.tokenStack.includes(token.path))
     throw new Error(`Circular token reference found at ${token.path}.`);
-  const nextStack = [...stack, token.path];
+  const nextState = {
+    ...state,
+    tokenStack: [...state.tokenStack, token.path],
+  };
   const { node } = token;
 
   if ('$value' in node && '$ref' in node)
@@ -394,61 +513,24 @@ function resolveToken(
     throw new Error(`Token ${token.path} has an invalid $ref.`);
 
   if (reference !== null) {
-    let targetToken: TokenRecord | undefined;
-    let targetValue: unknown;
+    let target: ResolvedToken;
     if (reference.startsWith('{') && reference.endsWith('}')) {
       const targetPath = reference.slice(1, -1);
-      targetToken = records.get(targetPath);
+      const targetToken = state.records.get(targetPath);
       if (!targetToken)
         throw new Error(
           `The token reference {${targetPath}} from ${token.path} cannot be resolved.`,
         );
-      const resolved = resolveToken(
-        targetToken,
-        records,
-        recordsByNode,
-        document,
-        nextStack,
-      );
-      targetValue = resolved.value;
-      referencedType = resolved.type;
+      target = resolveToken(targetToken, nextState);
     } else {
-      const pointer = reference;
-      const targetPath = tokenPathFromPointer(pointer);
-      if (targetPath) targetToken = records.get(targetPath);
-      if (targetToken && pointer.endsWith('/$value')) {
-        const resolved = resolveToken(
-          targetToken,
-          records,
-          recordsByNode,
-          document,
-          nextStack,
-        );
-        targetValue = resolved.value;
-        referencedType = resolved.type;
-      } else {
-        targetValue = pointerValue(document, pointer);
-        const record = isObject(targetValue)
-          ? recordsByNode.get(targetValue)
-          : undefined;
-        if (record) {
-          const resolved = resolveToken(
-            record,
-            records,
-            recordsByNode,
-            document,
-            nextStack,
-          );
-          targetValue = resolved.value;
-          referencedType = resolved.type;
-        }
-      }
+      target = resolvePointerReference(reference, nextState);
     }
-    value = targetValue;
+    value = target.value;
+    referencedType = target.type;
   } else if ('$ref' in node) {
     throw new Error(`Token ${token.path} has an invalid $ref.`);
   } else if ('$value' in node) {
-    value = node.$value;
+    value = resolveCompositeValue(node.$value, nextState);
   } else {
     throw new Error(`Token ${token.path} has no $value.`);
   }
@@ -462,14 +544,31 @@ function resolveToken(
       `Token ${token.path} references a value with a different type.`,
     );
 
+  if (
+    typeof explicitType !== 'string' &&
+    token.inheritedType !== undefined &&
+    referencedType !== undefined &&
+    token.inheritedType !== referencedType
+  )
+    throw new Error(
+      `Token ${token.path} references a value with a different type from its inherited group type.`,
+    );
+
   const type =
     typeof explicitType === 'string'
       ? explicitType
-      : (referencedType ?? token.inheritedType);
+      : (token.inheritedType ?? referencedType);
   if (type === undefined)
     throw new Error(`Token ${token.path} has no explicit or inherited type.`);
 
   return { type, value };
+}
+
+function containsPropertyReference(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some(containsPropertyReference);
+  if (!isObject(value)) return false;
+  if (Object.hasOwn(value, '$ref')) return true;
+  return Object.values(value).some(containsPropertyReference);
 }
 
 function validateColorValue(value: unknown, path: string): string {
@@ -844,7 +943,14 @@ export function previewDesignTokensFile(
   text: string,
 ): DesignTokenImportPreview {
   const document = parseJson(text);
-  const { records, recordsByNode } = collectTokens(document);
+  const { records, recordsByPointer } = collectTokens(document);
+  const resolution: ResolveState = {
+    records,
+    recordsByPointer,
+    document,
+    tokenStack: [],
+    pointerStack: [],
+  };
   const galleryStyle: Record<string, unknown> = {};
   const appearance: Record<string, unknown> = {};
   const colors: DesignTokenImportPreview['colors'] = {};
@@ -856,10 +962,11 @@ export function previewDesignTokensFile(
       const hasReference =
         Object.hasOwn(token.node, '$ref') ||
         (typeof token.node.$value === 'string' &&
-          /^\{[^{}]+\}$/.test(token.node.$value));
+          /^\{[^{}]+\}$/.test(token.node.$value)) ||
+        containsPropertyReference(token.node.$value);
       if (hasReference) {
         try {
-          resolveToken(token, records, recordsByNode, document, []);
+          resolveToken(token, resolution);
         } catch (cause) {
           const detail =
             cause instanceof Error ? cause.message : 'reference rejected';
@@ -872,13 +979,7 @@ export function previewDesignTokensFile(
     const mapping = tokenMappings[path];
 
     try {
-      const resolved = resolveToken(
-        token,
-        records,
-        recordsByNode,
-        document,
-        [],
-      );
+      const resolved = resolveToken(token, resolution);
       const value = normalizeMappedValue(mapping, resolved, path);
       const target =
         mapping.target === 'color'
