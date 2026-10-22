@@ -12,6 +12,8 @@ export const APPEARANCE_FILE_VERSION = 2;
 export const APPEARANCE_FILE_MAX_BYTES = 96 * 1024;
 
 const color = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+const appearanceClientUiSchema = clientUiSchema.strict();
+const appearanceGalleryStyleSchema = galleryStyleSchema.strict();
 
 const appearanceV1Schema = z
   .object({
@@ -46,8 +48,8 @@ export const appearanceSettingsSchema = z
     descriptionSize: z.number().min(0.875).max(1.5),
     headerSpacing: z.number().min(1.5).max(5),
     customCss: z.string().max(20_000),
-    clientUi: clientUiSchema,
-    galleryStyle: galleryStyleSchema,
+    clientUi: appearanceClientUiSchema,
+    galleryStyle: appearanceGalleryStyleSchema,
   })
   .strict();
 
