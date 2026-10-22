@@ -56,3 +56,19 @@ Deployed to the existing instance with a stopped-volume backup before the schema
 ## Dev branch: banner composition and custom CSS
 
 The dev branch adds header overlays and per-page CSS without changing main or the live instance. Browser coverage verifies desktop/mobile overlays, centered whole-header composition, missing-banner fallback, private autosave, explicit publication, clearing CSS, and rejection of invalid CSS without altering live styling. Release-readiness checks also cover a 160-character title, a 2,000-character unbroken description, absent branding, a failed album-cover fallback, dark and light appearance, and keyboard-only theme and preview controls. The CSS containment check verifies that a keyboard user can still reach and activate the preview toolbar. Security cases cover resource/attribute functions, escaped URLs, imports, unsupported nesting/at-rules, selector escape attempts, fixed-position containment and style-closing HTML strings. Screenshots use public NASA fixtures. This increment was verified against the local fixture only; no release or live deployment was performed.
+
+## v0.3.1 Customize refinements
+
+Verified with Node 22.23.3 and pnpm 11.28.5: zero Svelte/TypeScript diagnostics,
+187 unit/integration tests, 54 production Chromium browser tests, ESLint,
+Prettier, dependency audit, and production build. Independent integration review
+found no blocking issues after the delayed-preview regression was fixed.
+
+Browser coverage includes visual preset keyboard selection, collapsed advanced
+controls, all six locally loaded fonts, logo shapes/placement, hidden header
+editing, owner-only direct preview editing, failed-save retry, caret retention,
+delayed and stale preview messages, phone controls, CSS isolation, and explicit
+publication. [Desktop inline editing](screenshots/customize-v031-desktop.png) and
+[phone settings](screenshots/customize-v031-phone.png) were inspected in the
+production fixture app with native dark Immich styling. Images use the repository's
+attributed NASA fixtures; no live client content was used.

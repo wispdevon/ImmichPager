@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.3.1] - 2026-10-23
+
+### Added
+
+- Locally bundled open-license Inter, Nunito Sans, Lato, Source Serif 4, Merriweather, and JetBrains Mono fonts, including appearance and design-token transfer.
+- Square, rounded, and circular logos with placement above or beside the title; narrow screens stack the header for readability.
+- Visual Classic, Centered, and Editorial header preset cards with keyboard selection and selected-state feedback.
+- Direct title and description editing in the private Customize preview, with hidden text editable in Design.
+
+### Improved
+
+- Design presents everyday controls first, with fine header, typography, and gallery layout settings in a final Advanced design section.
+- Preview updates preserve the editing caret through acknowledged saves, and failed saves retain unfinished text.
+- Importing a partial token file preserves styling values that the file does not specify.
+
+### Upgrade notes
+
+- Existing logo shape and position retain their previous appearance. Storage remains schema version 2, with additive JSON defaults.
+- Fonts load from Pager assets without external font requests. Google Sans remains the default.
+- Draft edits remain private until publication; public gallery text remains read-only.
+
 ## [0.3.0] - 2026-10-23
 
 ### Added
