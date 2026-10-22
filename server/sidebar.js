@@ -6,8 +6,14 @@
     hidden = [],
     originalTitle,
     opener;
+  let hostInteractionRevision = 0;
   const activeClasses = ['bg-primary/10', 'text-primary'];
   const navigationState = new Map();
+  const trackHostInteraction = () => {
+    hostInteractionRevision += 1;
+  };
+  for (const eventName of ['focusin', 'keydown', 'pointerdown'])
+    document.addEventListener(eventName, trackHostInteraction, true);
   const sidebars = () => document.querySelectorAll('#sidebar');
   function rememberNavigation(sidebar) {
     for (const link of sidebar.querySelectorAll('a[href]')) {
@@ -101,8 +107,15 @@
     frame.tabIndex = 0;
     const currentFrame = frame;
     const shouldFocus = focus;
+    closeMobileSidebar();
+    const interactionRevisionAtShow = hostInteractionRevision;
     currentFrame.addEventListener('load', () => {
-      if (!shouldFocus) return;
+      if (
+        !shouldFocus ||
+        frame !== currentFrame ||
+        hostInteractionRevision !== interactionRevisionAtShow
+      )
+        return;
       const contentMain = currentFrame.contentDocument?.querySelector('main');
       if (contentMain) {
         if (!contentMain.hasAttribute('tabindex'))
@@ -114,7 +127,6 @@
     opener = source instanceof HTMLElement ? source : null;
     document.title = 'Pages · Immich';
     showPagesAsActive();
-    closeMobileSidebar();
   }
   function install() {
     for (const sharing of document.querySelectorAll('a[href="/sharing"]')) {

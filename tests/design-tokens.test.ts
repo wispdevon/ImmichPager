@@ -3,6 +3,7 @@ import {
   previewDesignTokensFile,
   serializeDesignTokensFile,
 } from '../src/lib/design-tokens';
+import { FONT_CATALOG } from '../src/lib/font-catalog';
 
 const style = {
   fontFamily: 'google-sans',
@@ -18,6 +19,8 @@ const style = {
   gridColumnGap: 0,
   coverAspectRatio: 1,
   cardRadius: 16,
+  logoShape: 'rounded',
+  logoPosition: 'above',
   hoverTreatment: 'surface',
 } as const;
 
@@ -51,6 +54,23 @@ it('imports documented Pager paths and inherited DTCG types', () => {
     'pager.colors.accent',
     'pager.galleryStyle.contentWidth',
   ]);
+});
+
+it('keeps token preview patches sparse so omitted settings are preserved', () => {
+  const preview = previewDesignTokensFile(
+    JSON.stringify({
+      pager: {
+        galleryStyle: {
+          contentWidth: {
+            $type: 'dimension',
+            $value: { value: 1200, unit: 'px' },
+          },
+        },
+      },
+    }),
+  );
+
+  expect(preview.galleryStyle).toEqual({ contentWidth: 1200 });
 });
 
 it('resolves local aliases and inherited alias types', () => {
@@ -98,6 +118,55 @@ it('resolves local aliases and inherited alias types', () => {
       pagePadding: 32,
     },
   });
+});
+
+it.each(FONT_CATALOG)(
+  'imports and exports the bundled font family $name',
+  (font) => {
+    const preview = previewDesignTokensFile(
+      JSON.stringify({
+        pager: {
+          galleryStyle: {
+            fontFamily: { $type: 'fontFamily', $value: font.tokenFamily },
+          },
+        },
+      }),
+    );
+
+    expect(preview.galleryStyle.fontFamily).toBe(font.id);
+
+    const exported = JSON.parse(
+      serializeDesignTokensFile({
+        galleryStyle: { ...style, fontFamily: font.id },
+        background: null,
+        foreground: null,
+        accent: '#accbfa',
+        titleSize: 3,
+        descriptionSize: 1.125,
+        logoSize: 80,
+        headerSpacing: 2.5,
+        bannerPosition: 50,
+      }),
+    );
+
+    expect(exported.pager.galleryStyle.fontFamily.$value).toBe(
+      font.tokenFamily,
+    );
+  },
+);
+
+it('rejects unknown font families rather than substituting another font', () => {
+  expect(() =>
+    previewDesignTokensFile(
+      JSON.stringify({
+        pager: {
+          galleryStyle: {
+            fontFamily: { $type: 'fontFamily', $value: 'Arial' },
+          },
+        },
+      }),
+    ),
+  ).toThrow(/fontFamily/i);
 });
 
 it('rejects token aliases whose inherited type conflicts with the source type', () => {
@@ -281,6 +350,31 @@ it('reports unsupported paths and exposes an empty summary when nothing applies'
     unsupported: ['pager.galleryStyle.animation', 'pager.extra.token'],
     hasApplicableTokens: false,
   });
+  expect(preview.galleryStyle).toEqual({});
+});
+
+it('reports enum-only logo tokens as unsupported while applying supported tokens', () => {
+  const preview = previewDesignTokensFile(
+    JSON.stringify({
+      pager: {
+        galleryStyle: {
+          logoShape: { $type: 'string', $value: 'circle' },
+          logoPosition: { $type: 'string', $value: 'left' },
+          contentWidth: {
+            $type: 'dimension',
+            $value: { value: 1200, unit: 'px' },
+          },
+        },
+      },
+    }),
+  );
+
+  expect(preview.galleryStyle).toEqual({ contentWidth: 1200 });
+  expect(preview.unsupported).toEqual([
+    'pager.galleryStyle.logoShape',
+    'pager.galleryStyle.logoPosition',
+  ]);
+  expect(preview.hasApplicableTokens).toBe(true);
 });
 
 it('rejects recognized tokens that are missing a value even beside valid tokens', () => {
@@ -512,7 +606,12 @@ it('exports concrete self-contained DTCG tokens that import back to the same set
   expect(text).not.toContain('"$ref"');
   expect(text).not.toMatch(/"\$value":\s*"\{[^}]+\}"/);
   expect(previewDesignTokensFile(text)).toMatchObject({
-    galleryStyle: style,
+    galleryStyle: Object.fromEntries(
+      Object.entries(style).filter(
+        ([key]) =>
+          !['hoverTreatment', 'logoShape', 'logoPosition'].includes(key),
+      ),
+    ),
     appearance: {
       titleSize: 3,
       descriptionSize: 1.125,

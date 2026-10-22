@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { closeCustomize, openCustomize } from './customize-helper';
+import {
+  closeCustomize,
+  openCustomize,
+  openAdvancedDesign,
+} from './customize-helper';
 
 test('reviews album and appearance changes before they replace the live page', async ({
   page,
@@ -55,6 +59,7 @@ test('reviews album and appearance changes before they replace the live page', a
   await title.fill('Acme autumn season');
   await title.press('Tab');
   await openCustomize(page);
+  await openAdvancedDesign(page);
   await page.getByRole('button', { name: 'Header size', exact: true }).click();
   await page.getByRole('option', { name: 'Tall', exact: true }).click();
   for (let step = 0; step < 4; step++)

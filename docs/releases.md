@@ -1,5 +1,11 @@
 # Releases
 
+## v0.3.1
+
+Version 0.3.1 refines Customize with visual header presets, a simpler Design tab, six additional locally bundled open-license fonts, and logo shape and placement controls. Title and description can be edited directly in the private Customize preview. Partial token imports preserve styling omitted from the file. See [the changelog](../CHANGELOG.md), [customization guide](customization.md), and [font licenses](fonts.md).
+
+Storage remains schema version 2; existing pages retain compatible defaults. Public pages stay read-only, and draft edits affect clients only after publication. The release is based on `dev`; upgrading Pager does not upgrade Immich.
+
 ## v0.3.0
 
 The [GitLab v0.3.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.3.0) ships the per-page Customize workspace, individual element visibility, gallery styling, CodeMirror CSS editing, appearance v2, and DTCG token portability from MRs !28–!30. See [the changelog](../CHANGELOG.md) and [customization guide](customization.md).

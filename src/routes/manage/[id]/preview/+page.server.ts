@@ -9,6 +9,8 @@ export const load: PageServerLoad = async (event) => {
     const draft = database().editor(event.params.id, event.locals.user!.id);
     return {
       page: await gallery(draft, event, { preview: true, session: null }),
+      draftRevision: draft.draftRevision,
+      inlineHeader: event.url.searchParams.get('inlineHeader') === '1',
     };
   } catch (cause) {
     if (cause instanceof AppError) error(cause.status, cause.message);

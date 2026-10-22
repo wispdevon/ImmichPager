@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { DEFAULT_PAGE_ACCENT } from './gallery';
+import { FONT_FAMILY_IDS } from './font-catalog';
 
 export const reservedSlugs = new Set([
   'manage',
@@ -14,7 +15,7 @@ const color = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, 'Use a six-digit hex color');
 
-const fontFamily = z.enum(['google-sans', 'system']);
+const fontFamily = z.enum(FONT_FAMILY_IDS);
 
 export const galleryStyleSchema = z.object({
   fontFamily: fontFamily.default('google-sans'),
@@ -30,6 +31,8 @@ export const galleryStyleSchema = z.object({
   gridColumnGap: z.number().int().min(0).max(80).default(0),
   coverAspectRatio: z.number().min(0.5).max(2).default(1),
   cardRadius: z.number().int().min(0).max(40).default(16),
+  logoShape: z.enum(['square', 'rounded', 'circle']).default('rounded'),
+  logoPosition: z.enum(['above', 'left']).default('above'),
   hoverTreatment: z
     .enum(['surface', 'underline', 'lift', 'none'])
     .default('surface'),

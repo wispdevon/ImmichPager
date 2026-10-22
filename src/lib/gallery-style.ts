@@ -2,6 +2,7 @@ import * as css from 'css-tree';
 import type { GalleryPage } from './contracts';
 import { DEFAULT_PAGE_ACCENT } from './gallery';
 import { stylesheetMarkup } from './custom-css';
+import { FONT_CATALOG_BY_ID } from './font-catalog';
 
 export type GalleryStyleSource = Pick<
   GalleryPage,
@@ -83,16 +84,18 @@ export function galleryStyleVariables(
       overlay: 'clamp(360px, 42vw, 560px)',
     },
   }[page.headerSize];
+  const logoRadius = {
+    square: '0px',
+    rounded: '16px',
+    circle: '50%',
+  }[style.logoShape];
 
   const variables: Record<string, string> = {
     '--pager-background': page.background ?? 'var(--custom-bg, var(--base-bg))',
     '--pager-accent': baseAccent
       ? 'var(--gallery-hover-accent, var(--accent))'
       : page.accent,
-    '--pager-font-family':
-      style.fontFamily === 'google-sans'
-        ? '"GoogleSans", sans-serif'
-        : 'system-ui, sans-serif',
+    '--pager-font-family': FONT_CATALOG_BY_ID[style.fontFamily].cssStack,
     '--pager-title-font-weight': String(style.titleFontWeight),
     '--pager-body-font-size': `${style.bodyFontSize}rem`,
     '--pager-body-font-weight': String(style.bodyFontWeight),
@@ -131,6 +134,12 @@ export function galleryStyleVariables(
       ? 'var(--pager-foreground, #fff)'
       : 'inherit',
     '--pager-logo-size': `${page.logoSize}px`,
+    '--pager-logo-radius': logoRadius,
+    '--pager-logo-layout': style.logoPosition === 'left' ? 'row' : 'column',
+    '--pager-logo-gap': '20px',
+    '--pager-mobile-logo-layout': 'column',
+    '--pager-logo-justify':
+      page.alignment === 'center' ? 'center' : 'flex-start',
     '--pager-title-size': `${page.titleSize}rem`,
     '--pager-title-min-size': `${page.titleSize * 0.625}rem`,
     '--pager-title-fluid-size': `${(3.4 / 3) * page.titleSize}vw`,

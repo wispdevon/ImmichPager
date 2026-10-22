@@ -27,6 +27,8 @@ const appearance: AppearanceSettings = {
     ...DEFAULT_GALLERY_STYLE,
     cardRadius: 21,
     fontFamily: 'system',
+    logoShape: 'circle',
+    logoPosition: 'left',
   },
 };
 
@@ -172,6 +174,28 @@ it('rejects unknown fields inside version 2 client UI and gallery style settings
         format: 'immichpager-appearance',
         version: 2,
         appearance: badGalleryStyle,
+      }),
+    ),
+  ).toThrow(/supported ImmichPager appearance/i);
+});
+
+it('validates logo appearance settings in version 2 files', () => {
+  expect(
+    parseAppearanceFile(serializeAppearanceFile(appearance)).galleryStyle,
+  ).toMatchObject({
+    logoShape: 'circle',
+    logoPosition: 'left',
+  });
+
+  expect(() =>
+    parseAppearanceFile(
+      JSON.stringify({
+        format: 'immichpager-appearance',
+        version: 2,
+        appearance: {
+          ...appearance,
+          galleryStyle: { ...appearance.galleryStyle, logoShape: 'pill' },
+        },
       }),
     ),
   ).toThrow(/supported ImmichPager appearance/i);

@@ -20,3 +20,11 @@ export async function closeCustomize(root: Root) {
     root.getByRole('dialog', { name: 'Customize', exact: true }),
   ).toHaveCount(0);
 }
+
+export async function openAdvancedDesign(root: Root) {
+  const details = root.locator('details.advanced-design');
+  if ((await details.getAttribute('open')) === null) {
+    await details.locator('summary').click();
+  }
+  await expect(details).toHaveAttribute('open', '');
+}

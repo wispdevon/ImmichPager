@@ -75,6 +75,8 @@ Choose **Below banner** or **Over banner** to compose your logo, title, and desc
 
 Version 0.3.0 adds **Customize** inside Pages, with **Design**, **Elements**, **Themes**, and **CSS** tabs beside a private responsive preview. Choose which client elements appear, adjust gallery typography and spacing, edit isolated CSS, or transfer a design with a version 2 appearance file. Separate [DTCG design token files](docs/design-tokens.md) transfer styling after an import summary while keeping content, visibility, and CSS intact. New pages start with browsing controls off; existing pages keep their current appearance. Appearance edits remain private until a page is explicitly published.
 
+Version 0.3.1 makes Design easier to use: visual header preset cards, logo shape and position controls, and locally bundled Inter, Nunito Sans, Lato, Source Serif 4, Merriweather, and JetBrains Mono. Click the title or description directly in the Customize preview to edit your private draft. Fine typography and layout controls are grouped under **Advanced design** at the end of the Design tab.
+
 ## Quick start
 
 Requires Docker Compose v2, an existing Immich installation, and control of its HTTPS reverse proxy.

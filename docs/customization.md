@@ -102,6 +102,8 @@ are shaped like this:
     "gridColumnGap": 0,
     "coverAspectRatio": 1,
     "cardRadius": 16,
+    "logoShape": "rounded",
+    "logoPosition": "above",
     "hoverTreatment": "surface"
   }
 }
@@ -110,9 +112,28 @@ are shaped like this:
 Use the separate [DTCG token file format](design-tokens.md) to share colors and
 gallery styling without visibility settings or custom CSS.
 
+## Edit directly in Customize
+
+Click the title or description in the private preview to edit it. Empty visible
+text has an Add a title or Add a description placeholder. Enter finishes title
+editing; Ctrl+Enter finishes description editing; Escape returns to the text
+button. Text autosaves to the draft, including while you type. A save failure
+keeps your edits and offers Retry save. The preview stays mounted through saved
+updates so your caret stays in place.
+
+On phones, use Preview to reach the text, then Settings to return to the Design
+panel. Hidden title and description fields are editable at the top of Design;
+they stay hidden in the preview. Public galleries and the standalone read-only
+Preview do not expose editing controls.
+
+Design begins with visual header presets, logo options, fonts, and colors.
+Expand Advanced design at the end for detailed sizing and spacing. Preset cards
+show which layout matches the current header settings; fine-tuning those settings
+can leave no preset selected.
+
 ## Compose the header over a banner
 
-Add a banner using **Choose from Immich**, an upload, or a file drop. In **Customize → Design**, change **Header layout** from **Below banner** to **Over banner**. Your logo, title, and description move together onto the image. Header alignment controls left or centered composition. Banner crop position controls the image's vertical focal point.
+Add a banner using **Choose from Immich**, an upload, or a file drop. In **Customize → Design → Advanced design**, change **Header layout** from **Below banner** to **Over banner**. Your logo, title, and description move together onto the image. Header alignment controls left or centered composition. Banner crop position controls the image's vertical focal point.
 
 Overlay mode uses white text and a dark gradient to keep the header readable. The banner grows to fit longer text on narrow screens. If you remove the banner, the header returns to the normal layout; the saved overlay choice takes effect when you add a banner again. Existing pages default to Below banner.
 
@@ -120,13 +141,18 @@ Overlay mode uses white text and a dark gradient to keep the header readable. Th
 
 ## Set header size
 
-In **Customize → Design**, choose **Compact**, **Standard**, or **Tall** for the banner composition. Standard keeps the existing responsive banner height. Compact and Tall give you shorter or deeper compositions in both Below banner and Over banner layouts. Use the logo-size slider to choose a size from 48–160 px; existing and new pages default to 80 px.
+In **Customize → Design → Advanced design**, choose **Compact**, **Standard**, or **Tall** for the banner composition. Standard keeps the existing responsive banner height. Compact and Tall give you shorter or deeper compositions in both Below banner and Over banner layouts. Use the logo-size slider to choose a size from 48–160 px; existing and new pages default to 80 px.
+
+Choose a logo shape of square, rounded, or circle, and place it above or to the
+left of the title and description. Existing and new pages default to rounded
+corners and the logo above the text. The left layout stacks above the text on
+small screens unless custom CSS changes `--pager-mobile-logo-layout`.
 
 Changes autosave to the private draft, appear in Preview, and only update your client page after you publish. Existing pages receive these defaults without a database migration.
 
 ## Set typography and spacing
 
-In **Customize → Design**, use the sliders to set title size (1.5–4 rem), description size (0.875–1.5 rem), and header spacing (1.5–5 rem). The title scales with page width while preserving the selected size at phone widths, and spacing adjusts on narrow screens. Google Sans remains the default font. Existing and new pages start with a 3 rem title, 1.125 rem description, and 2.5 rem header spacing.
+In **Customize → Design → Advanced design**, use the sliders to set title size (1.5–4 rem), description size (0.875–1.5 rem), and header spacing (1.5–5 rem). The title scales with page width while preserving the selected size at phone widths, and spacing adjusts on narrow screens. Google Sans remains the default font. Existing and new pages start with a 3 rem title, 1.125 rem description, and 2.5 rem header spacing.
 
 Changes autosave to the private draft and appear in Preview. Your client page changes only after you publish. Existing pages receive defaults without a database migration.
 
@@ -146,10 +172,12 @@ is hidden.
 
 ## Adjust the gallery layout
 
-Open **Customize → Design** to set the gallery font, title/body/card
-typography, content width, page padding, grid density, row and column spacing,
-cover aspect ratio, corner radius, and hover treatment. Google Sans is the
-default bundled font; the system option uses installed fonts. The initial layout
+Open **Customize → Design** to choose the gallery font. Google Sans remains the
+default; six additional open-license families are bundled locally, and System
+uses installed fonts. See the [font catalog and licenses](fonts.md). Expand
+**Advanced design** at the end of the tab for title/body/card typography, content
+width, page padding, grid density, row and column spacing, cover aspect ratio,
+corner radius, and hover treatment. The initial layout
 keeps Immich's 1600 px content width, 224 px minimum album track, square covers,
 16 px card corners, and subtle hover surface.
 
@@ -278,11 +306,22 @@ theme properties `--custom-bg`, `--custom-fg`, `--accent`, and
 | `--pager-header-align-self`             | Header position in overlay; `end` or `auto`                    |
 | `--pager-overlay-header-color`          | Overlay title and description color                            |
 | `--pager-logo-size`                     | Logo width and height; `80px`                                  |
+| `--pager-logo-radius`                   | Logo corner radius; `16px`                                     |
+| `--pager-logo-layout`                   | Logo and copy direction; `column` above or `row` beside        |
+| `--pager-logo-gap`                      | Space between logo and copy; `20px`                            |
+| `--pager-logo-justify`                  | Left-layout group alignment; `flex-start` or `center`          |
+| `--pager-mobile-logo-layout`            | Logo layout below 600px; `column`                              |
 | `--pager-header-spacing`                | Desktop header spacing; `2.5rem`                               |
 | `--pager-mobile-header-spacing`         | Mobile header spacing; `2rem`                                  |
 | `--pager-mobile-control-font-size`      | Mobile browsing control text size; `13px`                      |
 | `--pager-mobile-footer-inline-padding`  | Mobile footer horizontal padding; `24px`                       |
 | `--pager-color-scheme`                  | Native control theme; `dark`, `light`, or `light dark`         |
+
+The logo shape setting maps to `--pager-logo-radius`: `square` uses `0px`,
+`rounded` uses `16px`, and `circle` uses `50%`. The `left` logo position uses a
+row on larger screens and stacks above the header copy below 600px by default.
+Set `--pager-mobile-logo-layout: row` to keep the side-by-side layout on small
+screens.
 
 For example, this changes the page without `!important`:
 
@@ -298,7 +337,9 @@ For example, this changes the page without `!important`:
 
 ### Title typography
 
-Use installed system fonts, including the gallery's bundled Google Sans, without external font requests.
+Use any bundled gallery family or an installed system font without external
+font requests. The gallery uses Google Sans by default; see the
+[font catalog](fonts.md) for local family options and licenses.
 
 ```css
 .ip-title {

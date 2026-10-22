@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Button } from '@immich/ui';
+  import { mdiContentCopy } from '@mdi/js';
   let { slug, label = 'Copy link' }: { slug: string | null; label?: string } =
     $props();
   let copied = $state(false),
@@ -19,6 +20,7 @@
 
 <div class="copy-link">
   <Button
+    leadingIcon={mdiContentCopy}
     variant="ghost"
     shape="round"
     disabled={!slug}
@@ -26,18 +28,7 @@
     aria-label={label}
     onclick={copy}
   >
-    <svg
-      width="19"
-      height="19"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="1.7"
-      aria-hidden="true"
-      ><rect x="8" y="8" width="13" height="13" rx="2" /><path
-        d="M16 8V3H3v13h5"
-      /></svg
-    >{copied ? 'Copied' : label}</Button
+    {copied ? 'Copied' : label}</Button
   >
   {#if manual}<label class="manual"
       >Select and copy your link<input

@@ -6,10 +6,16 @@
     ContextMenuButton,
     Field,
     Input,
+    IconButton,
     Select,
     type ActionItem,
   } from '@immich/ui';
-  import { mdiCogOutline, mdiContentDuplicate, mdiOpenInNew } from '@mdi/js';
+  import {
+    mdiCogOutline,
+    mdiContentDuplicate,
+    mdiOpenInNew,
+    mdiDotsHorizontal,
+  } from '@mdi/js';
   import CopyLink from '$lib/components/CopyLink.svelte';
   import PagePreviewThumbnail from '$lib/components/PagePreviewThumbnail.svelte';
   import {
@@ -279,35 +285,42 @@
         <div class="row-actions">
           <CopyLink slug={page.publishedSlug} />
           <div class="desktop-actions">
-            <Button
+            <IconButton
+              icon={mdiContentDuplicate}
               variant="ghost"
               color="secondary"
+              shape="round"
+              title={duplicating === page.id
+                ? 'Creating design…'
+                : 'Duplicate design'}
+              aria-label={`Duplicate design for ${page.title || 'Untitled page'}`}
               disabled={duplicating !== null}
+              loading={duplicating === page.id}
               aria-busy={duplicating === page.id}
               onclick={() => void duplicateDesign(page.id)}
-              >{duplicating === page.id ? 'Creating…' : 'Duplicate design'}<span
-                class="sr-only"
-              >
-                for {page.title || 'Untitled page'}</span
-              ></Button
-            >
+            />
             {#if page.publishedSlug}
-              <Button
+              <IconButton
+                icon={mdiOpenInNew}
                 variant="ghost"
                 color="secondary"
+                shape="round"
+                title="Open client page"
                 href={`/page/${page.publishedSlug}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`Open ${page.title || 'Untitled page'}`}>↗</Button
-              >
+                aria-label={`Open ${page.title || 'Untitled page'}`}
+              />
             {/if}
-            <Button
+            <IconButton
+              icon={mdiDotsHorizontal}
               variant="ghost"
               color="secondary"
+              shape="round"
+              title="Options"
               href={`/page/manage/${page.id}?options=1`}
               aria-label={`Options for ${page.title || 'Untitled page'}`}
-              >⋯</Button
-            >
+            />
           </div>
           <div class="mobile-actions">
             <ContextMenuButton
