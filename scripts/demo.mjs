@@ -74,6 +74,7 @@ if (!existing.some((p) => p.slug === 'acme')) {
         slug: 'acme',
         description: 'Every shoot. Every season. All in one place.',
         albumIds: albums.filter((a) => a.ownerId === 'alice').map((a) => a.id),
+        clientUi: { showBrowsingControls: true },
       }),
     })
   ).json();

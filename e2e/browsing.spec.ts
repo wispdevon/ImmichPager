@@ -139,6 +139,7 @@ test('public gallery browsing, responsive layout, and year navigation work', asy
   }));
   expect(defaultSurface.background).toMatch(/rgba\(0, 0, 0, 0\)/);
   await firstAlbum.hover();
+  await expect(firstAlbum).toHaveCSS('transform', 'none');
   const hoveredSurface = await firstAlbum.evaluate((album) => ({
     background: getComputedStyle(album).backgroundColor,
     border: getComputedStyle(album).borderColor,
@@ -265,6 +266,7 @@ test('single-album browse summaries use singular labels before and after filteri
         title: 'Single album summary check',
         slug,
         albumIds: [albums[0].id],
+        clientUi: { showBrowsingControls: true },
       },
     });
     expect(created.ok()).toBe(true);
@@ -307,6 +309,7 @@ test('light client galleries retain the same responsive album presentation', asy
         slug: 'native-gallery-light-reference',
         theme: 'light',
         albumIds: [albums[0].id, albums[1].id],
+        clientUi: { showBrowsingControls: true },
       },
     });
     expect(created.ok()).toBe(true);
@@ -392,6 +395,7 @@ test('light client galleries retain the same responsive album presentation', asy
         theme: 'light',
         accent: '#0f766e',
         albumIds: [albums[0].id],
+        clientUi: { showBrowsingControls: true },
       },
     });
     expect(customAccentCreated.ok()).toBe(true);
@@ -424,6 +428,7 @@ test('light client galleries retain the same responsive album presentation', asy
         slug: 'native-gallery-system-reference',
         theme: 'system',
         albumIds: [albums[0].id],
+        clientUi: { showBrowsingControls: true },
       },
     });
     expect(systemCreated.ok()).toBe(true);

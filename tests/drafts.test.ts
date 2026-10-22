@@ -57,12 +57,16 @@ it('keeps live settings, branding and sessions unchanged until publication', asy
   d = await drafts.save('alice', d.id, {
     ...values,
     title: 'Changed',
+    clientUi: { ...d.clientUi, showTitle: false },
+    galleryStyle: { ...d.galleryStyle, contentWidth: 1280 },
     expectedDraftRevision: d.draftRevision,
   });
   const draft = store.draft(d.id, 'alice');
   store.changeDraftBranding(draft, 'logo', new Uint8Array([1, 2]));
   d = store.editor(d.id, 'alice');
   expect(store.publicPage('client')?.title).toBe('Client');
+  expect(store.publicPage('client')?.clientUi.showTitle).toBe(true);
+  expect(store.publicPage('client')?.galleryStyle.contentWidth).toBe(1600);
   expect(store.branding(d.id, 'logo')).toBeNull();
   expect(store.session(token, store.get(d.id)!)).toEqual({ tokens: {} });
   expect(d.hasUnpublishedChanges).toBe(true);
@@ -72,6 +76,8 @@ it('keeps live settings, branding and sessions unchanged until publication', asy
     expectedDraftRevision: d.draftRevision,
   });
   expect(store.publicPage('client')?.title).toBe('Changed');
+  expect(store.publicPage('client')?.clientUi.showTitle).toBe(false);
+  expect(store.publicPage('client')?.galleryStyle.contentWidth).toBe(1280);
   expect(store.branding(d.id, 'logo')).toEqual(new Uint8Array([1, 2]));
   expect(d.hasUnpublishedChanges).toBe(false);
   expect(upstream.createShare).toHaveBeenCalledTimes(1);
@@ -183,6 +189,43 @@ it('duplicates only an owned page design into an empty private draft', async () 
     descriptionSize: 1.25,
     headerSpacing: 3.5,
     customCss: ':scope { --pager-accent: #abcdef; }',
+    clientUi: {
+      showBanner: false,
+      showLogo: true,
+      showTitle: true,
+      showDescription: false,
+      showBrowsingControls: true,
+      showAlbumSearch: false,
+      showMonthFilter: true,
+      showYearNavigation: true,
+      showResultsCount: true,
+      showAlbums: true,
+      showAlbumCovers: true,
+      showAlbumTitles: false,
+      showAlbumDates: true,
+      showAlbumItemCounts: true,
+      showSharedLabels: false,
+      showYearHeadings: true,
+      showYearCounts: false,
+      allowYearCollapse: true,
+      showBranding: false,
+    },
+    galleryStyle: {
+      fontFamily: 'system',
+      titleFontWeight: 700,
+      bodyFontSize: 1.1,
+      bodyFontWeight: 500,
+      cardTitleSize: 1.25,
+      cardTitleWeight: 650,
+      contentWidth: 1280,
+      pagePadding: 24,
+      gridMinWidth: 240,
+      gridRowGap: 24,
+      gridColumnGap: 12,
+      coverAspectRatio: 1.5,
+      cardRadius: 8,
+      hoverTreatment: 'lift',
+    },
     bannerPosition: 28,
     order: 'manual',
   });
@@ -225,6 +268,8 @@ it('duplicates only an owned page design into an empty private draft', async () 
     descriptionSize: 1.25,
     headerSpacing: 3.5,
     customCss: ':scope { --pager-accent: #abcdef; }',
+    clientUi: source.clientUi,
+    galleryStyle: source.galleryStyle,
     bannerPosition: 28,
     logo: true,
     banner: true,
