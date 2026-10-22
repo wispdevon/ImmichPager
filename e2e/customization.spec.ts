@@ -56,9 +56,12 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
           root.classList.contains('header-compact') ||
           root.classList.contains('header-tall'),
         logoSize: style.getPropertyValue('--logo-size').trim(),
+        pagerLogoSize: style.getPropertyValue('--pager-logo-size').trim(),
         logoWidth: logo && getComputedStyle(logo).width,
         titleSize: style.getPropertyValue('--title-max-size').trim(),
+        pagerTitleSize: style.getPropertyValue('--pager-title-size').trim(),
         spacing: style.getPropertyValue('--header-spacing').trim(),
+        pagerSpacing: style.getPropertyValue('--pager-header-spacing').trim(),
         descriptionSize: description && getComputedStyle(description).fontSize,
         titleFont: title && getComputedStyle(title).fontFamily,
       };
@@ -66,9 +69,12 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
   expect(defaultAppearance).toMatchObject({
     headerSize: false,
     logoSize: '80px',
+    pagerLogoSize: '80px',
     logoWidth: '80px',
     titleSize: '3rem',
+    pagerTitleSize: '3rem',
     spacing: '2.5rem',
+    pagerSpacing: '2.5rem',
     descriptionSize: '18px',
   });
   expect(defaultAppearance.titleFont).toContain('GoogleSans');
@@ -291,9 +297,17 @@ test('header presets stay per-page and private until publication', async ({
     '--logo-size',
     '112px',
   );
+  await expect(gallery.locator('.ip-gallery')).toHaveCSS(
+    '--pager-logo-size',
+    '112px',
+  );
   await expect(gallery.locator('.ip-logo')).toHaveCSS('width', '112px');
   await expect(gallery.locator('.ip-gallery')).toHaveCSS(
     '--title-max-size',
+    '3.5rem',
+  );
+  await expect(gallery.locator('.ip-gallery')).toHaveCSS(
+    '--pager-title-size',
     '3.5rem',
   );
   await expect(gallery.locator('.ip-gallery')).toHaveCSS(
@@ -302,6 +316,10 @@ test('header presets stay per-page and private until publication', async ({
   );
   await expect(gallery.locator('.ip-gallery')).toHaveCSS(
     '--header-spacing',
+    '3.5rem',
+  );
+  await expect(gallery.locator('.ip-gallery')).toHaveCSS(
+    '--pager-header-spacing',
     '3.5rem',
   );
   await expect(gallery.locator('.ip-gallery')).toHaveClass(/light/);
