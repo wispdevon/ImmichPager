@@ -1,6 +1,10 @@
 import { test, expect, type Page } from '@playwright/test';
 import { confirmPublication } from './publication-helper';
-import { closeCustomize, openCustomize } from './customize-helper';
+import {
+  closeCustomize,
+  openCustomize,
+  openAdvancedDesign,
+} from './customize-helper';
 
 async function createBannerDraft(page: Page, slug: string) {
   await page.goto('/dev-login/alice');
@@ -22,6 +26,7 @@ async function createBannerDraft(page: Page, slug: string) {
     .setInputFiles('fixtures/photos/earthrise.webp');
   await expect(page.getByAltText('Banner preview')).toBeVisible();
   await openCustomize(page);
+  await openAdvancedDesign(page);
   return slug;
 }
 
@@ -48,6 +53,7 @@ test('banner crop preview supports drag and touch while the slider remains keybo
   );
 
   await openCustomize(page);
+  await openAdvancedDesign(page);
 
   const slider = page.getByRole('slider', { name: 'Banner crop position' });
   const crop = page.getByRole('group', { name: 'Banner crop preview' });
@@ -84,9 +90,11 @@ test('banner crop preview supports drag and touch while the slider remains keybo
     '50% 50%',
   );
   await openCustomize(page);
+  await openAdvancedDesign(page);
   const savedPosition = await slider.inputValue();
   await page.reload();
   await openCustomize(page);
+  await openAdvancedDesign(page);
   await expect(
     page.getByRole('slider', { name: 'Banner crop position' }),
   ).toHaveValue(savedPosition!);

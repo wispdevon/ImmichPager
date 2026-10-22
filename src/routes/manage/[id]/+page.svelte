@@ -583,6 +583,7 @@
           class:mobile-preview={customizeMobilePreview}
         >
           <CustomizePanel
+            onTitleInput={editTitle}
             bind:fields
             {saved}
             {busy}

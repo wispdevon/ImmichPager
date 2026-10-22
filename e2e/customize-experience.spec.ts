@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { closeCustomize, openCustomize } from './customize-helper';
+import {
+  closeCustomize,
+  openCustomize,
+  openAdvancedDesign,
+} from './customize-helper';
 
 async function createDraft(
   page: import('@playwright/test').Page,
@@ -25,6 +29,7 @@ test('acknowledged draft saves refresh the preview without moving settings focus
   const record = await createDraft(page, 'customize-focus-ack');
   await page.goto('/page/manage/' + record.id);
   await openCustomize(page);
+  await openAdvancedDesign(page);
 
   const frame = page.getByTestId('responsive-preview-frame');
   const before = await frame.getAttribute('src');
@@ -38,7 +43,12 @@ test('acknowledged draft saves refresh the preview without moving settings focus
 
   await expect(titleWeight).toHaveValue(String(initialValue + 50));
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
-  await expect.poll(() => frame.getAttribute('src')).not.toBe(before);
+  await expect(frame).toHaveAttribute('src', before!);
+  await expect(
+    page
+      .frameLocator('[data-testid="responsive-preview-frame"]')
+      .locator('.ip-title'),
+  ).toHaveCSS('font-weight', String(initialValue + 50));
   await expect(titleWeight).toBeFocused();
   await closeCustomize(page);
 });
@@ -49,6 +59,7 @@ test('Immich selects support pointer and keyboard input in Customize', async ({
   const record = await createDraft(page, 'customize-select-input');
   await page.goto('/page/manage/' + record.id);
   const dialog = await openCustomize(page);
+  await openAdvancedDesign(page);
   const layout = dialog.getByRole('button', {
     name: 'Header layout',
     exact: true,
@@ -86,6 +97,7 @@ test('failed saves keep edits visible and can be retried', async ({ page }) => {
   const record = await createDraft(page, 'customize-save-failure');
   await page.goto('/page/manage/' + record.id);
   await openCustomize(page);
+  await openAdvancedDesign(page);
 
   await page.route('**/page/api/pages/' + record.id, async (route) => {
     if (route.request().method() !== 'PUT') return route.continue();

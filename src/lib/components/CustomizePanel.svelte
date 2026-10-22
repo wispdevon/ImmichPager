@@ -1,6 +1,6 @@
 <script lang="ts">
   import { tick } from 'svelte';
-  import { Button, Field, Select, Switch } from '@immich/ui';
+  import { Button, Field, Select, Switch, Input, Textarea } from '@immich/ui';
   import {
     APPEARANCE_FILE_MAX_BYTES,
     parseAppearanceFile,
@@ -15,7 +15,6 @@
   } from '$lib/contracts';
   import {
     applyHeaderPreset,
-    headerPresets,
     type HeaderPreset,
   } from '$lib/appearance-presets';
   import { compileCustomCss, CUSTOM_CSS_LIMIT } from '$lib/custom-css';
@@ -23,6 +22,8 @@
     previewDesignTokensFile,
     serializeDesignTokensFile,
   } from '$lib/design-tokens';
+  import { FONT_CATALOG } from '$lib/font-catalog';
+  import HeaderPresetPicker from './HeaderPresetPicker.svelte';
   import CodeMirrorCssEditor from './CodeMirrorCssEditor.svelte';
 
   type Tab = 'Design' | 'Elements' | 'Themes' | 'CSS';
@@ -32,11 +33,13 @@
     saved,
     busy = false,
     onPreview,
+    onTitleInput,
   }: {
     fields: PageInput;
     saved: DraftEditorPage | null;
     busy?: boolean;
     onPreview: () => void;
+    onTitleInput: (value: string) => void;
   } = $props();
 
   let root: HTMLElement;
@@ -326,6 +329,95 @@
       aria-labelledby="customize-tab-design"
       tabindex="0"
     >
+      <p class="hint">
+        Click the title or description in the preview to edit your draft.
+      </p>
+      {#if !fields.clientUi.showTitle || !fields.clientUi.showDescription}
+        <section>
+          <h2>Hidden text</h2>
+          <p class="hint">
+            Edit hidden content here, or show it in Elements to edit it in the
+            preview.
+          </p>
+          {#if !fields.clientUi.showTitle}
+            <Field label="Title"
+              ><Input
+                maxlength={160}
+                value={fields.title}
+                oninput={(event) => onTitleInput(event.currentTarget.value)}
+              /></Field
+            >
+          {/if}
+          {#if !fields.clientUi.showDescription}
+            <Field label="Description"
+              ><Textarea
+                maxlength={2000}
+                rows={3}
+                bind:value={fields.description}
+              /></Field
+            >
+          {/if}
+        </section>
+      {/if}
+      <section>
+        <h2>Header</h2>
+        <HeaderPresetPicker {fields} onSelect={applyPreset} />
+        <p class="hint">
+          Choose a starting layout. Presets change header composition only.
+        </p>
+      </section>
+      <section>
+        <h2>Logo</h2>
+        <Field label="Logo shape"
+          ><Select
+            bind:value={fields.galleryStyle.logoShape}
+            options={[
+              { value: 'square', label: 'Square' },
+              { value: 'rounded', label: 'Rounded' },
+              { value: 'circle', label: 'Circle' },
+            ]}
+          /></Field
+        >
+        <Field label="Logo position"
+          ><Select
+            bind:value={fields.galleryStyle.logoPosition}
+            options={[
+              { value: 'above', label: 'Above title' },
+              { value: 'left', label: 'Left of title' },
+            ]}
+          /></Field
+        >
+        <label class="range-setting">
+          Logo size
+          <div class="range-control">
+            <input
+              type="range"
+              min="48"
+              max="160"
+              step="8"
+              aria-label="Logo size"
+              bind:value={fields.logoSize}
+            />
+            <output>{fields.logoSize}px</output>
+          </div>
+        </label>
+      </section>
+      <section>
+        <h2>Font</h2>
+        <Field label="Font family"
+          ><Select
+            bind:value={fields.galleryStyle.fontFamily}
+            options={FONT_CATALOG.map((font) => ({
+              value: font.id,
+              label: font.name,
+            }))}
+          /></Field
+        >
+        <p class="hint">
+          Fonts are bundled locally. System uses the fonts installed on each
+          visitor’s device.
+        </p>
+      </section>
       <section>
         <h2>Appearance</h2>
         <Field label="Appearance">
@@ -380,411 +472,375 @@
         >
       </section>
 
-      <section>
-        <h2>Header</h2>
-        <ul class="preset-list" role="list" aria-label="Header presets">
-          {#each headerPresets as preset (preset.id)}
-            <li>
-              <button
-                class="preset-card"
-                type="button"
-                onclick={() => applyPreset(preset)}
-              >
-                <strong>{preset.label}</strong>
-                <span>{preset.description}</span>
-              </button>
-            </li>
-          {/each}
-        </ul>
+      <details class="advanced-design">
+        <summary>Advanced design</summary>
         <p class="hint">
-          Presets change header composition only. They keep your colors, gallery
-          typography, visibility, albums, password, URL, and CSS. Google Sans
-          remains the default.
+          Fine-tune header sizing, typography, and gallery layout.
         </p>
-        <Field label="Header alignment">
-          <Select
-            bind:value={fields.alignment}
-            options={[
-              { value: 'left', label: 'Left' },
-              { value: 'center', label: 'Centered' },
-            ]}
-          />
-        </Field>
-        <Field label="Header layout">
-          <Select
-            bind:value={fields.headerLayout}
-            options={[
-              { value: 'below', label: 'Below banner' },
-              { value: 'overlay', label: 'Over banner' },
-            ]}
-          />
-        </Field>
-        <Field label="Header size">
-          <Select
-            bind:value={fields.headerSize}
-            options={[
-              { value: 'compact', label: 'Compact' },
-              { value: 'standard', label: 'Standard' },
-              { value: 'tall', label: 'Tall' },
-            ]}
-          />
-        </Field>
-        {#if !saved?.banner}
-          <p class="hint">Banner height applies when you add a banner.</p>
-        {/if}
-        <label class="range-setting">
-          Logo size
-          <div class="range-control">
-            <input
-              type="range"
-              min="48"
-              max="160"
-              step="8"
-              aria-label="Logo size"
-              bind:value={fields.logoSize}
+        <section>
+          <h2>Header details</h2>
+          <Field label="Header alignment">
+            <Select
+              bind:value={fields.alignment}
+              options={[
+                { value: 'left', label: 'Left' },
+                { value: 'center', label: 'Centered' },
+              ]}
             />
-            <output>{fields.logoSize}px</output>
-          </div>
-        </label>
-        <label class="range-setting">
-          Title size
-          <div class="range-control">
-            <input
-              type="range"
-              min="1.5"
-              max="4"
-              step="0.125"
-              aria-label="Title size"
-              bind:value={fields.titleSize}
+          </Field>
+          <Field label="Header layout">
+            <Select
+              bind:value={fields.headerLayout}
+              options={[
+                { value: 'below', label: 'Below banner' },
+                { value: 'overlay', label: 'Over banner' },
+              ]}
             />
-            <output>{fields.titleSize}rem</output>
-          </div>
-        </label>
-        <label class="range-setting">
-          Description size
-          <div class="range-control">
-            <input
-              type="range"
-              min="0.875"
-              max="1.5"
-              step="0.0625"
-              aria-label="Description size"
-              bind:value={fields.descriptionSize}
+          </Field>
+          <Field label="Header size">
+            <Select
+              bind:value={fields.headerSize}
+              options={[
+                { value: 'compact', label: 'Compact' },
+                { value: 'standard', label: 'Standard' },
+                { value: 'tall', label: 'Tall' },
+              ]}
             />
-            <output>{fields.descriptionSize}rem</output>
-          </div>
-        </label>
-        <label class="range-setting">
-          Header spacing
-          <div class="range-control">
-            <input
-              type="range"
-              min="1.5"
-              max="5"
-              step="0.25"
-              aria-label="Header spacing"
-              bind:value={fields.headerSpacing}
-            />
-            <output>{fields.headerSpacing}rem</output>
-          </div>
-        </label>
-        {#if fields.headerLayout === 'overlay' && !saved?.banner}
-          <p class="hint">
-            Add a banner to place your logo, title, and description over it.
-          </p>
-        {/if}
-        {#if bannerCropPreview}
-          <div class="banner-crop-control">
-            <span class="crop-label">Banner crop preview</span>
-            <div
-              class="banner-crop-preview"
-              role="group"
-              aria-label="Banner crop preview"
-              aria-describedby="banner-crop-hint"
-              use:bannerCropDrag
-            >
-              <img
-                src={bannerCropPreview}
-                alt=""
-                draggable="false"
-                style:object-position={`center ${fields.bannerPosition}%`}
+          </Field>
+          {#if !saved?.banner}
+            <p class="hint">Banner height applies when you add a banner.</p>
+          {/if}
+          <label class="range-setting">
+            Title size
+            <div class="range-control">
+              <input
+                type="range"
+                min="1.5"
+                max="4"
+                step="0.125"
+                aria-label="Title size"
+                bind:value={fields.titleSize}
               />
-              <span class="crop-guides" aria-hidden="true"></span>
+              <output>{fields.titleSize}rem</output>
             </div>
-            <small id="banner-crop-hint" class="hint">
-              Drag the image to choose its crop. The slider supports keyboard
-              controls.
-            </small>
-            <label for="banner-crop-position">Banner crop position</label>
-            <input
-              id="banner-crop-position"
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-              aria-describedby="banner-crop-hint"
-              aria-valuetext={`${fields.bannerPosition}% from top`}
-              bind:value={fields.bannerPosition}
-            />
-          </div>
-        {/if}
-      </section>
+          </label>
+          <label class="range-setting">
+            Description size
+            <div class="range-control">
+              <input
+                type="range"
+                min="0.875"
+                max="1.5"
+                step="0.0625"
+                aria-label="Description size"
+                bind:value={fields.descriptionSize}
+              />
+              <output>{fields.descriptionSize}rem</output>
+            </div>
+          </label>
+          <label class="range-setting">
+            Header spacing
+            <div class="range-control">
+              <input
+                type="range"
+                min="1.5"
+                max="5"
+                step="0.25"
+                aria-label="Header spacing"
+                bind:value={fields.headerSpacing}
+              />
+              <output>{fields.headerSpacing}rem</output>
+            </div>
+          </label>
+          {#if fields.headerLayout === 'overlay' && !saved?.banner}
+            <p class="hint">
+              Add a banner to place your logo, title, and description over it.
+            </p>
+          {/if}
+          {#if bannerCropPreview}
+            <div class="banner-crop-control">
+              <span class="crop-label">Banner crop preview</span>
+              <div
+                class="banner-crop-preview"
+                role="group"
+                aria-label="Banner crop preview"
+                aria-describedby="banner-crop-hint"
+                use:bannerCropDrag
+              >
+                <img
+                  src={bannerCropPreview}
+                  alt=""
+                  draggable="false"
+                  style:object-position={`center ${fields.bannerPosition}%`}
+                />
+                <span class="crop-guides" aria-hidden="true"></span>
+              </div>
+              <small id="banner-crop-hint" class="hint">
+                Drag the image to choose its crop. The slider supports keyboard
+                controls.
+              </small>
+              <label for="banner-crop-position">Banner crop position</label>
+              <input
+                id="banner-crop-position"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                aria-describedby="banner-crop-hint"
+                aria-valuetext={`${fields.bannerPosition}% from top`}
+                bind:value={fields.bannerPosition}
+              />
+            </div>
+          {/if}
+        </section>
 
-      <section>
-        <h2>Typography</h2>
-        <Field label="Font family">
-          <Select
-            bind:value={fields.galleryStyle.fontFamily}
-            options={[
-              { value: 'google-sans', label: 'Google Sans' },
-              { value: 'system', label: 'System' },
-            ]}
-          />
-        </Field>
-        <label class="range-setting">
-          Title weight
-          <div class="range-control">
-            <input
-              type="range"
-              min="400"
-              max="800"
-              step="50"
-              aria-label="Title weight"
-              value={fields.galleryStyle.titleFontWeight}
-              oninput={(event) =>
-                changeGalleryStyle(
-                  'titleFontWeight',
-                  Number(event.currentTarget.value),
-                )}
-            />
-            <output>{fields.galleryStyle.titleFontWeight}</output>
-          </div>
-        </label>
-        <label class="range-setting">
-          Body size
-          <div class="range-control">
-            <input
-              type="range"
-              min="0.75"
-              max="1.5"
-              step="0.0625"
-              aria-label="Body size"
-              value={fields.galleryStyle.bodyFontSize}
-              oninput={(event) =>
-                changeGalleryStyle(
-                  'bodyFontSize',
-                  Number(event.currentTarget.value),
-                )}
-            />
-            <output>{fields.galleryStyle.bodyFontSize}rem</output>
-          </div>
-        </label>
-        <label class="range-setting">
-          Body weight
-          <div class="range-control">
-            <input
-              type="range"
-              min="300"
-              max="700"
-              step="50"
-              aria-label="Body weight"
-              value={fields.galleryStyle.bodyFontWeight}
-              oninput={(event) =>
-                changeGalleryStyle(
-                  'bodyFontWeight',
-                  Number(event.currentTarget.value),
-                )}
-            />
-            <output>{fields.galleryStyle.bodyFontWeight}</output>
-          </div>
-        </label>
-        <label class="range-setting">
-          Album title size
-          <div class="range-control">
-            <input
-              type="range"
-              min="0.75"
-              max="2"
-              step="0.0625"
-              aria-label="Album title size"
-              value={fields.galleryStyle.cardTitleSize}
-              oninput={(event) =>
-                changeGalleryStyle(
-                  'cardTitleSize',
-                  Number(event.currentTarget.value),
-                )}
-            />
-            <output>{fields.galleryStyle.cardTitleSize}rem</output>
-          </div>
-        </label>
-        <label class="range-setting">
-          Album title weight
-          <div class="range-control">
-            <input
-              type="range"
-              min="400"
-              max="800"
-              step="50"
-              aria-label="Album title weight"
-              value={fields.galleryStyle.cardTitleWeight}
-              oninput={(event) =>
-                changeGalleryStyle(
-                  'cardTitleWeight',
-                  Number(event.currentTarget.value),
-                )}
-            />
-            <output>{fields.galleryStyle.cardTitleWeight}</output>
-          </div>
-        </label>
-      </section>
+        <section>
+          <h2>Typography</h2>
+          <label class="range-setting">
+            Title weight
+            <div class="range-control">
+              <input
+                type="range"
+                min="400"
+                max="800"
+                step="50"
+                aria-label="Title weight"
+                value={fields.galleryStyle.titleFontWeight}
+                oninput={(event) =>
+                  changeGalleryStyle(
+                    'titleFontWeight',
+                    Number(event.currentTarget.value),
+                  )}
+              />
+              <output>{fields.galleryStyle.titleFontWeight}</output>
+            </div>
+          </label>
+          <label class="range-setting">
+            Body size
+            <div class="range-control">
+              <input
+                type="range"
+                min="0.75"
+                max="1.5"
+                step="0.0625"
+                aria-label="Body size"
+                value={fields.galleryStyle.bodyFontSize}
+                oninput={(event) =>
+                  changeGalleryStyle(
+                    'bodyFontSize',
+                    Number(event.currentTarget.value),
+                  )}
+              />
+              <output>{fields.galleryStyle.bodyFontSize}rem</output>
+            </div>
+          </label>
+          <label class="range-setting">
+            Body weight
+            <div class="range-control">
+              <input
+                type="range"
+                min="300"
+                max="700"
+                step="50"
+                aria-label="Body weight"
+                value={fields.galleryStyle.bodyFontWeight}
+                oninput={(event) =>
+                  changeGalleryStyle(
+                    'bodyFontWeight',
+                    Number(event.currentTarget.value),
+                  )}
+              />
+              <output>{fields.galleryStyle.bodyFontWeight}</output>
+            </div>
+          </label>
+          <label class="range-setting">
+            Album title size
+            <div class="range-control">
+              <input
+                type="range"
+                min="0.75"
+                max="2"
+                step="0.0625"
+                aria-label="Album title size"
+                value={fields.galleryStyle.cardTitleSize}
+                oninput={(event) =>
+                  changeGalleryStyle(
+                    'cardTitleSize',
+                    Number(event.currentTarget.value),
+                  )}
+              />
+              <output>{fields.galleryStyle.cardTitleSize}rem</output>
+            </div>
+          </label>
+          <label class="range-setting">
+            Album title weight
+            <div class="range-control">
+              <input
+                type="range"
+                min="400"
+                max="800"
+                step="50"
+                aria-label="Album title weight"
+                value={fields.galleryStyle.cardTitleWeight}
+                oninput={(event) =>
+                  changeGalleryStyle(
+                    'cardTitleWeight',
+                    Number(event.currentTarget.value),
+                  )}
+              />
+              <output>{fields.galleryStyle.cardTitleWeight}</output>
+            </div>
+          </label>
+        </section>
 
-      <section>
-        <h2>Layout</h2>
-        <label class="range-setting">
-          Content width
-          <div class="range-control">
-            <input
-              type="range"
-              min="640"
-              max="1920"
-              step="40"
-              aria-label="Content width"
-              value={fields.galleryStyle.contentWidth}
-              oninput={(event) =>
-                changeGalleryStyle(
-                  'contentWidth',
-                  Number(event.currentTarget.value),
-                )}
+        <section>
+          <h2>Layout</h2>
+          <label class="range-setting">
+            Content width
+            <div class="range-control">
+              <input
+                type="range"
+                min="640"
+                max="1920"
+                step="40"
+                aria-label="Content width"
+                value={fields.galleryStyle.contentWidth}
+                oninput={(event) =>
+                  changeGalleryStyle(
+                    'contentWidth',
+                    Number(event.currentTarget.value),
+                  )}
+              />
+              <output>{fields.galleryStyle.contentWidth}px</output>
+            </div>
+          </label>
+          <label class="range-setting">
+            Page padding
+            <div class="range-control">
+              <input
+                type="range"
+                min="0"
+                max="80"
+                step="4"
+                aria-label="Page padding"
+                value={fields.galleryStyle.pagePadding}
+                oninput={(event) =>
+                  changeGalleryStyle(
+                    'pagePadding',
+                    Number(event.currentTarget.value),
+                  )}
+              />
+              <output>{fields.galleryStyle.pagePadding}px</output>
+            </div>
+          </label>
+          <label class="range-setting">
+            Grid density
+            <div class="range-control">
+              <input
+                type="range"
+                min="160"
+                max="360"
+                step="8"
+                aria-label="Grid density"
+                value={fields.galleryStyle.gridMinWidth}
+                oninput={(event) =>
+                  changeGalleryStyle(
+                    'gridMinWidth',
+                    Number(event.currentTarget.value),
+                  )}
+              />
+              <output>{fields.galleryStyle.gridMinWidth}px minimum</output>
+            </div>
+          </label>
+          <label class="range-setting">
+            Row spacing
+            <div class="range-control">
+              <input
+                type="range"
+                min="0"
+                max="80"
+                step="4"
+                aria-label="Row spacing"
+                value={fields.galleryStyle.gridRowGap}
+                oninput={(event) =>
+                  changeGalleryStyle(
+                    'gridRowGap',
+                    Number(event.currentTarget.value),
+                  )}
+              />
+              <output>{fields.galleryStyle.gridRowGap}px</output>
+            </div>
+          </label>
+          <label class="range-setting">
+            Column spacing
+            <div class="range-control">
+              <input
+                type="range"
+                min="0"
+                max="80"
+                step="4"
+                aria-label="Column spacing"
+                value={fields.galleryStyle.gridColumnGap}
+                oninput={(event) =>
+                  changeGalleryStyle(
+                    'gridColumnGap',
+                    Number(event.currentTarget.value),
+                  )}
+              />
+              <output>{fields.galleryStyle.gridColumnGap}px</output>
+            </div>
+          </label>
+          <label class="range-setting">
+            Cover aspect ratio
+            <div class="range-control">
+              <input
+                type="range"
+                min="0.5"
+                max="2"
+                step="0.05"
+                aria-label="Cover aspect ratio"
+                value={fields.galleryStyle.coverAspectRatio}
+                oninput={(event) =>
+                  changeGalleryStyle(
+                    'coverAspectRatio',
+                    Number(event.currentTarget.value),
+                  )}
+              />
+              <output>{fields.galleryStyle.coverAspectRatio.toFixed(2)}</output>
+            </div>
+          </label>
+          <label class="range-setting">
+            Corner radius
+            <div class="range-control">
+              <input
+                type="range"
+                min="0"
+                max="40"
+                step="2"
+                aria-label="Corner radius"
+                value={fields.galleryStyle.cardRadius}
+                oninput={(event) =>
+                  changeGalleryStyle(
+                    'cardRadius',
+                    Number(event.currentTarget.value),
+                  )}
+              />
+              <output>{fields.galleryStyle.cardRadius}px</output>
+            </div>
+          </label>
+          <Field label="Hover treatment">
+            <Select
+              bind:value={fields.galleryStyle.hoverTreatment}
+              options={[
+                { value: 'surface', label: 'Surface' },
+                { value: 'underline', label: 'Underline' },
+                { value: 'lift', label: 'Lift' },
+                { value: 'none', label: 'None' },
+              ]}
             />
-            <output>{fields.galleryStyle.contentWidth}px</output>
-          </div>
-        </label>
-        <label class="range-setting">
-          Page padding
-          <div class="range-control">
-            <input
-              type="range"
-              min="0"
-              max="80"
-              step="4"
-              aria-label="Page padding"
-              value={fields.galleryStyle.pagePadding}
-              oninput={(event) =>
-                changeGalleryStyle(
-                  'pagePadding',
-                  Number(event.currentTarget.value),
-                )}
-            />
-            <output>{fields.galleryStyle.pagePadding}px</output>
-          </div>
-        </label>
-        <label class="range-setting">
-          Grid density
-          <div class="range-control">
-            <input
-              type="range"
-              min="160"
-              max="360"
-              step="8"
-              aria-label="Grid density"
-              value={fields.galleryStyle.gridMinWidth}
-              oninput={(event) =>
-                changeGalleryStyle(
-                  'gridMinWidth',
-                  Number(event.currentTarget.value),
-                )}
-            />
-            <output>{fields.galleryStyle.gridMinWidth}px minimum</output>
-          </div>
-        </label>
-        <label class="range-setting">
-          Row spacing
-          <div class="range-control">
-            <input
-              type="range"
-              min="0"
-              max="80"
-              step="4"
-              aria-label="Row spacing"
-              value={fields.galleryStyle.gridRowGap}
-              oninput={(event) =>
-                changeGalleryStyle(
-                  'gridRowGap',
-                  Number(event.currentTarget.value),
-                )}
-            />
-            <output>{fields.galleryStyle.gridRowGap}px</output>
-          </div>
-        </label>
-        <label class="range-setting">
-          Column spacing
-          <div class="range-control">
-            <input
-              type="range"
-              min="0"
-              max="80"
-              step="4"
-              aria-label="Column spacing"
-              value={fields.galleryStyle.gridColumnGap}
-              oninput={(event) =>
-                changeGalleryStyle(
-                  'gridColumnGap',
-                  Number(event.currentTarget.value),
-                )}
-            />
-            <output>{fields.galleryStyle.gridColumnGap}px</output>
-          </div>
-        </label>
-        <label class="range-setting">
-          Cover aspect ratio
-          <div class="range-control">
-            <input
-              type="range"
-              min="0.5"
-              max="2"
-              step="0.05"
-              aria-label="Cover aspect ratio"
-              value={fields.galleryStyle.coverAspectRatio}
-              oninput={(event) =>
-                changeGalleryStyle(
-                  'coverAspectRatio',
-                  Number(event.currentTarget.value),
-                )}
-            />
-            <output>{fields.galleryStyle.coverAspectRatio.toFixed(2)}</output>
-          </div>
-        </label>
-        <label class="range-setting">
-          Corner radius
-          <div class="range-control">
-            <input
-              type="range"
-              min="0"
-              max="40"
-              step="2"
-              aria-label="Corner radius"
-              value={fields.galleryStyle.cardRadius}
-              oninput={(event) =>
-                changeGalleryStyle(
-                  'cardRadius',
-                  Number(event.currentTarget.value),
-                )}
-            />
-            <output>{fields.galleryStyle.cardRadius}px</output>
-          </div>
-        </label>
-        <Field label="Hover treatment">
-          <Select
-            bind:value={fields.galleryStyle.hoverTreatment}
-            options={[
-              { value: 'surface', label: 'Surface' },
-              { value: 'underline', label: 'Underline' },
-              { value: 'lift', label: 'Lift' },
-              { value: 'none', label: 'None' },
-            ]}
-          />
-        </Field>
-      </section>
+          </Field>
+        </section>
+      </details>
     </div>
   {:else if activeTab === 'Elements'}
     <div
@@ -1312,44 +1368,28 @@
     color-scheme: inherit;
   }
 
-  .preset-list {
-    display: grid;
-    gap: 8px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
+  .advanced-design {
+    padding-block: 18px;
   }
-
-  .preset-card {
-    display: grid;
-    gap: 4px;
-    inline-size: 100%;
-    min-block-size: 44px;
-    padding: 10px 12px;
-    border: 1px solid var(--pager-management-border);
-    border-radius: 8px;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    text-align: start;
+  .advanced-design summary {
     cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    padding-block: 8px;
   }
-
-  .preset-card:hover {
-    background: var(--pager-management-surface-quiet);
-  }
-
-  .preset-card:focus-visible {
+  .advanced-design summary:focus-visible {
     outline: 2px solid var(--pager-management-focus);
-    outline-offset: 2px;
+    outline-offset: 3px;
   }
-
-  .preset-card span {
-    color: var(--pager-management-text-secondary);
-    font-size: 12px;
-    line-height: 1.45;
+  .advanced-design > section {
+    display: grid;
+    gap: 14px;
+    padding-block: 18px;
+    border-bottom: 1px solid var(--pager-management-border);
   }
-
+  .advanced-design > section:last-child {
+    border: 0;
+  }
   .range-setting {
     display: grid;
     gap: 6px;
