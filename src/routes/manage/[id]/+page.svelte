@@ -20,6 +20,10 @@
     type GalleryPage,
     type PageInput,
   } from '$lib/contracts';
+  import {
+    inlineHeaderChangeSchema,
+    inlinePreviewSyncSchema,
+  } from '$lib/inline-preview';
   import type { PublicationSummary } from '$lib/publication-summary';
   import type { PageData } from './$types';
   let { data }: { data: PageData } = $props();
@@ -65,6 +69,8 @@
     slugLocked = $state(!!initial?.slug),
     conflict = $state(false),
     failedSnapshot = $state<string | null>(null);
+  let customizeDraftRevision = $state<number | null>(null);
+  let customizeSyncSequence = $state(0);
   function snapshot() {
     const { password: _password, passwordMode: _mode, ...values } = fields;
     void _password;
@@ -110,6 +116,11 @@
       ? `/page/manage/${saved.id}/preview?draft=${saved.draftRevision}&branding=${brandingVersion}`
       : null,
   );
+  const customizePreviewUrl = $derived(
+    saved && customizeDraftRevision !== null
+      ? `/page/manage/${saved.id}/preview?draft=${customizeDraftRevision}&branding=${brandingVersion}&inlineHeader=1`
+      : null,
+  );
   let customizeTrigger = $state<HTMLElement | null>(null);
   let customizePreviewFrame = $state<HTMLIFrameElement | null>(null);
   function focusCustomizePanel() {
@@ -118,6 +129,52 @@
         '.customize-panel [role="tab"][aria-selected="true"]',
       )
       ?.focus();
+  }
+  function syncCustomizePreview() {
+    if (!customizing || !saved || !customizePreviewFrame?.contentWindow) return;
+    const page = previewPage;
+    const syncSequence = customizeSyncSequence + 1;
+    const syncMessage = inlinePreviewSyncSchema.safeParse({
+      type: 'pager:inline-preview-sync',
+      version: 1,
+      pageId: saved.id,
+      syncSequence,
+      draftRevision: saved.draftRevision,
+      page: {
+        id: page.id,
+        title: page.title,
+        description: page.description,
+        theme: page.theme,
+        background: page.background,
+        foreground: page.foreground,
+        accent: page.accent,
+        alignment: page.alignment,
+        bannerPosition: page.bannerPosition,
+        headerLayout: page.headerLayout,
+        headerSize: page.headerSize,
+        logoSize: page.logoSize,
+        titleSize: page.titleSize,
+        descriptionSize: page.descriptionSize,
+        headerSpacing: page.headerSpacing,
+        customCss: page.customCss,
+        clientUi: page.clientUi,
+        galleryStyle: page.galleryStyle,
+        order: page.order,
+        logo: page.logo,
+        banner: page.banner,
+        albums: page.albums,
+      },
+    });
+    if (!syncMessage.success) {
+      message =
+        'Could not refresh the private preview. Reopen Customize to reload it.';
+      return;
+    }
+    customizeSyncSequence = syncSequence;
+    customizePreviewFrame.contentWindow.postMessage(
+      syncMessage.data,
+      window.location.origin,
+    );
   }
   let queue: Promise<unknown> = Promise.resolve();
   function enqueue<T>(work: () => Promise<T>): Promise<T> {
@@ -176,6 +233,8 @@
         failedSnapshot = null;
         if (saved.slug) slugLocked = true;
         if (wasNew) replaceState(`/page/manage/${saved.id}`, {});
+        await tick();
+        syncCustomizePreview();
         return saved;
       } catch (cause) {
         failedSnapshot = json;
@@ -211,8 +270,25 @@
         event.returnValue = '';
       }
     };
+    const receiveInlineHeaderChange = (event: MessageEvent<unknown>) => {
+      if (
+        event.origin !== window.location.origin ||
+        event.source !== customizePreviewFrame?.contentWindow ||
+        !customizing ||
+        !saved
+      )
+        return;
+      const parsed = inlineHeaderChangeSchema.safeParse(event.data);
+      if (!parsed.success || parsed.data.pageId !== saved.id) return;
+      if (parsed.data.field === 'title') editTitle(parsed.data.value);
+      else fields.description = parsed.data.value;
+    };
     window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
+    window.addEventListener('message', receiveInlineHeaderChange);
+    return () => {
+      window.removeEventListener('beforeunload', warn);
+      window.removeEventListener('message', receiveInlineHeaderChange);
+    };
   });
   async function back() {
     try {
@@ -235,6 +311,8 @@
     try {
       await flush(true);
       previewSize = 'desktop';
+      customizeDraftRevision = saved?.draftRevision ?? null;
+      customizeSyncSequence = 0;
       customizeMobilePreview = false;
       customizing = true;
       await tick();
@@ -246,6 +324,7 @@
   async function closeCustomize() {
     customizing = false;
     customizeMobilePreview = false;
+    customizeDraftRevision = null;
     await tick();
     customizeTrigger?.focus();
   }
@@ -450,7 +529,7 @@
 <svelte:head
   ><title>{fields.title || 'New page'} · ImmichPager</title></svelte:head
 >
-{#if customizing && previewUrl}<Modal
+{#if customizing && customizePreviewUrl}<Modal
     size="full"
     class="customize-dialog"
     onClose={closeCustomize}
@@ -512,7 +591,7 @@
           <section class="customize-preview" aria-label="Client page preview">
             <div class="preview-toolbar">
               <p class="preview-note">
-                Private preview · shows the last saved draft
+                Private preview · saves remain unpublished
               </p>
               <div class="preview-sizes" role="group" aria-label="Preview size">
                 <Button
@@ -549,7 +628,9 @@
                 class:tablet={previewSize === 'tablet'}
                 class:phone={previewSize === 'phone'}
                 title={`${previewSize[0].toUpperCase()}${previewSize.slice(1)} preview of ${fields.title || 'your client page'}`}
-                src={previewUrl}
+                data-sync-sequence={customizeSyncSequence}
+                src={customizePreviewUrl}
+                onload={syncCustomizePreview}
               ></iframe>
             </div>
           </section>
