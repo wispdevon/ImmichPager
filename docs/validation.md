@@ -60,15 +60,16 @@ The dev branch adds header overlays and per-page CSS without changing main or th
 ## v0.3.1 Customize refinements
 
 Verified with Node 22.23.3 and pnpm 11.28.5: zero Svelte/TypeScript diagnostics,
-187 unit/integration tests, 54 production Chromium browser tests, ESLint,
+187 unit/integration tests, 56 production Chromium browser tests, ESLint,
 Prettier, dependency audit, and production build. Independent integration review
 found no blocking issues after the delayed-preview regression was fixed.
 
 Browser coverage includes visual preset keyboard selection, collapsed advanced
 controls, all six locally loaded fonts, logo shapes/placement, hidden header
 editing, owner-only direct preview editing, failed-save retry, caret retention,
-delayed and stale preview messages, phone controls, CSS isolation, and explicit
-publication. [Desktop inline editing](screenshots/customize-v031-desktop.png) and
+delayed and stale preview messages, phone controls, native row-action icon tooltips, CSS isolation, and explicit
+publication. A delayed-load regression reproduces and verifies the fix for iframe
+auto-focus stealing sidebar focus after history navigation. [Desktop inline editing](screenshots/customize-v031-desktop.png) and
 [phone settings](screenshots/customize-v031-phone.png) were inspected in the
 production fixture app with native dark Immich styling. Images use the repository's
 attributed NASA fixtures; no live client content was used.
