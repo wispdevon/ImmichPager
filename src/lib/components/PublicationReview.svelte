@@ -31,6 +31,8 @@
     headerSpacing: 'Header spacing',
     bannerPosition: 'Banner crop position',
     customCss: 'Custom CSS',
+    visibility: 'Visible page elements',
+    galleryStyle: 'Gallery styling',
     albumOrder: 'Album order',
     logo: 'Logo image',
     banner: 'Banner image',

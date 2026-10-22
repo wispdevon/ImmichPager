@@ -11,7 +11,13 @@
   import CopyLink from '$lib/components/CopyLink.svelte';
   import PublishedView from '$lib/components/PublishedView.svelte';
   import { readApiResponse } from '$lib/api-response';
-  import type { DraftEditorPage, GalleryPage, PageInput } from '$lib/contracts';
+  import {
+    DEFAULT_GALLERY_STYLE,
+    NEW_PAGE_CLIENT_UI,
+    type DraftEditorPage,
+    type GalleryPage,
+    type PageInput,
+  } from '$lib/contracts';
   import type { PublicationSummary } from '$lib/publication-summary';
   import type { PageData } from './$types';
   let { data }: { data: PageData } = $props();
@@ -34,6 +40,8 @@
     descriptionSize: initial?.descriptionSize ?? 1.125,
     headerSpacing: initial?.headerSpacing ?? 2.5,
     customCss: initial?.customCss ?? '',
+    clientUi: initial?.clientUi ?? NEW_PAGE_CLIENT_UI,
+    galleryStyle: initial?.galleryStyle ?? DEFAULT_GALLERY_STYLE,
     albumIds: [...(initial?.albumIds ?? [])],
     order: initial?.order ?? 'newest',
     passwordMode: 'keep',
