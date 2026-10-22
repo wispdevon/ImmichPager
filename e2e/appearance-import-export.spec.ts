@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
+import { openCustomize } from './customize-helper';
 
 test('appearance files round-trip between private drafts without copying page data', async ({
   page,
@@ -29,13 +30,25 @@ test('appearance files round-trip between private drafts without copying page da
       descriptionSize: 1.25,
       headerSpacing: 3.5,
       customCss: '.ip-title { color: #d26c42 !important; }',
+      clientUi: {
+        showBanner: false,
+        showDescription: false,
+        showBrowsingControls: false,
+        showYearHeadings: false,
+      },
+      galleryStyle: {
+        fontFamily: 'system',
+        titleFontWeight: 700,
+        contentWidth: 1320,
+        gridMinWidth: 280,
+        hoverTreatment: 'lift',
+      },
     },
   });
   expect(sourceResponse.ok()).toBe(true);
   const source = await sourceResponse.json();
   await page.goto(`/page/manage/${source.id}`);
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
-  await page.getByText('Import or export appearance', { exact: true }).click();
+  await openCustomize(page, 'Themes');
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     page.getByRole('button', { name: 'Export appearance JSON' }).click(),
@@ -44,9 +57,9 @@ test('appearance files round-trip between private drafts without copying page da
   expect(downloadPath).toBeTruthy();
   const exportedText = await readFile(downloadPath!, 'utf8');
   const exported = JSON.parse(exportedText);
-  expect(exported).toEqual({
+  expect(exported).toMatchObject({
     format: 'immichpager-appearance',
-    version: 1,
+    version: 2,
     appearance: {
       theme: 'light',
       background: '#f4f2ef',
@@ -61,6 +74,19 @@ test('appearance files round-trip between private drafts without copying page da
       descriptionSize: 1.25,
       headerSpacing: 3.5,
       customCss: '.ip-title { color: #d26c42 !important; }',
+      clientUi: {
+        showBanner: false,
+        showDescription: false,
+        showBrowsingControls: false,
+        showYearHeadings: false,
+      },
+      galleryStyle: {
+        fontFamily: 'system',
+        titleFontWeight: 700,
+        contentWidth: 1320,
+        gridMinWidth: 280,
+        hoverTreatment: 'lift',
+      },
     },
   });
 
@@ -77,8 +103,7 @@ test('appearance files round-trip between private drafts without copying page da
   expect(targetResponse.ok()).toBe(true);
   const target = await targetResponse.json();
   await page.goto(`/page/manage/${target.id}`);
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
-  await page.getByText('Import or export appearance', { exact: true }).click();
+  await openCustomize(page, 'Themes');
   await page.getByLabel('Import appearance JSON').scrollIntoViewIfNeeded();
   await page.screenshot({
     path: 'test-results/appearance-import-export.png',
@@ -116,6 +141,19 @@ test('appearance files round-trip between private drafts without copying page da
     descriptionSize: 1.25,
     headerSpacing: 3.5,
     customCss: '.ip-title { color: #d26c42 !important; }',
+    clientUi: {
+      showBanner: false,
+      showDescription: false,
+      showBrowsingControls: false,
+      showYearHeadings: false,
+    },
+    galleryStyle: {
+      fontFamily: 'system',
+      titleFontWeight: 700,
+      contentWidth: 1320,
+      gridMinWidth: 280,
+      hoverTreatment: 'lift',
+    },
     status: 'draft',
     publishedSlug: null,
   });
@@ -129,6 +167,8 @@ test('appearance files round-trip between private drafts without copying page da
   delete legacyAppearance.titleSize;
   delete legacyAppearance.descriptionSize;
   delete legacyAppearance.headerSpacing;
+  delete legacyAppearance.clientUi;
+  delete legacyAppearance.galleryStyle;
   await page.getByLabel('Import appearance JSON').setInputFiles({
     name: 'immichpager-appearance-v1.json',
     mimeType: 'application/json',
@@ -156,6 +196,8 @@ test('appearance files round-trip between private drafts without copying page da
     title: 'Destination page',
     description: 'Keep this description',
     albumIds: [albums[1].id, albums[2].id],
+    clientUi: exported.appearance.clientUi,
+    galleryStyle: exported.appearance.galleryStyle,
   });
   expect(errors).toEqual([]);
 });

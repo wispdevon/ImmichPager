@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { confirmPublication } from './publication-helper';
+import { closeCustomize, openCustomize } from './customize-helper';
 
 async function createBannerDraft(page: Page, slug: string) {
   await page.goto('/dev-login/alice');
@@ -20,7 +21,7 @@ async function createBannerDraft(page: Page, slug: string) {
     .getByLabel('Banner', { exact: true })
     .setInputFiles('fixtures/photos/earthrise.webp');
   await expect(page.getByAltText('Banner preview')).toBeVisible();
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
+  await openCustomize(page);
   return slug;
 }
 
@@ -32,7 +33,7 @@ test('banner crop preview supports drag and touch while the slider remains keybo
   page.on('pageerror', (error) => browserErrors.push(error.message));
   const slug = `banner-crop-${Date.now()}`;
   await createBannerDraft(page, slug);
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await closeCustomize(page);
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await confirmPublication(page, 'Publish page');
   await expect(page.getByRole('status')).toContainText('Page published');
@@ -46,7 +47,7 @@ test('banner crop preview supports drag and touch while the slider remains keybo
     '50% 50%',
   );
 
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
+  await openCustomize(page);
 
   const slider = page.getByRole('slider', { name: 'Banner crop position' });
   const crop = page.getByRole('group', { name: 'Banner crop preview' });
@@ -75,21 +76,21 @@ test('banner crop preview supports drag and touch while the slider remains keybo
     `50% ${pointerPosition}%`,
   );
 
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await closeCustomize(page);
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await visitor.reload();
   await expect(visitor.locator('.ip-banner img')).toHaveCSS(
     'object-position',
     '50% 50%',
   );
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
+  await openCustomize(page);
   const savedPosition = await slider.inputValue();
   await page.reload();
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
+  await openCustomize(page);
   await expect(
     page.getByRole('slider', { name: 'Banner crop position' }),
   ).toHaveValue(savedPosition!);
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await closeCustomize(page);
   await confirmPublication(page, 'Update live page');
   await expect(page.getByRole('status')).toContainText('Page published');
   await visitor.reload();
