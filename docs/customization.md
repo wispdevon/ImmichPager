@@ -102,6 +102,8 @@ are shaped like this:
     "gridColumnGap": 0,
     "coverAspectRatio": 1,
     "cardRadius": 16,
+    "logoShape": "rounded",
+    "logoPosition": "above",
     "hoverTreatment": "surface"
   }
 }
@@ -121,6 +123,11 @@ Overlay mode uses white text and a dark gradient to keep the header readable. Th
 ## Set header size
 
 In **Customize → Design**, choose **Compact**, **Standard**, or **Tall** for the banner composition. Standard keeps the existing responsive banner height. Compact and Tall give you shorter or deeper compositions in both Below banner and Over banner layouts. Use the logo-size slider to choose a size from 48–160 px; existing and new pages default to 80 px.
+
+Choose a logo shape of square, rounded, or circle, and place it above or to the
+left of the title and description. Existing and new pages default to rounded
+corners and the logo above the text. The left layout stacks above the text on
+small screens unless custom CSS changes `--pager-mobile-logo-layout`.
 
 Changes autosave to the private draft, appear in Preview, and only update your client page after you publish. Existing pages receive these defaults without a database migration.
 
@@ -278,11 +285,22 @@ theme properties `--custom-bg`, `--custom-fg`, `--accent`, and
 | `--pager-header-align-self`             | Header position in overlay; `end` or `auto`                    |
 | `--pager-overlay-header-color`          | Overlay title and description color                            |
 | `--pager-logo-size`                     | Logo width and height; `80px`                                  |
+| `--pager-logo-radius`                   | Logo corner radius; `16px`                                     |
+| `--pager-logo-layout`                   | Logo and copy direction; `column` above or `row` beside        |
+| `--pager-logo-gap`                      | Space between logo and copy; `20px`                            |
+| `--pager-logo-justify`                  | Left-layout group alignment; `flex-start` or `center`          |
+| `--pager-mobile-logo-layout`            | Logo layout below 600px; `column`                              |
 | `--pager-header-spacing`                | Desktop header spacing; `2.5rem`                               |
 | `--pager-mobile-header-spacing`         | Mobile header spacing; `2rem`                                  |
 | `--pager-mobile-control-font-size`      | Mobile browsing control text size; `13px`                      |
 | `--pager-mobile-footer-inline-padding`  | Mobile footer horizontal padding; `24px`                       |
 | `--pager-color-scheme`                  | Native control theme; `dark`, `light`, or `light dark`         |
+
+The logo shape setting maps to `--pager-logo-radius`: `square` uses `0px`,
+`rounded` uses `16px`, and `circle` uses `50%`. The `left` logo position uses a
+row on larger screens and stacks above the header copy below 600px by default.
+Set `--pager-mobile-logo-layout: row` to keep the side-by-side layout on small
+screens.
 
 For example, this changes the page without `!important`:
 

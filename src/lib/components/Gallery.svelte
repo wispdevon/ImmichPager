@@ -14,6 +14,7 @@
     page,
     preview = false,
     editorHeader = false,
+    inlineHeaderEdit = false,
     editDisabled = false,
     onTitleInput = () => {},
     onDescriptionInput = () => {},
@@ -21,6 +22,7 @@
     page: GalleryPage;
     preview?: boolean;
     editorHeader?: boolean;
+    inlineHeaderEdit?: boolean;
     editDisabled?: boolean;
     onTitleInput?: (value: string) => void;
     onDescriptionInput?: (value: string) => void;
@@ -47,6 +49,7 @@
   const ui = $derived(page.clientUi);
   const clientHeaderVisible = $derived(
     editorHeader ||
+      (inlineHeaderEdit && (ui.showTitle || ui.showDescription)) ||
       (ui.showBanner && !!page.banner) ||
       (ui.showLogo && !!page.logo) ||
       (ui.showTitle && !!page.title) ||
@@ -99,7 +102,12 @@
   });
 
   function editField(field: 'title' | 'description') {
-    if (editDisabled) return;
+    if (
+      editDisabled ||
+      (inlineHeaderEdit &&
+        !(field === 'title' ? ui.showTitle : ui.showDescription))
+    )
+      return;
     editing = field;
   }
 
@@ -263,104 +271,116 @@
             <img src={page.banner} alt="" fetchpriority="high" />
           </div>{/if}
         <header class="ip-header" class:centered={page.alignment === 'center'}>
-          {#if page.logo && (editorHeader || ui.showLogo)}<img
-              class="logo ip-logo"
-              src={page.logo}
-              alt=""
-              width={page.logoSize}
-              height={page.logoSize}
-            />{/if}
-          {#if editorHeader && editing === 'title'}<Textarea
-              bind:ref={titleInput}
-              variant="ghost"
-              class="ip-title ip-title-editor"
-              aria-label="Title"
-              placeholder="Add a title"
-              maxlength={160}
-              disabled={editDisabled}
-              value={page.title}
-              oninput={(event) => {
-                const title = event.currentTarget.value.replaceAll('\n', ' ');
-                event.currentTarget.value = title;
-                onTitleInput(title);
-              }}
-              onblur={() => finishOnBlur('title')}
-              onkeydown={(event) => {
-                if (event.key === 'Enter') {
-                  if (event.isComposing || event.keyCode === 229) return;
-                  event.preventDefault();
-                  void finishEditing('title');
-                } else if (event.key === 'Escape') {
-                  event.preventDefault();
-                  void finishEditing('title');
-                }
-              }}
-            />{:else if editorHeader || ui.showTitle}<h1
-              class="ip-title"
-              aria-label={editorHeader
-                ? page.title || 'Add a title'
-                : undefined}
-            >
-              {#if editorHeader}<button
-                  type="button"
-                  class="header-edit-field title-edit-field"
-                  class:is-placeholder={!page.title}
-                  bind:this={titleEditButton}
-                  aria-label={`Edit title, ${page.title || 'Add a title'}`}
-                  disabled={editDisabled}
-                  onclick={() => editField('title')}
-                  >{page.title || 'Add a title'}<span
-                    class="edit-hint"
-                    aria-hidden="true">✎</span
-                  ></button
-                >{:else}{page.title}{/if}
-            </h1>{/if}
-          {#if editorHeader}
-            {#if editing === 'description'}<div
-                class="description ip-description description-editor"
-              >
-                <Textarea
-                  bind:ref={descriptionInput}
+          <div
+            class="header-content"
+            class:left-logo={page.galleryStyle.logoPosition === 'left' &&
+              !!page.logo &&
+              (editorHeader || ui.showLogo)}
+          >
+            {#if page.logo && (editorHeader || ui.showLogo)}<img
+                class="logo ip-logo"
+                src={page.logo}
+                alt=""
+                width={page.logoSize}
+                height={page.logoSize}
+              />{/if}
+            <div class="header-copy">
+              {#if (editorHeader || inlineHeaderEdit) && editing === 'title' && (editorHeader || ui.showTitle)}<Textarea
+                  bind:ref={titleInput}
                   variant="ghost"
-                  class="ip-description ip-description-editor"
-                  aria-label="Description"
-                  placeholder="Add a description"
-                  maxlength={2000}
+                  class="ip-title ip-title-editor"
+                  aria-label="Title"
+                  placeholder="Add a title"
+                  maxlength={160}
                   disabled={editDisabled}
-                  value={page.description}
-                  oninput={(event) =>
-                    onDescriptionInput(event.currentTarget.value)}
-                  onblur={() => finishOnBlur('description')}
+                  value={page.title}
+                  oninput={(event) => {
+                    const title = event.currentTarget.value.replaceAll(
+                      '\n',
+                      ' ',
+                    );
+                    event.currentTarget.value = title;
+                    onTitleInput(title);
+                  }}
+                  onblur={() => finishOnBlur('title')}
                   onkeydown={(event) => {
-                    if (event.key === 'Enter' && event.ctrlKey) {
+                    if (event.key === 'Enter') {
+                      if (event.isComposing || event.keyCode === 229) return;
                       event.preventDefault();
-                      void finishEditing('description');
+                      void finishEditing('title');
                     } else if (event.key === 'Escape') {
                       event.preventDefault();
-                      void finishEditing('description');
+                      void finishEditing('title');
                     }
                   }}
-                />
-              </div>{:else}<p class="description ip-description">
-                <button
-                  type="button"
-                  class="header-edit-field description-edit-field"
-                  class:is-placeholder={!page.description}
-                  bind:this={descriptionEditButton}
-                  aria-label={`Edit description, ${page.description || 'Add a description'}`}
-                  disabled={editDisabled}
-                  onclick={() => editField('description')}
-                  >{page.description || 'Add a description'}<span
-                    class="edit-hint"
-                    aria-hidden="true">✎</span
-                  ></button
+                />{:else if editorHeader || ui.showTitle}<h1
+                  class="ip-title"
+                  aria-label={editorHeader || inlineHeaderEdit
+                    ? page.title || 'Add a title'
+                    : undefined}
                 >
-              </p>{/if}
-          {:else if ui.showDescription && page.description}<p
-              class="description ip-description"
-            >
-              {page.description}
-            </p>{/if}
+                  {#if editorHeader || inlineHeaderEdit}<button
+                      type="button"
+                      class="header-edit-field title-edit-field"
+                      class:is-placeholder={!page.title}
+                      bind:this={titleEditButton}
+                      aria-label={`Edit title, ${page.title || 'Add a title'}`}
+                      disabled={editDisabled}
+                      onclick={() => editField('title')}
+                      >{page.title || 'Add a title'}<span
+                        class="edit-hint"
+                        aria-hidden="true">✎</span
+                      ></button
+                    >{:else}{page.title}{/if}
+                </h1>{/if}
+              {#if editorHeader || (inlineHeaderEdit && ui.showDescription)}
+                {#if editing === 'description'}<div
+                    class="description ip-description description-editor"
+                  >
+                    <Textarea
+                      bind:ref={descriptionInput}
+                      variant="ghost"
+                      class="ip-description ip-description-editor"
+                      aria-label="Description"
+                      placeholder="Add a description"
+                      maxlength={2000}
+                      disabled={editDisabled}
+                      value={page.description}
+                      oninput={(event) =>
+                        onDescriptionInput(event.currentTarget.value)}
+                      onblur={() => finishOnBlur('description')}
+                      onkeydown={(event) => {
+                        if (event.key === 'Enter' && event.ctrlKey) {
+                          event.preventDefault();
+                          void finishEditing('description');
+                        } else if (event.key === 'Escape') {
+                          event.preventDefault();
+                          void finishEditing('description');
+                        }
+                      }}
+                    />
+                  </div>{:else}<p class="description ip-description">
+                    <button
+                      type="button"
+                      class="header-edit-field description-edit-field"
+                      class:is-placeholder={!page.description}
+                      bind:this={descriptionEditButton}
+                      aria-label={`Edit description, ${page.description || 'Add a description'}`}
+                      disabled={editDisabled}
+                      onclick={() => editField('description')}
+                      >{page.description || 'Add a description'}<span
+                        class="edit-hint"
+                        aria-hidden="true">✎</span
+                      ></button
+                    >
+                  </p>{/if}
+              {:else if ui.showDescription && page.description}<p
+                  class="description ip-description"
+                >
+                  {page.description}
+                </p>{/if}
+            </div>
+          </div>
         </header>
       </div>{/if}
     {#if !editorHeader}
@@ -604,12 +624,30 @@
   header.centered {
     text-align: var(--pager-header-alignment, center);
   }
+  .header-content {
+    display: flex;
+    flex-direction: var(--pager-logo-layout, column);
+    align-items: stretch;
+    gap: var(--pager-logo-gap, 20px);
+  }
+  .header-content.left-logo {
+    align-items: center;
+    justify-content: var(--pager-logo-justify, flex-start);
+  }
+  .header-copy {
+    min-width: 0;
+    max-width: 100%;
+  }
   .logo {
+    display: block;
+    flex: 0 0 auto;
     width: var(--pager-logo-size, 80px);
     height: var(--pager-logo-size, 80px);
     object-fit: contain;
-    margin-block-end: 20px;
-    display: inline-block;
+    border-radius: var(--pager-logo-radius, 16px);
+  }
+  .centered .header-content:not(.left-logo) .logo {
+    align-self: center;
   }
   h1 {
     font-size: clamp(
@@ -809,6 +847,18 @@
     .browse-controls .search-control,
     .browse-controls > .clear-filters {
       grid-column: 1 / -1;
+    }
+  }
+  @media (max-width: 600px) {
+    .header-content.left-logo {
+      flex-direction: var(--pager-mobile-logo-layout, column);
+      align-items: stretch;
+    }
+    .header-content.left-logo .logo {
+      align-self: flex-start;
+    }
+    .centered .header-content.left-logo .logo {
+      align-self: center;
     }
   }
   summary {

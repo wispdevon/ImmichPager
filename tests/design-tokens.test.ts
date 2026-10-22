@@ -18,6 +18,8 @@ const style = {
   gridColumnGap: 0,
   coverAspectRatio: 1,
   cardRadius: 16,
+  logoShape: 'rounded',
+  logoPosition: 'above',
   hoverTreatment: 'surface',
 } as const;
 
@@ -281,6 +283,30 @@ it('reports unsupported paths and exposes an empty summary when nothing applies'
     unsupported: ['pager.galleryStyle.animation', 'pager.extra.token'],
     hasApplicableTokens: false,
   });
+});
+
+it('reports enum-only logo tokens as unsupported while applying supported tokens', () => {
+  const preview = previewDesignTokensFile(
+    JSON.stringify({
+      pager: {
+        galleryStyle: {
+          logoShape: { $type: 'string', $value: 'circle' },
+          logoPosition: { $type: 'string', $value: 'left' },
+          contentWidth: {
+            $type: 'dimension',
+            $value: { value: 1200, unit: 'px' },
+          },
+        },
+      },
+    }),
+  );
+
+  expect(preview.galleryStyle).toEqual({ contentWidth: 1200 });
+  expect(preview.unsupported).toEqual([
+    'pager.galleryStyle.logoShape',
+    'pager.galleryStyle.logoPosition',
+  ]);
+  expect(preview.hasApplicableTokens).toBe(true);
 });
 
 it('rejects recognized tokens that are missing a value even beside valid tokens', () => {

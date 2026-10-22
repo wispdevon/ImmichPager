@@ -30,6 +30,8 @@ export const galleryStyleSchema = z.object({
   gridColumnGap: z.number().int().min(0).max(80).default(0),
   coverAspectRatio: z.number().min(0.5).max(2).default(1),
   cardRadius: z.number().int().min(0).max(40).default(16),
+  logoShape: z.enum(['square', 'rounded', 'circle']).default('rounded'),
+  logoPosition: z.enum(['above', 'left']).default('above'),
   hoverTreatment: z
     .enum(['surface', 'underline', 'lift', 'none'])
     .default('surface'),

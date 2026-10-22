@@ -83,6 +83,11 @@ export function galleryStyleVariables(
       overlay: 'clamp(360px, 42vw, 560px)',
     },
   }[page.headerSize];
+  const logoRadius = {
+    square: '0px',
+    rounded: '16px',
+    circle: '50%',
+  }[style.logoShape];
 
   const variables: Record<string, string> = {
     '--pager-background': page.background ?? 'var(--custom-bg, var(--base-bg))',
@@ -131,6 +136,12 @@ export function galleryStyleVariables(
       ? 'var(--pager-foreground, #fff)'
       : 'inherit',
     '--pager-logo-size': `${page.logoSize}px`,
+    '--pager-logo-radius': logoRadius,
+    '--pager-logo-layout': style.logoPosition === 'left' ? 'row' : 'column',
+    '--pager-logo-gap': '20px',
+    '--pager-mobile-logo-layout': 'column',
+    '--pager-logo-justify':
+      page.alignment === 'center' ? 'center' : 'flex-start',
     '--pager-title-size': `${page.titleSize}rem`,
     '--pager-title-min-size': `${page.titleSize * 0.625}rem`,
     '--pager-title-fluid-size': `${(3.4 / 3) * page.titleSize}vw`,
