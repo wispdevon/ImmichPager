@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.3.0] - 2026-10-23
+
+### Added
+
+- Per-page Customize workspace with Design, Elements, Themes, and CSS tabs, a responsive private preview, and phone settings/preview switching.
+- Individual client visibility controls for headers, browsing, album details, year groups, and footer branding, with accessible album names and preserved hidden content.
+- Gallery typography, fonts, spacing, density, cover proportions, corners, and hover controls backed by documented CSS variables.
+- Lazy-loaded CodeMirror CSS editor with validation, examples, character count, and reset controls.
+- Complete appearance-file version 2 and styling-only DTCG 2025.10 token import/export with local references and import summaries.
+
+### Improved
+
+- Preview refreshes after acknowledged draft saves without moving settings focus; failed saves preserve edits and support retry.
+- Publication review identifies visibility and gallery-style changes before clients see them.
+- Keyboard focus, mobile Preview reachability, reduced-motion behavior, and compatibility with existing gallery CSS variables.
+
+### Upgrade notes
+
+- Storage remains schema version 2; these settings are additive JSON fields. Back up the complete stopped Pager volume before upgrading.
+- Existing pages retain compatibility defaults. New pages start with browsing controls off; duplicated designs preserve their source settings.
+- Version 1 appearance imports remain supported and preserve newer visibility/style settings. Token imports change styling only and do not load external resources.
+- Existing published pages and share links remain unchanged until explicitly updated. The release includes merged MRs !28, !29, and !30.
+
 ## [0.2.0] - 2026-10-23
 
 ### Added

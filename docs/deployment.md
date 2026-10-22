@@ -5,7 +5,7 @@
 Build the stable version from source, or import the prebuilt ARM64 package below. The GitLab registry target is `registry.gitlab.com/wispd/immichpager`; no image has been published there yet. Registry publishing is available only from a protected semantic-version tag after the checks pass and a maintainer manually starts the job. See the [GitLab distribution guide](gitlab-distribution.md) for the migration steps.
 
 ```sh
-git clone --branch v0.2.0 --depth 1 https://gitlab.com/wispd/ImmichPager.git
+git clone --branch v0.3.0 --depth 1 https://gitlab.com/wispd/ImmichPager.git
 cd ImmichPager
 cp .env.example .env
 # Edit IMMICH_URL and ORIGIN, plus IMMICH_NETWORK if necessary.
@@ -60,7 +60,7 @@ pnpm bundle:runtime
 
 Transfer `.deploy/runtime/` to the host and run `docker build -t immichpager:local .` inside that transferred directory. The generated context includes `Dockerfile.runtime` as its Dockerfile, compiled assets, and dependency manifests. Production dependencies, including native Sharp binaries, are installed for the host architecture during the container build. No workstation `node_modules`, credentials, or demo data are included. Set the Compose image to that local tag and use `docker compose up -d --no-build`.
 
-The [v0.2.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.2.0)'s `immichpager-v0.2.0-runtime.tar.gz` contains this compiled build context, so you can extract it and run the target-host Docker build without installing frontend tooling. It supports Linux amd64 and arm64 through the target Docker platform. The source archive remains available for inspection and rebuilding.
+The [v0.3.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.3.0)'s `immichpager-v0.3.0-runtime.tar.gz` contains this compiled build context, so you can extract it and run the target-host Docker build without installing frontend tooling. It supports Linux amd64 and arm64 through the target Docker platform. The source archive remains available for inspection and rebuilding.
 
 ## Environment variables
 

@@ -71,16 +71,16 @@ Start with **Add a title**, **Add a description**, and **Select albums**. Brandi
 
 Choose **Below banner** or **Over banner** to compose your logo, title, and description, or start with a Classic, Centered, or Editorial header preset. Set compact, standard, or tall banners; tune logo size, title and description sizes, and header spacing per page while keeping Google Sans as the default. Advanced per-page CSS supports further typography, cover corners, responsive spacing, and theme variables. Changes remain private until published. See the [customization guide and CSS examples](docs/customization.md). These additions ship in v0.2.0, tagged from `dev`; existing deployments update only when their operator upgrades.
 
-## Per-page customization (in review)
+## Per-page customization
 
-The next update adds **Customize** inside Pages, with **Design**, **Elements**, **Themes**, and **CSS** tabs beside a private responsive preview. Choose which client elements appear, adjust gallery typography and spacing, edit isolated CSS, or transfer a design with a version 2 appearance file. Separate [DTCG design token files](docs/design-tokens.md) transfer styling after an import summary while keeping content, visibility, and CSS intact. New pages start with browsing controls off; existing pages keep their current appearance. These changes are separate from the v0.2.0 release and remain private until a page is explicitly published.
+Version 0.3.0 adds **Customize** inside Pages, with **Design**, **Elements**, **Themes**, and **CSS** tabs beside a private responsive preview. Choose which client elements appear, adjust gallery typography and spacing, edit isolated CSS, or transfer a design with a version 2 appearance file. Separate [DTCG design token files](docs/design-tokens.md) transfer styling after an import summary while keeping content, visibility, and CSS intact. New pages start with browsing controls off; existing pages keep their current appearance. Appearance edits remain private until a page is explicitly published.
 
 ## Quick start
 
 Requires Docker Compose v2, an existing Immich installation, and control of its HTTPS reverse proxy.
 
 ```sh
-git clone --branch v0.2.0 --depth 1 https://gitlab.com/wispd/ImmichPager.git
+git clone --branch v0.3.0 --depth 1 https://gitlab.com/wispd/ImmichPager.git
 cd ImmichPager
 cp .env.example .env
 ```
@@ -95,13 +95,13 @@ Point the existing HTTPS proxy at Pager's default `127.0.0.1:3102` listener. Sig
 
 All Pager routes and assets use `/page/`; native Immich `/api/`, `/s/`, and `/share/` routes continue to the upstream. You can chain Pager in front of Immichinko or keep an Immicull custom server. See [deployment and configuration](docs/deployment.md) for exact setup, image tags, proxy trust, backups, and rollback.
 
-The [v0.2.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.2.0) includes tagged source and a compiled runtime build context with SHA-256 checksums. Historical v0.1.0 ARM64 packages remain available through the [deployment guide](docs/deployment.md#prebuilt-arm64-package).
+The [v0.3.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.3.0) includes tagged source and a compiled runtime build context with SHA-256 checksums. Historical v0.1.0 ARM64 packages remain available through the [deployment guide](docs/deployment.md#prebuilt-arm64-package).
 
 ## Compatibility and current status
 
 Initial source review targets **Immich v3.3.1**, with an ARM64 runtime deployment and public HTTP smoke checks verified on **v3.3.3** alongside Immichinko and a RAW/JPEG companion. Authenticated editing and publishing tests use an isolated fixture; the signed-in live workflow remains to be checked. This is an early implementation, not a claim of compatibility with every Immich release.
 
-The v0.2.0 candidate passed 127 unit tests, 34 Chromium scenarios, type checking, lint, formatting, audit, production build, and a hosted Docker smoke check. Source, releases, and active reviews live on [GitLab](https://gitlab.com/wispd/ImmichPager); see the [migration record](docs/gitlab-migration.md). Historical v0.1.0 downloads remain on GitHub. Source builds support amd64 and arm64. Registry image publication is a separate manual release action.
+The v0.3.0 feature set passed 160 unit tests, 45 Chromium scenarios, type checking, lint, formatting, audit, production build, and a hosted Docker smoke check. Source, releases, and active reviews live on [GitLab](https://gitlab.com/wispd/ImmichPager); see the [migration record](docs/gitlab-migration.md). Historical v0.1.0 downloads remain on GitHub. Source builds support amd64 and arm64. Registry image publication is a separate manual release action.
 
 The sidebar bridge is a maintained DOM integration rather than an official Immich plugin API. Use one Pager container per database. When upstream revocation fails, the overview is hidden; existing native links remain subject to Immich until the owner finishes synchronization. See [validation notes](docs/validation.md).
 
