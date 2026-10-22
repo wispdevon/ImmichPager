@@ -1,4 +1,5 @@
 @import '@immich/ui/theme/default.css';
+@import './lib/bundled-fonts.css';
 @source '../node_modules/@immich/ui/dist';
 @font-face {
   font-family: 'GoogleSans';

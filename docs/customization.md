@@ -156,8 +156,10 @@ is hidden.
 Open **Customize → Design** to set the gallery font, title/body/card
 typography, content width, page padding, grid density, row and column spacing,
 cover aspect ratio, corner radius, and hover treatment. Google Sans is the
-default bundled font; the system option uses installed fonts. The initial layout
-keeps Immich's 1600 px content width, 224 px minimum album track, square covers,
+default bundled font; the system option uses installed fonts. Six more local
+families are available, including Inter, Lato, Source Serif 4, and JetBrains
+Mono. See the [font catalog and licenses](fonts.md). The initial layout keeps
+Immich's 1600 px content width, 224 px minimum album track, square covers,
 16 px card corners, and subtle hover surface.
 
 The settings are page-specific and stay private until publication. Existing
@@ -316,7 +318,9 @@ For example, this changes the page without `!important`:
 
 ### Title typography
 
-Use installed system fonts, including the gallery's bundled Google Sans, without external font requests.
+Use any bundled gallery family or an installed system font without external
+font requests. The gallery uses Google Sans by default; see the
+[font catalog](fonts.md) for local family options and licenses.
 
 ```css
 .ip-title {

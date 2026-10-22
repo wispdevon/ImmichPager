@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { DEFAULT_PAGE_ACCENT } from './gallery';
+import { FONT_FAMILY_IDS } from './font-catalog';
 
 export const reservedSlugs = new Set([
   'manage',
@@ -14,7 +15,7 @@ const color = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, 'Use a six-digit hex color');
 
-const fontFamily = z.enum(['google-sans', 'system']);
+const fontFamily = z.enum(FONT_FAMILY_IDS);
 
 export const galleryStyleSchema = z.object({
   fontFamily: fontFamily.default('google-sans'),

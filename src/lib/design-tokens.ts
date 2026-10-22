@@ -4,6 +4,7 @@ import {
   type GalleryStyle,
   type PageInput,
 } from './contracts';
+import { FONT_CATALOG, fontFamilyIdFromToken } from './font-catalog';
 
 export const DESIGN_TOKEN_MAX_BYTES = 96 * 1024;
 
@@ -833,10 +834,11 @@ function normalizeFontFamily(
     throw new Error(`Token ${path} has an invalid fontFamily value.`);
 
   const first = (families[0] as string).trim().toLowerCase();
-  if (first === 'google sans' || first === 'google-sans') return 'google-sans';
+  const bundled = fontFamilyIdFromToken(first);
+  if (bundled) return bundled;
   if (recognizedSystemFontFamilies.has(first)) return 'system';
   throw new Error(
-    `Token ${path} must use Google Sans or a supported system font stack.`,
+    `Token ${path} must use a bundled Pager font or a supported system font stack.`,
   );
 }
 
@@ -922,7 +924,7 @@ function normalizeMappedValue(
 }
 
 function validateGalleryStylePatch(value: Record<string, unknown>) {
-  const result = galleryStyleSchema.partial().safeParse(value);
+  const result = galleryStyleSchema.safeParse(value);
   if (!result.success) {
     const issue = result.error.issues[0];
     const path = issue?.path.join('.') || 'galleryStyle';
@@ -930,7 +932,9 @@ function validateGalleryStylePatch(value: Record<string, unknown>) {
       `Invalid Pager galleryStyle.${path}: ${issue?.message ?? 'value rejected'}.`,
     );
   }
-  return result.data;
+  return Object.fromEntries(
+    Object.keys(value).map((key) => [key, result.data[key as GalleryStyleKey]]),
+  ) as Partial<GalleryStyle>;
 }
 
 function validateAppearancePatch(value: Record<string, unknown>) {
@@ -1045,7 +1049,7 @@ function exportStyleValue(key: GalleryStyleKey, style: GalleryStyle) {
   if (fontFamilyKeys.has(key))
     return token(
       'fontFamily',
-      value === 'google-sans' ? 'Google Sans' : 'system-ui',
+      FONT_CATALOG.find((font) => font.id === value)?.tokenFamily ?? value,
     );
   if (numberKeys.has(key)) return token('number', value);
   return null;

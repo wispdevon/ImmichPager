@@ -26,38 +26,40 @@ header layout, theme, and settings that have no DTCG token type.
 
 ## Pager token paths
 
-| Path                                  | DTCG type    | Imported value                                                          |
-| ------------------------------------- | ------------ | ----------------------------------------------------------------------- |
-| `pager.colors.background`             | `color`      | Six-digit opaque sRGB hex; omitted when the page uses its theme default |
-| `pager.colors.foreground`             | `color`      | Six-digit opaque sRGB hex; omitted when the page uses its theme default |
-| `pager.colors.accent`                 | `color`      | Six-digit opaque sRGB hex                                               |
-| `pager.galleryStyle.fontFamily`       | `fontFamily` | Google Sans or a supported system font stack                            |
-| `pager.galleryStyle.titleFontWeight`  | `fontWeight` | Title weight, 400–800                                                   |
-| `pager.galleryStyle.bodyFontSize`     | `dimension`  | Body size, normalized to rem (0.75–1.5)                                 |
-| `pager.galleryStyle.bodyFontWeight`   | `fontWeight` | Body weight, 300–700                                                    |
-| `pager.galleryStyle.cardTitleSize`    | `dimension`  | Album title size, normalized to rem (0.75–2)                            |
-| `pager.galleryStyle.cardTitleWeight`  | `fontWeight` | Album title weight, 400–800                                             |
-| `pager.galleryStyle.contentWidth`     | `dimension`  | Content width, normalized to px (640–1920)                              |
-| `pager.galleryStyle.pagePadding`      | `dimension`  | Page padding, normalized to px (0–80)                                   |
-| `pager.galleryStyle.gridMinWidth`     | `dimension`  | Minimum album width, normalized to px (160–360)                         |
-| `pager.galleryStyle.gridRowGap`       | `dimension`  | Grid row gap, normalized to px (0–80)                                   |
-| `pager.galleryStyle.gridColumnGap`    | `dimension`  | Grid column gap, normalized to px (0–80)                                |
-| `pager.galleryStyle.coverAspectRatio` | `number`     | Cover width divided by height (0.5–2)                                   |
-| `pager.galleryStyle.cardRadius`       | `dimension`  | Album corner radius, normalized to px (0–40)                            |
-| `pager.header.titleSize`              | `dimension`  | Page title size, normalized to rem (1.5–4)                              |
-| `pager.header.descriptionSize`        | `dimension`  | Description size, normalized to rem (0.875–1.5)                         |
-| `pager.header.logoSize`               | `dimension`  | Logo size, normalized to px (48–160)                                    |
-| `pager.header.headerSpacing`          | `dimension`  | Header spacing, normalized to rem (1.5–5)                               |
-| `pager.header.bannerPosition`         | `number`     | Banner crop position, integer 0–100                                     |
+| Path                                  | DTCG type    | Imported value                                                               |
+| ------------------------------------- | ------------ | ---------------------------------------------------------------------------- |
+| `pager.colors.background`             | `color`      | Six-digit opaque sRGB hex; omitted when the page uses its theme default      |
+| `pager.colors.foreground`             | `color`      | Six-digit opaque sRGB hex; omitted when the page uses its theme default      |
+| `pager.colors.accent`                 | `color`      | Six-digit opaque sRGB hex                                                    |
+| `pager.galleryStyle.fontFamily`       | `fontFamily` | Bundled family from the [font catalog](fonts.md) or a supported system stack |
+| `pager.galleryStyle.titleFontWeight`  | `fontWeight` | Title weight, 400–800                                                        |
+| `pager.galleryStyle.bodyFontSize`     | `dimension`  | Body size, normalized to rem (0.75–1.5)                                      |
+| `pager.galleryStyle.bodyFontWeight`   | `fontWeight` | Body weight, 300–700                                                         |
+| `pager.galleryStyle.cardTitleSize`    | `dimension`  | Album title size, normalized to rem (0.75–2)                                 |
+| `pager.galleryStyle.cardTitleWeight`  | `fontWeight` | Album title weight, 400–800                                                  |
+| `pager.galleryStyle.contentWidth`     | `dimension`  | Content width, normalized to px (640–1920)                                   |
+| `pager.galleryStyle.pagePadding`      | `dimension`  | Page padding, normalized to px (0–80)                                        |
+| `pager.galleryStyle.gridMinWidth`     | `dimension`  | Minimum album width, normalized to px (160–360)                              |
+| `pager.galleryStyle.gridRowGap`       | `dimension`  | Grid row gap, normalized to px (0–80)                                        |
+| `pager.galleryStyle.gridColumnGap`    | `dimension`  | Grid column gap, normalized to px (0–80)                                     |
+| `pager.galleryStyle.coverAspectRatio` | `number`     | Cover width divided by height (0.5–2)                                        |
+| `pager.galleryStyle.cardRadius`       | `dimension`  | Album corner radius, normalized to px (0–40)                                 |
+| `pager.header.titleSize`              | `dimension`  | Page title size, normalized to rem (1.5–4)                                   |
+| `pager.header.descriptionSize`        | `dimension`  | Description size, normalized to rem (0.875–1.5)                              |
+| `pager.header.logoSize`               | `dimension`  | Logo size, normalized to px (48–160)                                         |
+| `pager.header.headerSpacing`          | `dimension`  | Header spacing, normalized to rem (1.5–5)                                    |
+| `pager.header.bannerPosition`         | `number`     | Banner crop position, integer 0–100                                          |
 
 Dimensions accept `px` or `rem`; Pager converts between them at 16 px per rem.
 The result must satisfy the target field's range, and px targets must resolve to
 a whole number of pixels. Font weights accept DTCG numeric values or the
 standard names understood by the DTCG format, then must fit the Pager range.
-Font families accept `Google Sans`/`google-sans` or a system stack beginning
-with `system`, `system-ui`, `ui-sans-serif`, `sans-serif`, `-apple-system`, or
-`blinkmacsystemfont`. Installed fonts such as Arial are not substituted
-silently; use CSS for other locally available fonts.
+Font families accept a bundled Pager family name or stable ID from the
+[font catalog](fonts.md), or a system stack beginning with `system`,
+`system-ui`, `ui-sans-serif`, `sans-serif`, `-apple-system`, or
+`blinkmacsystemfont`. The exporter writes the catalog's canonical family name.
+Unknown installed fonts such as Arial are rejected rather than substituted
+silently.
 
 Colors are stored by Pager as six-digit hex. sRGB, linear sRGB, HSL, and HWB
 values can be normalized directly. Other DTCG color spaces need a valid

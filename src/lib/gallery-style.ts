@@ -2,6 +2,7 @@ import * as css from 'css-tree';
 import type { GalleryPage } from './contracts';
 import { DEFAULT_PAGE_ACCENT } from './gallery';
 import { stylesheetMarkup } from './custom-css';
+import { FONT_CATALOG_BY_ID } from './font-catalog';
 
 export type GalleryStyleSource = Pick<
   GalleryPage,
@@ -94,10 +95,7 @@ export function galleryStyleVariables(
     '--pager-accent': baseAccent
       ? 'var(--gallery-hover-accent, var(--accent))'
       : page.accent,
-    '--pager-font-family':
-      style.fontFamily === 'google-sans'
-        ? '"GoogleSans", sans-serif'
-        : 'system-ui, sans-serif',
+    '--pager-font-family': FONT_CATALOG_BY_ID[style.fontFamily].cssStack,
     '--pager-title-font-weight': String(style.titleFontWeight),
     '--pager-body-font-size': `${style.bodyFontSize}rem`,
     '--pager-body-font-weight': String(style.bodyFontWeight),

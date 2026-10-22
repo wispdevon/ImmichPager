@@ -10,6 +10,7 @@ import {
   parsePageInput,
 } from '../src/lib/contracts';
 import { galleryStyleStylesheet } from '../src/lib/gallery-style';
+import { FONT_CATALOG } from '../src/lib/font-catalog';
 
 describe('client UI settings', () => {
   it('starts new pages with browsing controls off and preserves the other visible content', () => {
@@ -124,6 +125,33 @@ describe('gallery style defaults and CSS variables', () => {
       }).success,
     ).toBe(false);
   });
+  it.each(FONT_CATALOG)(
+    'maps the $name font option to its documented CSS stack',
+    (font) => {
+      const page = {
+        id: 'page-font',
+        theme: 'dark',
+        background: null,
+        foreground: null,
+        accent: '#accbfa',
+        alignment: 'left',
+        headerLayout: 'below',
+        headerSize: 'standard',
+        logoSize: 80,
+        titleSize: 3,
+        descriptionSize: 1.125,
+        headerSpacing: 2.5,
+        bannerPosition: 50,
+        banner: null,
+        clientUi: DEFAULT_CLIENT_UI,
+        galleryStyle: { ...DEFAULT_GALLERY_STYLE, fontFamily: font.id },
+      } satisfies Parameters<typeof galleryStyleStylesheet>[0];
+
+      expect(galleryStyleStylesheet(page)).toContain(
+        `--pager-font-family: ${font.cssStack}`,
+      );
+    },
+  );
 
   it('emits low-specificity scoped defaults so authored CSS can override them', () => {
     const page = {
