@@ -139,6 +139,7 @@ test('public gallery browsing, responsive layout, and year navigation work', asy
   }));
   expect(defaultSurface.background).toMatch(/rgba\(0, 0, 0, 0\)/);
   await firstAlbum.hover();
+  await expect(firstAlbum).toHaveCSS('transform', 'none');
   const hoveredSurface = await firstAlbum.evaluate((album) => ({
     background: getComputedStyle(album).backgroundColor,
     border: getComputedStyle(album).borderColor,
