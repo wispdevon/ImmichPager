@@ -76,3 +76,25 @@ it('normalizes v3 album ownership without treating a collaborator as owner', asy
     '2026-10-01T12:00:00.000Z',
   );
 });
+
+it('sends the selected download permission on share creation and retained-share updates', async () => {
+  const fetcher = vi
+    .fn()
+    .mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({ id: 'dedicated', key: 'key', slug: 'pager-custom' }),
+        ),
+    );
+  vi.stubGlobal('fetch', fetcher);
+  const client = new Immich('http://immich:2283', { cookie: 'owner' });
+  await client.createShare('album', 'pager-custom', null, false);
+  await client.updateShare('dedicated', null, 'pager-custom', false);
+  for (const [, request] of fetcher.mock.calls) {
+    expect(JSON.parse(request.body)).toMatchObject({
+      slug: 'pager-custom',
+      allowDownload: false,
+      allowUpload: false,
+    });
+  }
+});

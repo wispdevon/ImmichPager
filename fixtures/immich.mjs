@@ -133,7 +133,7 @@ export function createFixture() {
       type: 'ALBUM',
       password: share.password ? 'protected' : null,
       album: nativeAlbum(albums.find((a) => a.id === share.albumId)),
-      allowDownload: true,
+      allowDownload: share.allowDownload ?? true,
       allowUpload: false,
     });
     try {

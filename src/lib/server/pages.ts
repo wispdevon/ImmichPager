@@ -35,6 +35,7 @@ export class PageService {
       const accessChanged =
         previous &&
         (passwordMode !== 'keep' ||
+          previous.allowDownload !== settings.allowDownload ||
           JSON.stringify(previous.albumIds) !==
             JSON.stringify(settings.albumIds));
       const now = new Date().toISOString();
@@ -149,6 +150,7 @@ export class PageService {
                 albumId,
                 slug,
                 page.passwordHash ? password : null,
+                page.allowDownload,
               );
               share = {
                 pageId: id,
@@ -163,6 +165,7 @@ export class PageService {
               share.shareId,
               page.passwordHash ? password : null,
               share.slug,
+              page.allowDownload,
             );
           }
         }

@@ -8,6 +8,7 @@ import {
 } from '../contracts';
 import {
   summarizePublicationChanges,
+  requiresShareSynchronization,
   type PublicationSummary,
 } from '../publication-summary';
 import { Store } from './store';
@@ -49,6 +50,7 @@ export class DraftService {
     owner: string,
     id: string,
     expectedDraftRevision: number,
+    passwordMode: 'keep' | 'set' | 'remove' = 'keep',
   ): PublicationSummary {
     const draft = this.check(id, owner, expectedDraftRevision);
     const live = this.store.get(id);
@@ -70,6 +72,7 @@ export class DraftService {
             ),
           }
         : {},
+      passwordMode,
     );
   }
   async save(owner: string, id: string | null, value: unknown) {
@@ -112,6 +115,7 @@ export class DraftService {
           slug: '',
           albumIds: [],
           order: 'newest',
+          allowDownload: true,
           theme: source.theme,
           background: source.background,
           foreground: source.foreground,
@@ -169,10 +173,8 @@ export class DraftService {
           'The live page changed since this review. Review the changes again before publishing.',
         );
       if (
-        live?.status === 'published' &&
-        input.passwordMode === 'keep' &&
-        live.albumIds.length === draft.albumIds.length &&
-        live.albumIds.every((id) => draft.albumIds.includes(id))
+        live &&
+        !requiresShareSynchronization(draft, live, input.passwordMode)
       ) {
         for (const albumId of draft.albumIds) {
           if ((await this.immich.album(albumId)).ownerId !== owner)

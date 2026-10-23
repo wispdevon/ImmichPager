@@ -1,4 +1,4 @@
-import type { DraftRecord, PageRecord } from './contracts';
+import type { DraftRecord, PageRecord, PageInput } from './contracts';
 
 export type PublicationAppearanceChange =
   | 'title'
@@ -22,6 +22,9 @@ export type PublicationAppearanceChange =
   | 'banner';
 
 export type PublicationSummary = {
+  passwordAction: 'keep' | 'set' | 'change' | 'remove';
+  requiresCurrentPassword: boolean;
+  downloadChange: { before: boolean | null; after: boolean } | null;
   draftRevision: number;
   expectedPublishedRevision: number | null;
   currentlyPublished: boolean;
@@ -32,11 +35,27 @@ export type PublicationSummary = {
   appearanceChanges: PublicationAppearanceChange[];
 };
 
+/** Shared with publication: only these changes require native share synchronization. */
+export function requiresShareSynchronization(
+  draft: Pick<DraftRecord, 'albumIds' | 'allowDownload'>,
+  live: PageRecord | null,
+  passwordMode: PageInput['passwordMode'],
+) {
+  return (
+    live?.status !== 'published' ||
+    passwordMode !== 'keep' ||
+    live.allowDownload !== draft.allowDownload ||
+    live.albumIds.length !== draft.albumIds.length ||
+    !live.albumIds.every((id) => draft.albumIds.includes(id))
+  );
+}
+
 /** Compare the owner-checked draft with the page currently available to clients. */
 export function summarizePublicationChanges(
   draft: DraftRecord,
   live: PageRecord | null,
   changedBranding: { logo?: boolean; banner?: boolean } = {},
+  passwordMode: PageInput['passwordMode'] = 'keep',
 ): PublicationSummary {
   const published = live?.status === 'published' ? live : null;
   const previousAlbumIds = published?.albumIds ?? [];
@@ -103,6 +122,19 @@ export function summarizePublicationChanges(
   }
 
   return {
+    passwordAction:
+      passwordMode === 'set' && live?.passwordHash ? 'change' : passwordMode,
+    requiresCurrentPassword:
+      !!live?.passwordHash &&
+      passwordMode === 'keep' &&
+      requiresShareSynchronization(draft, live, passwordMode),
+    downloadChange:
+      !published || published.allowDownload !== draft.allowDownload
+        ? {
+            before: published?.allowDownload ?? null,
+            after: draft.allowDownload,
+          }
+        : null,
     draftRevision: draft.revision,
     expectedPublishedRevision: published?.revision ?? null,
     currentlyPublished: !!published,
