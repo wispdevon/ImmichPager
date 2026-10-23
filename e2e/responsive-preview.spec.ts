@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('private preview uses desktop, tablet, and phone gallery viewports', async ({
+test('live canvas uses desktop, tablet, and phone gallery viewports', async ({
   page,
   browser,
 }) => {
@@ -18,19 +18,18 @@ test('private preview uses desktop, tablet, and phone gallery viewports', async 
   const draft = await created.json();
 
   await page.goto(`/page/manage/${draft.id}`);
-  await page.getByRole('button', { name: 'Preview', exact: true }).click();
 
   const preview = page.locator('[data-testid="responsive-preview-frame"]');
   await expect(preview).toBeVisible();
   const gallery = page.frameLocator('[data-testid="responsive-preview-frame"]');
-  await expect(gallery.locator('.ip-title')).toHaveText(
+  await expect(gallery.locator('.ip-title')).toContainText(
     'Responsive preview client',
   );
   const cover = gallery.locator('.ip-cover img').first();
   await expect
     .poll(() => cover.evaluate((image) => image.naturalWidth))
     .toBeGreaterThan(0);
-  await expect(page.getByRole('group', { name: 'Preview size' })).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Canvas size' })).toBeVisible();
   await expect(
     gallery.getByRole('button', { name: 'Publish page', exact: true }),
   ).toHaveCount(0);
@@ -43,14 +42,14 @@ test('private preview uses desktop, tablet, and phone gallery viewports', async 
   const desktopWidth = await viewportWidth();
   expect(desktopWidth).toBeGreaterThan(768);
 
-  const tablet = page.getByRole('button', { name: 'Tablet preview' });
+  const tablet = page.getByRole('button', { name: 'Tablet canvas' });
   await tablet.click();
   await expect(tablet).toHaveAttribute('aria-pressed', 'true');
-  await expect.poll(viewportWidth).toBe(768);
+  await expect.poll(viewportWidth).toBe(820);
   await expect(gallery.locator('.shared')).toBeVisible();
   await page.screenshot({ path: 'test-results/responsive-preview-tablet.png' });
 
-  const phone = page.getByRole('button', { name: 'Phone preview' });
+  const phone = page.getByRole('button', { name: 'Phone canvas' });
   await phone.focus();
   await page.keyboard.press('Enter');
   await expect(phone).toHaveAttribute('aria-pressed', 'true');

@@ -5,6 +5,10 @@ const albumSchema = z
   .object({
     id: z.string(),
     albumName: z.string(),
+    description: z
+      .string()
+      .nullish()
+      .transform((value) => value ?? ''),
     ownerId: z.string().optional(),
     albumUsers: z
       .array(z.object({ user: z.object({ id: z.string() }) }))
@@ -30,12 +34,34 @@ const assetSchema = z.object({
   visibility: z.string(),
   isTrashed: z.boolean(),
   isOffline: z.boolean(),
+  exifInfo: z
+    .object({
+      exifImageWidth: z.number().nullish(),
+      exifImageHeight: z.number().nullish(),
+    })
+    .nullish(),
 });
 const shareSchema = z.object({
   id: z.string(),
   key: z.string(),
   slug: z.string().nullish(),
   album: albumSchema.optional(),
+  assets: z
+    .array(
+      z.object({
+        id: z.string(),
+        originalFileName: z.string().default(''),
+        fileCreatedAt: z.string().default(''),
+        type: z.string().default('IMAGE'),
+        exifInfo: z
+          .object({
+            exifImageWidth: z.number().nullish(),
+            exifImageHeight: z.number().nullish(),
+          })
+          .nullish(),
+      }),
+    )
+    .optional(),
 });
 export type NativeShare = z.infer<typeof shareSchema>;
 export class Immich {
@@ -201,11 +227,19 @@ export class Immich {
     if (size !== 'original') url.searchParams.set('size', size);
     if (key) url.searchParams.set('key', key);
     for (let hop = 0; hop < 4; hop++) {
-      const response = await fetch(url, {
-        headers: publicHeaders ?? this.credentials,
-        redirect: 'manual',
-        signal: AbortSignal.timeout(15000),
-      });
+      const deadline = new AbortController();
+      const timer = setTimeout(() => deadline.abort(), 15000);
+      let response: Response;
+      try {
+        response = await fetch(url, {
+          headers: publicHeaders ?? this.credentials,
+          redirect: 'manual',
+          signal: deadline.signal,
+        });
+      } finally {
+        // Bound upstream response headers without truncating a large original's stream.
+        clearTimeout(timer);
+      }
       if ([301, 302, 303, 307, 308].includes(response.status)) {
         const location = response.headers.get('location');
         await response.body?.cancel();
@@ -268,6 +302,191 @@ export class Immich {
         })
       ).json(),
     );
+  }
+  async createPhotoShare(
+    assetIds: string[],
+    slug: string,
+    password: string | null,
+    allowDownload = true,
+  ) {
+    return shareSchema.parse(
+      await (
+        await this.request('shared-links', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            type: 'INDIVIDUAL',
+            assetIds,
+            slug,
+            password,
+            allowUpload: false,
+            allowDownload,
+            showMetadata: true,
+          }),
+        })
+      ).json(),
+    );
+  }
+  async syncPhotoShare(shareId: string, assetIds: string[]) {
+    const current = shareSchema.parse(
+      await (
+        await this.request(`shared-links/${encodeURIComponent(shareId)}`)
+      ).json(),
+    );
+    const old = (current.assets ?? []).map((p) => p.id);
+    for (const [method, ids] of [
+      ['DELETE', old.filter((id) => !assetIds.includes(id))],
+      ['PUT', assetIds.filter((id) => !old.includes(id))],
+    ] as const) {
+      if (ids.length) {
+        const results = z
+          .array(z.object({ assetId: z.string(), success: z.boolean() }))
+          .parse(
+            await (
+              await this.request(
+                `shared-links/${encodeURIComponent(shareId)}/assets`,
+                {
+                  method,
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({ assetIds: ids }),
+                },
+              )
+            ).json(),
+          );
+        if (
+          results.length !== ids.length ||
+          new Set(results.map((result) => result.assetId)).size !==
+            ids.length ||
+          results.some(
+            (result) => !result.success || !ids.includes(result.assetId),
+          )
+        )
+          throw new AppError(
+            502,
+            'Immich could not synchronize selected photos',
+          );
+      }
+    }
+  }
+  async timeBuckets(albumId: string, key?: string, cookie = '') {
+    const query = new URLSearchParams({
+      albumId,
+      order: 'desc',
+      ...(key ? { key } : {}),
+    });
+    return z
+      .array(z.object({ timeBucket: z.string(), count: z.number() }))
+      .parse(
+        await (
+          await this.request(
+            `timeline/buckets?${query}`,
+            {},
+            key ? (cookie ? { cookie } : {}) : undefined,
+          )
+        ).json(),
+      );
+  }
+  async timeBucket(
+    albumId: string,
+    timeBucket: string,
+    key?: string,
+    cookie = '',
+  ) {
+    const query = new URLSearchParams({
+      albumId,
+      timeBucket,
+      order: 'desc',
+      ...(key ? { key } : {}),
+    });
+    const data = z
+      .object({
+        id: z.array(z.string()),
+        isImage: z.array(z.boolean()),
+        isTrashed: z.array(z.boolean()).optional(),
+        ratio: z.array(z.number()),
+        fileCreatedAt: z.array(z.string()),
+        visibility: z.array(z.string()).optional(),
+      })
+      .parse(
+        await (
+          await this.request(
+            `timeline/bucket?${query}`,
+            {},
+            key ? (cookie ? { cookie } : {}) : undefined,
+          )
+        ).json(),
+      );
+    return data.id.flatMap((id, i) =>
+      data.isImage[i] &&
+      !data.isTrashed?.[i] &&
+      (!data.visibility?.[i] ||
+        ['timeline', 'archive'].includes(data.visibility[i]))
+        ? [
+            {
+              id,
+              ratio: data.ratio[i] || 1.5,
+              takenAt: data.fileCreatedAt[i] || '',
+            },
+          ]
+        : [],
+    );
+  }
+  async downloadInfo(assetIds: string[], key?: string, cookie = '') {
+    return z
+      .object({
+        archives: z.array(
+          z.object({ assetIds: z.array(z.string()), size: z.number() }),
+        ),
+      })
+      .parse(
+        await (
+          await this.request(
+            `download/info${key ? `?key=${encodeURIComponent(key)}` : ''}`,
+            {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ assetIds }),
+            },
+            key ? (cookie ? { cookie } : {}) : undefined,
+          )
+        ).json(),
+      );
+  }
+  async downloadArchive(
+    assetIds: string[],
+    key?: string,
+    cookie = '',
+    signal?: AbortSignal,
+  ) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+    try {
+      const response = await fetch(
+        new URL(
+          `/api/download/archive${key ? `?key=${encodeURIComponent(key)}` : ''}`,
+          this.root,
+        ),
+        {
+          method: 'POST',
+          headers: {
+            ...(key ? (cookie ? { cookie } : {}) : this.credentials),
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ assetIds }),
+          redirect: 'error',
+          signal: signal
+            ? AbortSignal.any([signal, controller.signal])
+            : controller.signal,
+        },
+      );
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw new AppError(502, 'Archive unavailable');
+      }
+      return response;
+    } finally {
+      clearTimeout(timer);
+    }
   }
   async updateShare(
     id: string,

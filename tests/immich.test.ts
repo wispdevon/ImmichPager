@@ -34,6 +34,7 @@ it('normalizes v3 album ownership without treating a collaborator as owner', asy
     {
       id: 'owned',
       albumName: 'My work',
+      description: 'A few moments from the shoot.',
       createdAt: '2026-10-01T12:00:00.000Z',
       albumUsers: [{ user: { id: 'alice' }, role: 'owner' }],
     },
@@ -71,6 +72,12 @@ it('normalizes v3 album ownership without treating a collaborator as owner', asy
   expect(listed.find((a) => a.id === 'owned')?.createdAt).toBe(
     '2026-10-01T12:00:00.000Z',
   );
+  expect(listed.find((a) => a.id === 'owned')?.description).toBe(
+    'A few moments from the shoot.',
+  );
+  expect((await client.album('owned')).description).toBe(
+    'A few moments from the shoot.',
+  );
   expect((await client.album('owned')).ownerId).toBe('alice');
   expect((await client.album('owned')).createdAt).toBe(
     '2026-10-01T12:00:00.000Z',
@@ -97,4 +104,38 @@ it('sends the selected download permission on share creation and retained-share 
       allowUpload: false,
     });
   }
+});
+
+it('reconciles individual shares using Immich v3 assetId results and rejects partial failures', async () => {
+  let denied = false;
+  const fetcher = vi.fn(async (_url: string | URL, request?: RequestInit) => {
+    if (!request?.method || request.method === 'GET')
+      return Response.json({
+        id: 'share',
+        key: 'capability',
+        assets: [{ id: 'retained' }, { id: 'removed' }],
+      });
+    const body = JSON.parse(String(request.body));
+    return Response.json(
+      body.assetIds.map((assetId: string) => ({ assetId, success: !denied })),
+    );
+  });
+  vi.stubGlobal('fetch', fetcher);
+  const client = new Immich('http://immich:2283', { cookie: 'owner' });
+  await client.syncPhotoShare('share', ['retained', 'added']);
+  expect(
+    fetcher.mock.calls
+      .slice(1)
+      .map(([, request]) => [
+        request?.method,
+        JSON.parse(String(request?.body)).assetIds,
+      ]),
+  ).toEqual([
+    ['DELETE', ['removed']],
+    ['PUT', ['added']],
+  ]);
+  denied = true;
+  await expect(
+    client.syncPhotoShare('share', ['retained', 'added']),
+  ).rejects.toThrow('synchronize');
 });

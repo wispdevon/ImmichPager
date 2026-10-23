@@ -54,6 +54,10 @@ export async function gallery(
     clientUi,
     galleryStyle,
     order,
+    blocks,
+    bannerHeight,
+    allowDownload,
+    revision,
   } = page;
   const suffix = access.preview ? '?preview=1' : '';
   const result: GalleryPage = {
@@ -76,6 +80,10 @@ export async function gallery(
     clientUi,
     galleryStyle,
     order,
+    blocks,
+    bannerHeight,
+    allowDownload,
+    revision,
     logo: page.logo ? `/page/media/${id}/branding/logo${suffix}` : null,
     banner: page.banner ? `/page/media/${id}/branding/banner${suffix}` : null,
     albums: [],
@@ -102,6 +110,7 @@ export async function gallery(
             return {
               id: albumId,
               name: album.albumName,
+              description: album.description?.slice(0, 20000) ?? '',
               startDate: album.startDate ?? undefined,
               endDate: album.endDate ?? undefined,
               count: album.assetCount,

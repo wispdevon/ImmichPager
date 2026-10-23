@@ -330,10 +330,24 @@ These ideas are intentionally outside the planned queue. The ID records the topi
   - [ ] Decide and document useful metrics, privacy expectations, and data retention before scheduling.
 - **Dependencies:** Product decision.
 
-### DEC-05 — Replacement photo viewer
+### DEC-05 — Replacement photo viewer (approved as CMP-01)
 
 - **Priority:** Deferred · **Status:** Deferred
 - **Benefit:** Offer a different client photo-viewing experience if the native Immich viewer becomes insufficient.
 - **Acceptance:**
   - [ ] Decide and document required viewing and sharing features and their maintenance cost before scheduling.
 - **Dependencies:** Product decision.
+
+## Approved live-composer implementation — CMP-01
+
+**Status:** Implemented for review on `feature/live-composer`; not released or
+deployed. This replaces DEC-05's deferral following the approved composer plan.
+
+- [x] Ordered Albums, Photos, and rich Text blocks with legacy-page migration.
+- [x] Exact photo-block shares, durable retry, private drafts and explicit publication.
+- [x] One live canvas and Content/Design/Sharing inspector, replacing Preview mode.
+- [x] Direct header sizing/crop and inline text editing, responsive canvas widths.
+- [x] On-page album expansion and accessible photo viewer with slideshow/downloads.
+- [ ] Complete browser regression and review handoff.
+
+See [implementation checkpoints](tasks/live-composer.md).

@@ -1,3 +1,4 @@
+import { normalizeContent } from '../blocks';
 import { DatabaseSync } from 'node:sqlite';
 import { randomBytes } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
@@ -19,6 +20,9 @@ export type ShareRecord = {
   key: string;
   slug: string;
 };
+export type PhotoShareRecord = Omit<ShareRecord, 'albumId'> & {
+  blockId: string;
+};
 export type PageSession = { tokens: Record<string, string> };
 export class Store {
   db: DatabaseSync;
@@ -33,7 +37,7 @@ export class Store {
       (this.db.prepare('PRAGMA user_version').get() as { user_version: number })
         .user_version,
     );
-    if (version > 2) throw new Error('Database is newer than this application');
+    if (version > 3) throw new Error('Database is newer than this application');
     if (version < 1)
       this.db.exec(`
       BEGIN;
@@ -80,6 +84,27 @@ export class Store {
         throw cause;
       }
     }
+    if (version < 3) {
+      this.db.exec('BEGIN');
+      try {
+        for (const table of ['pages', 'drafts']) {
+          for (const row of this.db
+            .prepare(`SELECT id,document FROM ${table}`)
+            .all() as { id: string; document: string }[]) {
+            const page = normalizeContent(JSON.parse(row.document));
+            this.db
+              .prepare(`UPDATE ${table} SET document=? WHERE id=?`)
+              .run(JSON.stringify(page), row.id);
+          }
+        }
+        this.db.exec(
+          `CREATE TABLE IF NOT EXISTS photo_shares (page_id TEXT NOT NULL REFERENCES pages(id) ON DELETE CASCADE, block_id TEXT NOT NULL, share_id TEXT NOT NULL, key TEXT NOT NULL, slug TEXT NOT NULL, PRIMARY KEY(page_id,block_id)); PRAGMA user_version=3; COMMIT;`,
+        );
+      } catch (cause) {
+        this.db.exec('ROLLBACK');
+        throw cause;
+      }
+    }
     // An interrupted external operation remains private until its owner retries it.
     for (const row of this.db.prepare('SELECT document FROM pages').all() as {
       document: string;
@@ -98,7 +123,7 @@ export class Store {
     if (!row) throw new AppError(404, 'Page not found');
     return {
       allowDownload: true,
-      ...appearanceDefaults(JSON.parse(row.document)),
+      ...normalizeContent(appearanceDefaults(JSON.parse(row.document))),
     };
   }
   putDraft(page: DraftRecord) {
@@ -242,7 +267,10 @@ export class Store {
       .prepare('SELECT document FROM pages WHERE id=?')
       .get(id) as { document: string } | undefined;
     return row
-      ? { allowDownload: true, ...appearanceDefaults(JSON.parse(row.document)) }
+      ? {
+          allowDownload: true,
+          ...normalizeContent(appearanceDefaults(JSON.parse(row.document))),
+        }
       : null;
   }
   owned(id: string, ownerId: string) {
@@ -260,7 +288,7 @@ export class Store {
         .all(ownerId) as { document: string }[]
     ).map((r) => ({
       allowDownload: true,
-      ...appearanceDefaults(JSON.parse(r.document)),
+      ...normalizeContent(appearanceDefaults(JSON.parse(r.document))),
     }));
   }
   publicPage(slug: string): PageRecord | null {
@@ -304,6 +332,25 @@ export class Store {
     this.db
       .prepare('DELETE FROM shares WHERE page_id=? AND album_id=?')
       .run(pageId, albumId);
+  }
+  photoShares(pageId: string): PhotoShareRecord[] {
+    return this.db
+      .prepare(
+        'SELECT page_id AS pageId,block_id AS blockId,share_id AS shareId,key,slug FROM photo_shares WHERE page_id=?',
+      )
+      .all(pageId) as PhotoShareRecord[];
+  }
+  putPhotoShare(share: PhotoShareRecord) {
+    this.db
+      .prepare(
+        'INSERT INTO photo_shares VALUES (?,?,?,?,?) ON CONFLICT(page_id,block_id) DO UPDATE SET share_id=excluded.share_id,key=excluded.key,slug=excluded.slug',
+      )
+      .run(share.pageId, share.blockId, share.shareId, share.key, share.slug);
+  }
+  deletePhotoShare(pageId: string, blockId: string) {
+    this.db
+      .prepare('DELETE FROM photo_shares WHERE page_id=? AND block_id=?')
+      .run(pageId, blockId);
   }
   createSession(page: PageRecord, tokens: Record<string, string>) {
     const token = randomBytes(32).toString('base64url');

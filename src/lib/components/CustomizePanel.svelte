@@ -1,4 +1,10 @@
 <script lang="ts">
+  import {
+    customizationDefaults,
+    resetClientUiValue,
+  } from '$lib/customization';
+  import ResetField from './ResetField.svelte';
+  import { mdiRestore } from '@mdi/js';
   import { tick } from 'svelte';
   import { Button, Field, Select, Switch, Input, Textarea } from '@immich/ui';
   import {
@@ -32,14 +38,14 @@
     fields = $bindable(),
     saved,
     busy = false,
-    onPreview,
     onTitleInput,
+    onResetAll,
   }: {
     fields: PageInput;
     saved: DraftEditorPage | null;
     busy?: boolean;
-    onPreview: () => void;
     onTitleInput: (value: string) => void;
+    onResetAll: () => void;
   } = $props();
 
   let root: HTMLElement;
@@ -102,6 +108,7 @@
       bannerPosition: fields.bannerPosition,
       headerLayout: fields.headerLayout,
       headerSize: fields.headerSize,
+      bannerHeight: fields.bannerHeight,
       logoSize: fields.logoSize,
       titleSize: fields.titleSize,
       descriptionSize: fields.descriptionSize,
@@ -300,6 +307,13 @@
     <div>
       <h1 id="customize-heading">Customize</h1>
       <p>Changes save to this page’s private draft.</p>
+      <Button
+        variant="ghost"
+        size="small"
+        leadingIcon={mdiRestore}
+        disabled={busy}
+        onclick={onResetAll}>Reset all customization</Button
+      >
     </div>
   </div>
 
@@ -329,6 +343,29 @@
       aria-labelledby="customize-tab-design"
       tabindex="0"
     >
+      <ResetField
+        value={fields.bannerHeight}
+        defaultValue={customizationDefaults.bannerHeight}
+        label="Banner height"
+        disabled={busy}
+        onreset={() =>
+          (fields.bannerHeight = customizationDefaults.bannerHeight)}
+      >
+        <label class="canvas-height-control"
+          >Banner height {fields.bannerHeight
+            ? `${fields.bannerHeight}px`
+            : '(preset)'}<input
+            aria-label="Banner height"
+            type="range"
+            min="140"
+            max="900"
+            step="10"
+            value={fields.bannerHeight ?? 360}
+            oninput={(e) =>
+              (fields.bannerHeight = Number(e.currentTarget.value))}
+          /></label
+        >
+      </ResetField>
       <p class="hint">
         Click the title or description in the preview to edit your draft.
       </p>
@@ -368,51 +405,89 @@
       </section>
       <section>
         <h2>Logo</h2>
-        <Field label="Logo shape"
-          ><Select
-            bind:value={fields.galleryStyle.logoShape}
-            options={[
-              { value: 'square', label: 'Square' },
-              { value: 'rounded', label: 'Rounded' },
-              { value: 'circle', label: 'Circle' },
-            ]}
-          /></Field
+        <ResetField
+          value={fields.galleryStyle.logoShape}
+          defaultValue={customizationDefaults.galleryStyle.logoShape}
+          label="Logo shape"
+          disabled={busy}
+          onreset={() =>
+            (fields.galleryStyle.logoShape =
+              customizationDefaults.galleryStyle.logoShape)}
         >
-        <Field label="Logo position"
-          ><Select
-            bind:value={fields.galleryStyle.logoPosition}
-            options={[
-              { value: 'above', label: 'Above title' },
-              { value: 'left', label: 'Left of title' },
-            ]}
-          /></Field
+          <Field label="Logo shape"
+            ><Select
+              bind:value={fields.galleryStyle.logoShape}
+              options={[
+                { value: 'square', label: 'Square' },
+                { value: 'rounded', label: 'Rounded' },
+                { value: 'circle', label: 'Circle' },
+              ]}
+            /></Field
+          >
+        </ResetField>
+        <ResetField
+          value={fields.galleryStyle.logoPosition}
+          defaultValue={customizationDefaults.galleryStyle.logoPosition}
+          label="Logo position"
+          disabled={busy}
+          onreset={() =>
+            (fields.galleryStyle.logoPosition =
+              customizationDefaults.galleryStyle.logoPosition)}
         >
-        <label class="range-setting">
-          Logo size
-          <div class="range-control">
-            <input
-              type="range"
-              min="48"
-              max="160"
-              step="8"
-              aria-label="Logo size"
-              bind:value={fields.logoSize}
-            />
-            <output>{fields.logoSize}px</output>
-          </div>
-        </label>
+          <Field label="Logo position"
+            ><Select
+              bind:value={fields.galleryStyle.logoPosition}
+              options={[
+                { value: 'above', label: 'Above title' },
+                { value: 'left', label: 'Left of title' },
+              ]}
+            /></Field
+          >
+        </ResetField>
+        <ResetField
+          value={fields.logoSize}
+          defaultValue={customizationDefaults.logoSize}
+          label="Logo size"
+          disabled={busy}
+          onreset={() => (fields.logoSize = customizationDefaults.logoSize)}
+        >
+          <label class="range-setting">
+            Logo size
+            <div class="range-control">
+              <input
+                type="range"
+                min="48"
+                max="160"
+                step="8"
+                aria-label="Logo size"
+                bind:value={fields.logoSize}
+              />
+              <output>{fields.logoSize}px</output>
+            </div>
+          </label>
+        </ResetField>
       </section>
       <section>
         <h2>Font</h2>
-        <Field label="Font family"
-          ><Select
-            bind:value={fields.galleryStyle.fontFamily}
-            options={FONT_CATALOG.map((font) => ({
-              value: font.id,
-              label: font.name,
-            }))}
-          /></Field
+        <ResetField
+          value={fields.galleryStyle.fontFamily}
+          defaultValue={customizationDefaults.galleryStyle.fontFamily}
+          label="Font family"
+          disabled={busy}
+          onreset={() =>
+            (fields.galleryStyle.fontFamily =
+              customizationDefaults.galleryStyle.fontFamily)}
         >
+          <Field label="Font family"
+            ><Select
+              bind:value={fields.galleryStyle.fontFamily}
+              options={FONT_CATALOG.map((font) => ({
+                value: font.id,
+                label: font.name,
+              }))}
+            /></Field
+          >
+        </ResetField>
         <p class="hint">
           Fonts are bundled locally. System uses the fonts installed on each
           visitor’s device.
@@ -420,47 +495,81 @@
       </section>
       <section>
         <h2>Appearance</h2>
-        <Field label="Appearance">
-          <Select
-            bind:value={fields.theme}
-            options={[
-              { value: 'dark', label: 'Dark' },
-              { value: 'light', label: 'Light' },
-              { value: 'system', label: 'System' },
-            ]}
-          />
-        </Field>
+        <ResetField
+          value={fields.theme}
+          defaultValue={customizationDefaults.theme}
+          label="Appearance"
+          disabled={busy}
+          onreset={() => (fields.theme = customizationDefaults.theme)}
+        >
+          <Field label="Appearance">
+            <Select
+              bind:value={fields.theme}
+              options={[
+                { value: 'dark', label: 'Dark' },
+                { value: 'light', label: 'Light' },
+                { value: 'system', label: 'System' },
+              ]}
+            />
+          </Field>
+        </ResetField>
         <div class="color-row">
-          <label class="color-setting">
-            Background
-            <input
-              type="color"
-              aria-label="Background color"
-              value={fields.background ??
-                (fields.theme === 'light' ? '#ffffff' : '#000000')}
-              oninput={(event) =>
-                (fields.background = event.currentTarget.value)}
-            />
-          </label>
-          <label class="color-setting">
-            Text
-            <input
-              type="color"
-              aria-label="Text color"
-              value={fields.foreground ??
-                (fields.theme === 'light' ? '#191919' : '#e5e7eb')}
-              oninput={(event) =>
-                (fields.foreground = event.currentTarget.value)}
-            />
-          </label>
-          <label class="color-setting">
-            Accent
-            <input
-              type="color"
-              aria-label="Accent color"
-              bind:value={fields.accent}
-            />
-          </label>
+          <ResetField
+            value={fields.background}
+            defaultValue={customizationDefaults.background}
+            label="Background color"
+            disabled={busy}
+            onreset={() =>
+              (fields.background = customizationDefaults.background)}
+          >
+            <label class="color-setting">
+              Background
+              <input
+                type="color"
+                aria-label="Background color"
+                value={fields.background ??
+                  (fields.theme === 'light' ? '#ffffff' : '#000000')}
+                oninput={(event) =>
+                  (fields.background = event.currentTarget.value)}
+              />
+            </label>
+          </ResetField>
+          <ResetField
+            value={fields.foreground}
+            defaultValue={customizationDefaults.foreground}
+            label="Text color"
+            disabled={busy}
+            onreset={() =>
+              (fields.foreground = customizationDefaults.foreground)}
+          >
+            <label class="color-setting">
+              Text
+              <input
+                type="color"
+                aria-label="Text color"
+                value={fields.foreground ??
+                  (fields.theme === 'light' ? '#191919' : '#e5e7eb')}
+                oninput={(event) =>
+                  (fields.foreground = event.currentTarget.value)}
+              />
+            </label>
+          </ResetField>
+          <ResetField
+            value={fields.accent}
+            defaultValue={customizationDefaults.accent}
+            label="Accent color"
+            disabled={busy}
+            onreset={() => (fields.accent = customizationDefaults.accent)}
+          >
+            <label class="color-setting">
+              Accent
+              <input
+                type="color"
+                aria-label="Accent color"
+                bind:value={fields.accent}
+              />
+            </label>
+          </ResetField>
         </div>
         <Button
           variant="ghost"
@@ -479,79 +588,131 @@
         </p>
         <section>
           <h2>Header details</h2>
-          <Field label="Header alignment">
-            <Select
-              bind:value={fields.alignment}
-              options={[
-                { value: 'left', label: 'Left' },
-                { value: 'center', label: 'Centered' },
-              ]}
-            />
-          </Field>
-          <Field label="Header layout">
-            <Select
-              bind:value={fields.headerLayout}
-              options={[
-                { value: 'below', label: 'Below banner' },
-                { value: 'overlay', label: 'Over banner' },
-              ]}
-            />
-          </Field>
-          <Field label="Header size">
-            <Select
-              bind:value={fields.headerSize}
-              options={[
-                { value: 'compact', label: 'Compact' },
-                { value: 'standard', label: 'Standard' },
-                { value: 'tall', label: 'Tall' },
-              ]}
-            />
-          </Field>
+          <ResetField
+            value={fields.alignment}
+            defaultValue={customizationDefaults.alignment}
+            label="Header alignment"
+            disabled={busy}
+            onreset={() => (fields.alignment = customizationDefaults.alignment)}
+          >
+            <Field label="Header alignment">
+              <Select
+                bind:value={fields.alignment}
+                options={[
+                  { value: 'left', label: 'Left' },
+                  { value: 'center', label: 'Centered' },
+                ]}
+              />
+            </Field>
+          </ResetField>
+          <ResetField
+            value={fields.headerLayout}
+            defaultValue={customizationDefaults.headerLayout}
+            label="Header layout"
+            disabled={busy}
+            onreset={() =>
+              (fields.headerLayout = customizationDefaults.headerLayout)}
+          >
+            <Field label="Header layout">
+              <Select
+                bind:value={fields.headerLayout}
+                options={[
+                  { value: 'below', label: 'Below banner' },
+                  { value: 'overlay', label: 'Over banner' },
+                ]}
+              />
+            </Field>
+          </ResetField>
+          <ResetField
+            value={fields.headerSize}
+            defaultValue={customizationDefaults.headerSize}
+            label="Header size"
+            disabled={busy}
+            onreset={() =>
+              (fields.headerSize = customizationDefaults.headerSize)}
+          >
+            <Field label="Header size">
+              <Select
+                bind:value={fields.headerSize}
+                options={[
+                  { value: 'compact', label: 'Compact' },
+                  { value: 'standard', label: 'Standard' },
+                  { value: 'tall', label: 'Tall' },
+                ]}
+              />
+            </Field>
+          </ResetField>
           {#if !saved?.banner}
             <p class="hint">Banner height applies when you add a banner.</p>
           {/if}
-          <label class="range-setting">
-            Title size
-            <div class="range-control">
-              <input
-                type="range"
-                min="1.5"
-                max="4"
-                step="0.125"
-                aria-label="Title size"
-                bind:value={fields.titleSize}
-              />
-              <output>{fields.titleSize}rem</output>
-            </div>
-          </label>
-          <label class="range-setting">
-            Description size
-            <div class="range-control">
-              <input
-                type="range"
-                min="0.875"
-                max="1.5"
-                step="0.0625"
-                aria-label="Description size"
-                bind:value={fields.descriptionSize}
-              />
-              <output>{fields.descriptionSize}rem</output>
-            </div>
-          </label>
-          <label class="range-setting">
-            Header spacing
-            <div class="range-control">
-              <input
-                type="range"
-                min="1.5"
-                max="5"
-                step="0.25"
-                aria-label="Header spacing"
-                bind:value={fields.headerSpacing}
-              />
-              <output>{fields.headerSpacing}rem</output>
-            </div>
-          </label>
+          <ResetField
+            value={fields.titleSize}
+            defaultValue={customizationDefaults.titleSize}
+            label="Title size"
+            disabled={busy}
+            onreset={() => (fields.titleSize = customizationDefaults.titleSize)}
+          >
+            <label class="range-setting">
+              Title size
+              <div class="range-control">
+                <input
+                  type="range"
+                  min="1.5"
+                  max="4"
+                  step="0.125"
+                  aria-label="Title size"
+                  bind:value={fields.titleSize}
+                />
+                <output>{fields.titleSize}rem</output>
+              </div>
+            </label>
+          </ResetField>
+          <ResetField
+            value={fields.descriptionSize}
+            defaultValue={customizationDefaults.descriptionSize}
+            label="Description size"
+            disabled={busy}
+            onreset={() =>
+              (fields.descriptionSize = customizationDefaults.descriptionSize)}
+          >
+            <label class="range-setting">
+              Description size
+              <div class="range-control">
+                <input
+                  type="range"
+                  min="0.875"
+                  max="1.5"
+                  step="0.0625"
+                  aria-label="Description size"
+                  bind:value={fields.descriptionSize}
+                />
+                <output>{fields.descriptionSize}rem</output>
+              </div>
+            </label>
+          </ResetField>
+          <ResetField
+            value={fields.headerSpacing}
+            defaultValue={customizationDefaults.headerSpacing}
+            label="Header spacing"
+            disabled={busy}
+            onreset={() =>
+              (fields.headerSpacing = customizationDefaults.headerSpacing)}
+          >
+            <label class="range-setting">
+              Header spacing
+              <div class="range-control">
+                <input
+                  type="range"
+                  min="1.5"
+                  max="5"
+                  step="0.25"
+                  aria-label="Header spacing"
+                  bind:value={fields.headerSpacing}
+                />
+                <output>{fields.headerSpacing}rem</output>
+              </div>
+            </label>
+          </ResetField>
           {#if fields.headerLayout === 'overlay' && !saved?.banner}
             <p class="hint">
               Add a banner to place your logo, title, and description over it.
@@ -579,266 +740,410 @@
                 Drag the image to choose its crop. The slider supports keyboard
                 controls.
               </small>
-              <label for="banner-crop-position">Banner crop position</label>
-              <input
-                id="banner-crop-position"
-                type="range"
-                min="0"
-                max="100"
-                step="1"
-                aria-describedby="banner-crop-hint"
-                aria-valuetext={`${fields.bannerPosition}% from top`}
-                bind:value={fields.bannerPosition}
-              />
+              <ResetField
+                value={fields.bannerPosition}
+                defaultValue={customizationDefaults.bannerPosition}
+                label="Banner crop position"
+                disabled={busy}
+                onreset={() =>
+                  (fields.bannerPosition =
+                    customizationDefaults.bannerPosition)}
+              >
+                <div class="crop-position-control">
+                  <label for="banner-crop-position">Banner crop position</label>
+                  <input
+                    id="banner-crop-position"
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    aria-describedby="banner-crop-hint"
+                    aria-valuetext={`${fields.bannerPosition}% from top`}
+                    bind:value={fields.bannerPosition}
+                  />
+                </div></ResetField
+              >
             </div>
           {/if}
         </section>
 
         <section>
           <h2>Typography</h2>
-          <label class="range-setting">
-            Title weight
-            <div class="range-control">
-              <input
-                type="range"
-                min="400"
-                max="800"
-                step="50"
-                aria-label="Title weight"
-                value={fields.galleryStyle.titleFontWeight}
-                oninput={(event) =>
-                  changeGalleryStyle(
-                    'titleFontWeight',
-                    Number(event.currentTarget.value),
-                  )}
-              />
-              <output>{fields.galleryStyle.titleFontWeight}</output>
-            </div>
-          </label>
-          <label class="range-setting">
-            Body size
-            <div class="range-control">
-              <input
-                type="range"
-                min="0.75"
-                max="1.5"
-                step="0.0625"
-                aria-label="Body size"
-                value={fields.galleryStyle.bodyFontSize}
-                oninput={(event) =>
-                  changeGalleryStyle(
-                    'bodyFontSize',
-                    Number(event.currentTarget.value),
-                  )}
-              />
-              <output>{fields.galleryStyle.bodyFontSize}rem</output>
-            </div>
-          </label>
-          <label class="range-setting">
-            Body weight
-            <div class="range-control">
-              <input
-                type="range"
-                min="300"
-                max="700"
-                step="50"
-                aria-label="Body weight"
-                value={fields.galleryStyle.bodyFontWeight}
-                oninput={(event) =>
-                  changeGalleryStyle(
-                    'bodyFontWeight',
-                    Number(event.currentTarget.value),
-                  )}
-              />
-              <output>{fields.galleryStyle.bodyFontWeight}</output>
-            </div>
-          </label>
-          <label class="range-setting">
-            Album title size
-            <div class="range-control">
-              <input
-                type="range"
-                min="0.75"
-                max="2"
-                step="0.0625"
-                aria-label="Album title size"
-                value={fields.galleryStyle.cardTitleSize}
-                oninput={(event) =>
-                  changeGalleryStyle(
-                    'cardTitleSize',
-                    Number(event.currentTarget.value),
-                  )}
-              />
-              <output>{fields.galleryStyle.cardTitleSize}rem</output>
-            </div>
-          </label>
-          <label class="range-setting">
-            Album title weight
-            <div class="range-control">
-              <input
-                type="range"
-                min="400"
-                max="800"
-                step="50"
-                aria-label="Album title weight"
-                value={fields.galleryStyle.cardTitleWeight}
-                oninput={(event) =>
-                  changeGalleryStyle(
-                    'cardTitleWeight',
-                    Number(event.currentTarget.value),
-                  )}
-              />
-              <output>{fields.galleryStyle.cardTitleWeight}</output>
-            </div>
-          </label>
+          <ResetField
+            value={fields.galleryStyle.titleFontWeight}
+            defaultValue={customizationDefaults.galleryStyle.titleFontWeight}
+            label="Title weight"
+            disabled={busy}
+            onreset={() =>
+              (fields.galleryStyle.titleFontWeight =
+                customizationDefaults.galleryStyle.titleFontWeight)}
+          >
+            <label class="range-setting">
+              Title weight
+              <div class="range-control">
+                <input
+                  type="range"
+                  min="400"
+                  max="800"
+                  step="50"
+                  aria-label="Title weight"
+                  value={fields.galleryStyle.titleFontWeight}
+                  oninput={(event) =>
+                    changeGalleryStyle(
+                      'titleFontWeight',
+                      Number(event.currentTarget.value),
+                    )}
+                />
+                <output>{fields.galleryStyle.titleFontWeight}</output>
+              </div>
+            </label>
+          </ResetField>
+          <ResetField
+            value={fields.galleryStyle.bodyFontSize}
+            defaultValue={customizationDefaults.galleryStyle.bodyFontSize}
+            label="Body size"
+            disabled={busy}
+            onreset={() =>
+              (fields.galleryStyle.bodyFontSize =
+                customizationDefaults.galleryStyle.bodyFontSize)}
+          >
+            <label class="range-setting">
+              Body size
+              <div class="range-control">
+                <input
+                  type="range"
+                  min="0.75"
+                  max="1.5"
+                  step="0.0625"
+                  aria-label="Body size"
+                  value={fields.galleryStyle.bodyFontSize}
+                  oninput={(event) =>
+                    changeGalleryStyle(
+                      'bodyFontSize',
+                      Number(event.currentTarget.value),
+                    )}
+                />
+                <output>{fields.galleryStyle.bodyFontSize}rem</output>
+              </div>
+            </label>
+          </ResetField>
+          <ResetField
+            value={fields.galleryStyle.bodyFontWeight}
+            defaultValue={customizationDefaults.galleryStyle.bodyFontWeight}
+            label="Body weight"
+            disabled={busy}
+            onreset={() =>
+              (fields.galleryStyle.bodyFontWeight =
+                customizationDefaults.galleryStyle.bodyFontWeight)}
+          >
+            <label class="range-setting">
+              Body weight
+              <div class="range-control">
+                <input
+                  type="range"
+                  min="300"
+                  max="700"
+                  step="50"
+                  aria-label="Body weight"
+                  value={fields.galleryStyle.bodyFontWeight}
+                  oninput={(event) =>
+                    changeGalleryStyle(
+                      'bodyFontWeight',
+                      Number(event.currentTarget.value),
+                    )}
+                />
+                <output>{fields.galleryStyle.bodyFontWeight}</output>
+              </div>
+            </label>
+          </ResetField>
+          <ResetField
+            value={fields.galleryStyle.cardTitleSize}
+            defaultValue={customizationDefaults.galleryStyle.cardTitleSize}
+            label="Album title size"
+            disabled={busy}
+            onreset={() =>
+              (fields.galleryStyle.cardTitleSize =
+                customizationDefaults.galleryStyle.cardTitleSize)}
+          >
+            <label class="range-setting">
+              Album title size
+              <div class="range-control">
+                <input
+                  type="range"
+                  min="0.75"
+                  max="2"
+                  step="0.0625"
+                  aria-label="Album title size"
+                  value={fields.galleryStyle.cardTitleSize}
+                  oninput={(event) =>
+                    changeGalleryStyle(
+                      'cardTitleSize',
+                      Number(event.currentTarget.value),
+                    )}
+                />
+                <output>{fields.galleryStyle.cardTitleSize}rem</output>
+              </div>
+            </label>
+          </ResetField>
+          <ResetField
+            value={fields.galleryStyle.cardTitleWeight}
+            defaultValue={customizationDefaults.galleryStyle.cardTitleWeight}
+            label="Album title weight"
+            disabled={busy}
+            onreset={() =>
+              (fields.galleryStyle.cardTitleWeight =
+                customizationDefaults.galleryStyle.cardTitleWeight)}
+          >
+            <label class="range-setting">
+              Album title weight
+              <div class="range-control">
+                <input
+                  type="range"
+                  min="400"
+                  max="800"
+                  step="50"
+                  aria-label="Album title weight"
+                  value={fields.galleryStyle.cardTitleWeight}
+                  oninput={(event) =>
+                    changeGalleryStyle(
+                      'cardTitleWeight',
+                      Number(event.currentTarget.value),
+                    )}
+                />
+                <output>{fields.galleryStyle.cardTitleWeight}</output>
+              </div>
+            </label>
+          </ResetField>
         </section>
 
         <section>
           <h2>Layout</h2>
-          <label class="range-setting">
-            Content width
-            <div class="range-control">
-              <input
-                type="range"
-                min="640"
-                max="1920"
-                step="40"
-                aria-label="Content width"
-                value={fields.galleryStyle.contentWidth}
-                oninput={(event) =>
-                  changeGalleryStyle(
-                    'contentWidth',
-                    Number(event.currentTarget.value),
-                  )}
+          <ResetField
+            value={fields.galleryStyle.contentWidth}
+            defaultValue={customizationDefaults.galleryStyle.contentWidth}
+            label="Content width"
+            disabled={busy}
+            onreset={() =>
+              (fields.galleryStyle.contentWidth =
+                customizationDefaults.galleryStyle.contentWidth)}
+          >
+            <label class="range-setting">
+              Content width
+              <div class="range-control">
+                <input
+                  type="range"
+                  min="640"
+                  max="1920"
+                  step="40"
+                  aria-label="Content width"
+                  value={fields.galleryStyle.contentWidth}
+                  oninput={(event) =>
+                    changeGalleryStyle(
+                      'contentWidth',
+                      Number(event.currentTarget.value),
+                    )}
+                />
+                <output>{fields.galleryStyle.contentWidth}px</output>
+              </div>
+            </label>
+          </ResetField>
+          <ResetField
+            value={fields.galleryStyle.pagePadding}
+            defaultValue={customizationDefaults.galleryStyle.pagePadding}
+            label="Page padding"
+            disabled={busy}
+            onreset={() =>
+              (fields.galleryStyle.pagePadding =
+                customizationDefaults.galleryStyle.pagePadding)}
+          >
+            <label class="range-setting">
+              Page padding
+              <div class="range-control">
+                <input
+                  type="range"
+                  min="0"
+                  max="80"
+                  step="4"
+                  aria-label="Page padding"
+                  value={fields.galleryStyle.pagePadding}
+                  oninput={(event) =>
+                    changeGalleryStyle(
+                      'pagePadding',
+                      Number(event.currentTarget.value),
+                    )}
+                />
+                <output>{fields.galleryStyle.pagePadding}px</output>
+              </div>
+            </label>
+          </ResetField>
+          <ResetField
+            value={fields.galleryStyle.gridMinWidth}
+            defaultValue={customizationDefaults.galleryStyle.gridMinWidth}
+            label="Grid density"
+            disabled={busy}
+            onreset={() =>
+              (fields.galleryStyle.gridMinWidth =
+                customizationDefaults.galleryStyle.gridMinWidth)}
+          >
+            <label class="range-setting">
+              Grid density
+              <div class="range-control">
+                <input
+                  type="range"
+                  min="160"
+                  max="360"
+                  step="8"
+                  aria-label="Grid density"
+                  value={fields.galleryStyle.gridMinWidth}
+                  oninput={(event) =>
+                    changeGalleryStyle(
+                      'gridMinWidth',
+                      Number(event.currentTarget.value),
+                    )}
+                />
+                <output>{fields.galleryStyle.gridMinWidth}px minimum</output>
+              </div>
+            </label>
+          </ResetField>
+          <ResetField
+            value={fields.galleryStyle.gridRowGap}
+            defaultValue={customizationDefaults.galleryStyle.gridRowGap}
+            label="Row spacing"
+            disabled={busy}
+            onreset={() =>
+              (fields.galleryStyle.gridRowGap =
+                customizationDefaults.galleryStyle.gridRowGap)}
+          >
+            <label class="range-setting">
+              Row spacing
+              <div class="range-control">
+                <input
+                  type="range"
+                  min="0"
+                  max="80"
+                  step="4"
+                  aria-label="Row spacing"
+                  value={fields.galleryStyle.gridRowGap}
+                  oninput={(event) =>
+                    changeGalleryStyle(
+                      'gridRowGap',
+                      Number(event.currentTarget.value),
+                    )}
+                />
+                <output>{fields.galleryStyle.gridRowGap}px</output>
+              </div>
+            </label>
+          </ResetField>
+          <ResetField
+            value={fields.galleryStyle.gridColumnGap}
+            defaultValue={customizationDefaults.galleryStyle.gridColumnGap}
+            label="Column spacing"
+            disabled={busy}
+            onreset={() =>
+              (fields.galleryStyle.gridColumnGap =
+                customizationDefaults.galleryStyle.gridColumnGap)}
+          >
+            <label class="range-setting">
+              Column spacing
+              <div class="range-control">
+                <input
+                  type="range"
+                  min="0"
+                  max="80"
+                  step="4"
+                  aria-label="Column spacing"
+                  value={fields.galleryStyle.gridColumnGap}
+                  oninput={(event) =>
+                    changeGalleryStyle(
+                      'gridColumnGap',
+                      Number(event.currentTarget.value),
+                    )}
+                />
+                <output>{fields.galleryStyle.gridColumnGap}px</output>
+              </div>
+            </label>
+          </ResetField>
+          <ResetField
+            value={fields.galleryStyle.coverAspectRatio}
+            defaultValue={customizationDefaults.galleryStyle.coverAspectRatio}
+            label="Cover aspect ratio"
+            disabled={busy}
+            onreset={() =>
+              (fields.galleryStyle.coverAspectRatio =
+                customizationDefaults.galleryStyle.coverAspectRatio)}
+          >
+            <label class="range-setting">
+              Cover aspect ratio
+              <div class="range-control">
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2"
+                  step="0.05"
+                  aria-label="Cover aspect ratio"
+                  value={fields.galleryStyle.coverAspectRatio}
+                  oninput={(event) =>
+                    changeGalleryStyle(
+                      'coverAspectRatio',
+                      Number(event.currentTarget.value),
+                    )}
+                />
+                <output
+                  >{fields.galleryStyle.coverAspectRatio.toFixed(2)}</output
+                >
+              </div>
+            </label>
+          </ResetField>
+          <ResetField
+            value={fields.galleryStyle.cardRadius}
+            defaultValue={customizationDefaults.galleryStyle.cardRadius}
+            label="Corner radius"
+            disabled={busy}
+            onreset={() =>
+              (fields.galleryStyle.cardRadius =
+                customizationDefaults.galleryStyle.cardRadius)}
+          >
+            <label class="range-setting">
+              Corner radius
+              <div class="range-control">
+                <input
+                  type="range"
+                  min="0"
+                  max="40"
+                  step="2"
+                  aria-label="Corner radius"
+                  value={fields.galleryStyle.cardRadius}
+                  oninput={(event) =>
+                    changeGalleryStyle(
+                      'cardRadius',
+                      Number(event.currentTarget.value),
+                    )}
+                />
+                <output>{fields.galleryStyle.cardRadius}px</output>
+              </div>
+            </label>
+          </ResetField>
+          <ResetField
+            value={fields.galleryStyle.hoverTreatment}
+            defaultValue={customizationDefaults.galleryStyle.hoverTreatment}
+            label="Hover treatment"
+            disabled={busy}
+            onreset={() =>
+              (fields.galleryStyle.hoverTreatment =
+                customizationDefaults.galleryStyle.hoverTreatment)}
+          >
+            <Field label="Hover treatment">
+              <Select
+                bind:value={fields.galleryStyle.hoverTreatment}
+                options={[
+                  { value: 'surface', label: 'Surface' },
+                  { value: 'underline', label: 'Underline' },
+                  { value: 'lift', label: 'Lift' },
+                  { value: 'none', label: 'None' },
+                ]}
               />
-              <output>{fields.galleryStyle.contentWidth}px</output>
-            </div>
-          </label>
-          <label class="range-setting">
-            Page padding
-            <div class="range-control">
-              <input
-                type="range"
-                min="0"
-                max="80"
-                step="4"
-                aria-label="Page padding"
-                value={fields.galleryStyle.pagePadding}
-                oninput={(event) =>
-                  changeGalleryStyle(
-                    'pagePadding',
-                    Number(event.currentTarget.value),
-                  )}
-              />
-              <output>{fields.galleryStyle.pagePadding}px</output>
-            </div>
-          </label>
-          <label class="range-setting">
-            Grid density
-            <div class="range-control">
-              <input
-                type="range"
-                min="160"
-                max="360"
-                step="8"
-                aria-label="Grid density"
-                value={fields.galleryStyle.gridMinWidth}
-                oninput={(event) =>
-                  changeGalleryStyle(
-                    'gridMinWidth',
-                    Number(event.currentTarget.value),
-                  )}
-              />
-              <output>{fields.galleryStyle.gridMinWidth}px minimum</output>
-            </div>
-          </label>
-          <label class="range-setting">
-            Row spacing
-            <div class="range-control">
-              <input
-                type="range"
-                min="0"
-                max="80"
-                step="4"
-                aria-label="Row spacing"
-                value={fields.galleryStyle.gridRowGap}
-                oninput={(event) =>
-                  changeGalleryStyle(
-                    'gridRowGap',
-                    Number(event.currentTarget.value),
-                  )}
-              />
-              <output>{fields.galleryStyle.gridRowGap}px</output>
-            </div>
-          </label>
-          <label class="range-setting">
-            Column spacing
-            <div class="range-control">
-              <input
-                type="range"
-                min="0"
-                max="80"
-                step="4"
-                aria-label="Column spacing"
-                value={fields.galleryStyle.gridColumnGap}
-                oninput={(event) =>
-                  changeGalleryStyle(
-                    'gridColumnGap',
-                    Number(event.currentTarget.value),
-                  )}
-              />
-              <output>{fields.galleryStyle.gridColumnGap}px</output>
-            </div>
-          </label>
-          <label class="range-setting">
-            Cover aspect ratio
-            <div class="range-control">
-              <input
-                type="range"
-                min="0.5"
-                max="2"
-                step="0.05"
-                aria-label="Cover aspect ratio"
-                value={fields.galleryStyle.coverAspectRatio}
-                oninput={(event) =>
-                  changeGalleryStyle(
-                    'coverAspectRatio',
-                    Number(event.currentTarget.value),
-                  )}
-              />
-              <output>{fields.galleryStyle.coverAspectRatio.toFixed(2)}</output>
-            </div>
-          </label>
-          <label class="range-setting">
-            Corner radius
-            <div class="range-control">
-              <input
-                type="range"
-                min="0"
-                max="40"
-                step="2"
-                aria-label="Corner radius"
-                value={fields.galleryStyle.cardRadius}
-                oninput={(event) =>
-                  changeGalleryStyle(
-                    'cardRadius',
-                    Number(event.currentTarget.value),
-                  )}
-              />
-              <output>{fields.galleryStyle.cardRadius}px</output>
-            </div>
-          </label>
-          <Field label="Hover treatment">
-            <Select
-              bind:value={fields.galleryStyle.hoverTreatment}
-              options={[
-                { value: 'surface', label: 'Surface' },
-                { value: 'underline', label: 'Underline' },
-                { value: 'lift', label: 'Lift' },
-                { value: 'none', label: 'None' },
-              ]}
-            />
-          </Field>
+            </Field>
+          </ResetField>
         </section>
       </details>
     </div>
@@ -857,176 +1162,391 @@
 
       <fieldset class="toggle-group">
         <legend>Header</legend>
-        <div class="toggle-row">
-          <span>Banner</span><Switch
-            aria-label="Show banner"
-            checked={fields.clientUi.showBanner}
-            onCheckedChange={(value) => changeClientUi('showBanner', value)}
-          />
-        </div>
-        <div class="toggle-row">
-          <span>Logo</span><Switch
-            aria-label="Show logo"
-            checked={fields.clientUi.showLogo}
-            onCheckedChange={(value) => changeClientUi('showLogo', value)}
-          />
-        </div>
-        <div class="toggle-row">
-          <span>Title</span><Switch
-            aria-label="Show title"
-            checked={fields.clientUi.showTitle}
-            onCheckedChange={(value) => changeClientUi('showTitle', value)}
-          />
-        </div>
-        <div class="toggle-row">
-          <span>Description</span><Switch
-            aria-label="Show description"
-            checked={fields.clientUi.showDescription}
-            onCheckedChange={(value) =>
-              changeClientUi('showDescription', value)}
-          />
-        </div>
+        <ResetField
+          value={fields.clientUi.showBanner}
+          defaultValue={customizationDefaults.clientUi.showBanner}
+          label="Show banner"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showBanner',
+            ))}
+        >
+          <div class="toggle-row">
+            <span>Banner</span><Switch
+              aria-label="Show banner"
+              checked={fields.clientUi.showBanner}
+              onCheckedChange={(value) => changeClientUi('showBanner', value)}
+            />
+          </div>
+        </ResetField>
+        <ResetField
+          value={fields.clientUi.showLogo}
+          defaultValue={customizationDefaults.clientUi.showLogo}
+          label="Show logo"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(fields.clientUi, 'showLogo'))}
+        >
+          <div class="toggle-row">
+            <span>Logo</span><Switch
+              aria-label="Show logo"
+              checked={fields.clientUi.showLogo}
+              onCheckedChange={(value) => changeClientUi('showLogo', value)}
+            />
+          </div>
+        </ResetField>
+        <ResetField
+          value={fields.clientUi.showTitle}
+          defaultValue={customizationDefaults.clientUi.showTitle}
+          label="Show title"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showTitle',
+            ))}
+        >
+          <div class="toggle-row">
+            <span>Title</span><Switch
+              aria-label="Show title"
+              checked={fields.clientUi.showTitle}
+              onCheckedChange={(value) => changeClientUi('showTitle', value)}
+            />
+          </div>
+        </ResetField>
+        <ResetField
+          value={fields.clientUi.showDescription}
+          defaultValue={customizationDefaults.clientUi.showDescription}
+          label="Show description"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showDescription',
+            ))}
+        >
+          <div class="toggle-row">
+            <span>Description</span><Switch
+              aria-label="Show description"
+              checked={fields.clientUi.showDescription}
+              onCheckedChange={(value) =>
+                changeClientUi('showDescription', value)}
+            />
+          </div>
+        </ResetField>
       </fieldset>
 
       <fieldset class="toggle-group">
         <legend>Browsing</legend>
-        <div class="toggle-row">
-          <span>Browsing controls</span><Switch
-            aria-label="Show browsing controls"
-            checked={fields.clientUi.showBrowsingControls}
-            onCheckedChange={(value) =>
-              changeClientUi('showBrowsingControls', value)}
-          />
-        </div>
-        <div class="toggle-row nested">
-          <span>Album search</span><Switch
-            aria-label="Show album search"
-            disabled={!fields.clientUi.showBrowsingControls}
-            checked={fields.clientUi.showAlbumSearch}
-            onCheckedChange={(value) =>
-              changeClientUi('showAlbumSearch', value)}
-          />
-        </div>
-        <div class="toggle-row nested">
-          <span>Month filter</span><Switch
-            aria-label="Show month filter"
-            disabled={!fields.clientUi.showBrowsingControls}
-            checked={fields.clientUi.showMonthFilter}
-            onCheckedChange={(value) =>
-              changeClientUi('showMonthFilter', value)}
-          />
-        </div>
-        <div class="toggle-row nested">
-          <span>Year navigation</span><Switch
-            aria-label="Show year navigation"
-            disabled={!fields.clientUi.showBrowsingControls}
-            checked={fields.clientUi.showYearNavigation}
-            onCheckedChange={(value) =>
-              changeClientUi('showYearNavigation', value)}
-          />
-        </div>
-        <div class="toggle-row nested">
-          <span>Results count</span><Switch
-            aria-label="Show results count"
-            disabled={!fields.clientUi.showBrowsingControls}
-            checked={fields.clientUi.showResultsCount}
-            onCheckedChange={(value) =>
-              changeClientUi('showResultsCount', value)}
-          />
-        </div>
+        <ResetField
+          value={fields.clientUi.showBrowsingControls}
+          defaultValue={customizationDefaults.clientUi.showBrowsingControls}
+          label="Show browsing controls"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showBrowsingControls',
+            ))}
+        >
+          <div class="toggle-row">
+            <span>Browsing controls</span><Switch
+              aria-label="Show browsing controls"
+              checked={fields.clientUi.showBrowsingControls}
+              onCheckedChange={(value) =>
+                changeClientUi('showBrowsingControls', value)}
+            />
+          </div>
+        </ResetField>
+        <ResetField
+          value={fields.clientUi.showAlbumSearch}
+          defaultValue={customizationDefaults.clientUi.showAlbumSearch}
+          label="Show album search"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showAlbumSearch',
+            ))}
+        >
+          <div class="toggle-row nested">
+            <span>Album search</span><Switch
+              aria-label="Show album search"
+              disabled={!fields.clientUi.showBrowsingControls}
+              checked={fields.clientUi.showAlbumSearch}
+              onCheckedChange={(value) =>
+                changeClientUi('showAlbumSearch', value)}
+            />
+          </div>
+        </ResetField>
+        <ResetField
+          value={fields.clientUi.showMonthFilter}
+          defaultValue={customizationDefaults.clientUi.showMonthFilter}
+          label="Show month filter"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showMonthFilter',
+            ))}
+        >
+          <div class="toggle-row nested">
+            <span>Month filter</span><Switch
+              aria-label="Show month filter"
+              disabled={!fields.clientUi.showBrowsingControls}
+              checked={fields.clientUi.showMonthFilter}
+              onCheckedChange={(value) =>
+                changeClientUi('showMonthFilter', value)}
+            />
+          </div>
+        </ResetField>
+        <ResetField
+          value={fields.clientUi.showYearNavigation}
+          defaultValue={customizationDefaults.clientUi.showYearNavigation}
+          label="Show year navigation"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showYearNavigation',
+            ))}
+        >
+          <div class="toggle-row nested">
+            <span>Year navigation</span><Switch
+              aria-label="Show year navigation"
+              disabled={!fields.clientUi.showBrowsingControls}
+              checked={fields.clientUi.showYearNavigation}
+              onCheckedChange={(value) =>
+                changeClientUi('showYearNavigation', value)}
+            />
+          </div>
+        </ResetField>
+        <ResetField
+          value={fields.clientUi.showResultsCount}
+          defaultValue={customizationDefaults.clientUi.showResultsCount}
+          label="Show results count"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showResultsCount',
+            ))}
+        >
+          <div class="toggle-row nested">
+            <span>Results count</span><Switch
+              aria-label="Show results count"
+              disabled={!fields.clientUi.showBrowsingControls}
+              checked={fields.clientUi.showResultsCount}
+              onCheckedChange={(value) =>
+                changeClientUi('showResultsCount', value)}
+            />
+          </div>
+        </ResetField>
       </fieldset>
 
       <fieldset class="toggle-group">
         <legend>Albums</legend>
-        <div class="toggle-row">
-          <span>Album section</span><Switch
-            aria-label="Show albums"
-            disabled={!fields.clientUi.showAlbumCovers &&
-              !fields.clientUi.showAlbumTitles}
-            checked={fields.clientUi.showAlbums}
-            onCheckedChange={(value) => changeClientUi('showAlbums', value)}
-          />
-        </div>
-        <div class="toggle-row nested">
-          <span>Covers</span><Switch
-            aria-label="Show album covers"
-            disabled={fields.clientUi.showAlbums &&
-              !fields.clientUi.showAlbumTitles &&
-              fields.clientUi.showAlbumCovers}
-            checked={fields.clientUi.showAlbumCovers}
-            onCheckedChange={(value) =>
-              changeClientUi('showAlbumCovers', value)}
-          />
-        </div>
-        <div class="toggle-row nested">
-          <span>Names</span><Switch
-            aria-label="Show album names"
-            disabled={fields.clientUi.showAlbums &&
-              !fields.clientUi.showAlbumCovers &&
-              fields.clientUi.showAlbumTitles}
-            checked={fields.clientUi.showAlbumTitles}
-            onCheckedChange={(value) =>
-              changeClientUi('showAlbumTitles', value)}
-          />
-        </div>
+        <ResetField
+          value={fields.clientUi.showAlbums}
+          defaultValue={customizationDefaults.clientUi.showAlbums}
+          label="Show albums"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showAlbums',
+            ))}
+        >
+          <div class="toggle-row">
+            <span>Album section</span><Switch
+              aria-label="Show albums"
+              disabled={!fields.clientUi.showAlbumCovers &&
+                !fields.clientUi.showAlbumTitles}
+              checked={fields.clientUi.showAlbums}
+              onCheckedChange={(value) => changeClientUi('showAlbums', value)}
+            />
+          </div>
+        </ResetField>
+        <ResetField
+          value={fields.clientUi.showAlbumCovers}
+          defaultValue={customizationDefaults.clientUi.showAlbumCovers}
+          label="Show album covers"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showAlbumCovers',
+            ))}
+        >
+          <div class="toggle-row nested">
+            <span>Covers</span><Switch
+              aria-label="Show album covers"
+              disabled={fields.clientUi.showAlbums &&
+                !fields.clientUi.showAlbumTitles &&
+                fields.clientUi.showAlbumCovers}
+              checked={fields.clientUi.showAlbumCovers}
+              onCheckedChange={(value) =>
+                changeClientUi('showAlbumCovers', value)}
+            />
+          </div>
+        </ResetField>
+        <ResetField
+          value={fields.clientUi.showAlbumTitles}
+          defaultValue={customizationDefaults.clientUi.showAlbumTitles}
+          label="Show album names"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showAlbumTitles',
+            ))}
+        >
+          <div class="toggle-row nested">
+            <span>Names</span><Switch
+              aria-label="Show album names"
+              disabled={fields.clientUi.showAlbums &&
+                !fields.clientUi.showAlbumCovers &&
+                fields.clientUi.showAlbumTitles}
+              checked={fields.clientUi.showAlbumTitles}
+              onCheckedChange={(value) =>
+                changeClientUi('showAlbumTitles', value)}
+            />
+          </div>
+        </ResetField>
         <p class="hint">
           When the album section is visible, keep either covers or names visible
           so each album link has a clear label.
         </p>
-        <div class="toggle-row nested">
-          <span>Dates</span><Switch
-            aria-label="Show album dates"
-            disabled={!fields.clientUi.showAlbums}
-            checked={fields.clientUi.showAlbumDates}
-            onCheckedChange={(value) => changeClientUi('showAlbumDates', value)}
-          />
-        </div>
-        <div class="toggle-row nested">
-          <span>Item counts</span><Switch
-            aria-label="Show album item counts"
-            disabled={!fields.clientUi.showAlbums}
-            checked={fields.clientUi.showAlbumItemCounts}
-            onCheckedChange={(value) =>
-              changeClientUi('showAlbumItemCounts', value)}
-          />
-        </div>
-        <div class="toggle-row nested">
-          <span>Shared labels</span><Switch
-            aria-label="Show Shared labels"
-            disabled={!fields.clientUi.showAlbums}
-            checked={fields.clientUi.showSharedLabels}
-            onCheckedChange={(value) =>
-              changeClientUi('showSharedLabels', value)}
-          />
-        </div>
+        <ResetField
+          value={fields.clientUi.showAlbumDates}
+          defaultValue={customizationDefaults.clientUi.showAlbumDates}
+          label="Show album dates"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showAlbumDates',
+            ))}
+        >
+          <div class="toggle-row nested">
+            <span>Dates</span><Switch
+              aria-label="Show album dates"
+              disabled={!fields.clientUi.showAlbums}
+              checked={fields.clientUi.showAlbumDates}
+              onCheckedChange={(value) =>
+                changeClientUi('showAlbumDates', value)}
+            />
+          </div>
+        </ResetField>
+        <ResetField
+          value={fields.clientUi.showAlbumItemCounts}
+          defaultValue={customizationDefaults.clientUi.showAlbumItemCounts}
+          label="Show album item counts"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showAlbumItemCounts',
+            ))}
+        >
+          <div class="toggle-row nested">
+            <span>Item counts</span><Switch
+              aria-label="Show album item counts"
+              disabled={!fields.clientUi.showAlbums}
+              checked={fields.clientUi.showAlbumItemCounts}
+              onCheckedChange={(value) =>
+                changeClientUi('showAlbumItemCounts', value)}
+            />
+          </div>
+        </ResetField>
+        <ResetField
+          value={fields.clientUi.showSharedLabels}
+          defaultValue={customizationDefaults.clientUi.showSharedLabels}
+          label="Show Shared labels"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showSharedLabels',
+            ))}
+        >
+          <div class="toggle-row nested">
+            <span>Shared labels</span><Switch
+              aria-label="Show Shared labels"
+              disabled={!fields.clientUi.showAlbums}
+              checked={fields.clientUi.showSharedLabels}
+              onCheckedChange={(value) =>
+                changeClientUi('showSharedLabels', value)}
+            />
+          </div>
+        </ResetField>
       </fieldset>
 
       <fieldset class="toggle-group">
         <legend>Years</legend>
-        <div class="toggle-row">
-          <span>Year headings</span><Switch
-            aria-label="Show year headings"
-            checked={fields.clientUi.showYearHeadings}
-            onCheckedChange={(value) =>
-              changeClientUi('showYearHeadings', value)}
-          />
-        </div>
-        <div class="toggle-row nested">
-          <span>Year counts</span><Switch
-            aria-label="Show year counts"
-            checked={fields.clientUi.showYearCounts}
-            onCheckedChange={(value) => changeClientUi('showYearCounts', value)}
-          />
-        </div>
-        <div class="toggle-row nested">
-          <span>Allow collapsing years</span><Switch
-            aria-label="Allow year groups to collapse"
-            disabled={!fields.clientUi.showYearHeadings}
-            checked={fields.clientUi.allowYearCollapse}
-            onCheckedChange={(value) =>
-              changeClientUi('allowYearCollapse', value)}
-          />
-        </div>
+        <ResetField
+          value={fields.clientUi.showYearHeadings}
+          defaultValue={customizationDefaults.clientUi.showYearHeadings}
+          label="Show year headings"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showYearHeadings',
+            ))}
+        >
+          <div class="toggle-row">
+            <span>Year headings</span><Switch
+              aria-label="Show year headings"
+              checked={fields.clientUi.showYearHeadings}
+              onCheckedChange={(value) =>
+                changeClientUi('showYearHeadings', value)}
+            />
+          </div>
+        </ResetField>
+        <ResetField
+          value={fields.clientUi.showYearCounts}
+          defaultValue={customizationDefaults.clientUi.showYearCounts}
+          label="Show year counts"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showYearCounts',
+            ))}
+        >
+          <div class="toggle-row nested">
+            <span>Year counts</span><Switch
+              aria-label="Show year counts"
+              checked={fields.clientUi.showYearCounts}
+              onCheckedChange={(value) =>
+                changeClientUi('showYearCounts', value)}
+            />
+          </div>
+        </ResetField>
+        <ResetField
+          value={fields.clientUi.allowYearCollapse}
+          defaultValue={customizationDefaults.clientUi.allowYearCollapse}
+          label="Allow year groups to collapse"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'allowYearCollapse',
+            ))}
+        >
+          <div class="toggle-row nested">
+            <span>Allow collapsing years</span><Switch
+              aria-label="Allow year groups to collapse"
+              disabled={!fields.clientUi.showYearHeadings}
+              checked={fields.clientUi.allowYearCollapse}
+              onCheckedChange={(value) =>
+                changeClientUi('allowYearCollapse', value)}
+            />
+          </div>
+        </ResetField>
         <p class="hint">
           Hiding year headings preserves album order and year navigation.
           Turning off collapsing leaves every group expanded.
@@ -1035,13 +1555,25 @@
 
       <fieldset class="toggle-group">
         <legend>Footer</legend>
-        <div class="toggle-row">
-          <span>ImmichPager branding</span><Switch
-            aria-label="Show ImmichPager branding"
-            checked={fields.clientUi.showBranding}
-            onCheckedChange={(value) => changeClientUi('showBranding', value)}
-          />
-        </div>
+        <ResetField
+          value={fields.clientUi.showBranding}
+          defaultValue={customizationDefaults.clientUi.showBranding}
+          label="Show ImmichPager branding"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showBranding',
+            ))}
+        >
+          <div class="toggle-row">
+            <span>ImmichPager branding</span><Switch
+              aria-label="Show ImmichPager branding"
+              checked={fields.clientUi.showBranding}
+              onCheckedChange={(value) => changeClientUi('showBranding', value)}
+            />
+          </div>
+        </ResetField>
         <p class="hint">
           Source and license access remains available in the page footer.
         </p>
@@ -1239,11 +1771,15 @@
     <span class="hint"
       >{busy ? 'Working…' : 'Draft changes autosave privately'}</span
     >
-    <Button shape="round" onclick={onPreview}>Preview</Button>
   </div>
 </section>
 
 <style>
+  .canvas-height-control {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
   .customize-panel {
     display: grid;
     grid-template-rows: auto auto minmax(0, 1fr) auto;
@@ -1349,18 +1885,20 @@
 
   .color-row {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
   }
 
   .color-setting {
-    display: grid;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 6px;
     font-size: 12px;
   }
 
   .color-setting input {
-    inline-size: 100%;
+    inline-size: 48px;
     block-size: 38px;
     padding: 3px;
     border: 1px solid var(--pager-management-border);
@@ -1415,6 +1953,11 @@
     font-size: 12px;
     text-align: end;
     font-variant-numeric: tabular-nums;
+  }
+
+  .crop-position-control {
+    display: grid;
+    gap: 8px;
   }
 
   .banner-crop-control {

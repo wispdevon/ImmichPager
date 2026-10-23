@@ -59,7 +59,7 @@ test('appearance files round-trip between private drafts without copying page da
   const exported = JSON.parse(exportedText);
   expect(exported).toMatchObject({
     format: 'immichpager-appearance',
-    version: 2,
+    version: 3,
     appearance: {
       theme: 'light',
       background: '#f4f2ef',
@@ -162,6 +162,7 @@ test('appearance files round-trip between private drafts without copying page da
   ).toBe(404);
 
   const legacyAppearance = { ...exported.appearance };
+  delete legacyAppearance.bannerHeight;
   delete legacyAppearance.headerSize;
   delete legacyAppearance.logoSize;
   delete legacyAppearance.titleSize;

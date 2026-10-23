@@ -8,7 +8,7 @@ import {
 import { compileCustomCss } from './custom-css';
 
 export const APPEARANCE_FILE_FORMAT = 'immichpager-appearance';
-export const APPEARANCE_FILE_VERSION = 2;
+export const APPEARANCE_FILE_VERSION = 3;
 export const APPEARANCE_FILE_MAX_BYTES = 96 * 1024;
 
 const color = z.string().regex(/^#[0-9a-fA-F]{6}$/);
@@ -42,6 +42,7 @@ export const appearanceSettingsSchema = z
     alignment: z.enum(['left', 'center']),
     bannerPosition: z.number().int().min(0).max(100),
     headerLayout: z.enum(['below', 'overlay']),
+    bannerHeight: z.number().int().min(140).max(900).nullable().optional(),
     headerSize: z.enum(['compact', 'standard', 'tall']),
     logoSize: z.number().int().min(48).max(160),
     titleSize: z.number().min(1.5).max(4),
@@ -65,13 +66,20 @@ const appearanceFileV2Schema = z
   .object({
     format: z.literal(APPEARANCE_FILE_FORMAT),
     version: z.literal(2),
-    appearance: appearanceSettingsSchema,
+    appearance: appearanceSettingsSchema.omit({ bannerHeight: true }),
   })
   .strict();
 
 export const appearanceFileSchema = z.discriminatedUnion('version', [
   appearanceFileV1Schema,
   appearanceFileV2Schema,
+  z
+    .object({
+      format: z.literal(APPEARANCE_FILE_FORMAT),
+      version: z.literal(3),
+      appearance: appearanceSettingsSchema,
+    })
+    .strict(),
 ]);
 
 export type AppearanceSettings = z.infer<typeof appearanceSettingsSchema>;
@@ -119,11 +127,18 @@ export function parseAppearanceFile(
   const result = appearanceFileSchema.safeParse(input);
   if (!result.success)
     throw new Error(
-      'This is not a supported ImmichPager appearance file (version 1 or 2).',
+      'This is not a supported ImmichPager appearance file (version 1, 2 or 3).',
     );
 
   assertSafeCss(result.data.appearance.customCss);
-  if (result.data.version === 2) return result.data.appearance;
+  if (result.data.version === 3) return result.data.appearance;
+  if (result.data.version === 2)
+    return {
+      ...result.data.appearance,
+      ...(current?.bannerHeight !== undefined
+        ? { bannerHeight: current.bannerHeight }
+        : {}),
+    };
 
   // Version 1 predates client visibility and gallery style. Keep the current
   // draft values for those settings, then apply the fields that v1 can express.

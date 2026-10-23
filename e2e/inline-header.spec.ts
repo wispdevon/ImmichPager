@@ -12,28 +12,36 @@ test('edits the gallery header in place, autosaves privately, and publishes expl
   );
 
   await page
+    .frameLocator('[title="Live page canvas"]')
     .getByRole('button', { name: 'Edit title, Add a title', exact: true })
     .click();
-  const title = page.getByLabel('Title', { exact: true });
+  const title = page
+    .frameLocator('[title="Live page canvas"]')
+    .getByLabel('Title', { exact: true });
   await expect(title).toBeFocused();
   await title.fill('Jane Doe photography');
   await title.press('Tab');
   await expect(
-    page.getByRole('heading', { name: 'Jane Doe photography', exact: true }),
+    page
+      .frameLocator('[title="Live page canvas"]')
+      .getByRole('heading', { name: 'Jane Doe photography', exact: true }),
   ).toBeVisible();
 
   await page
+    .frameLocator('[title="Live page canvas"]')
     .getByRole('button', {
       name: 'Edit description, Add a description',
       exact: true,
     })
     .click();
-  const description = page.getByLabel('Description', { exact: true });
+  const description = page
+    .frameLocator('[title="Live page canvas"]')
+    .getByLabel('Description', { exact: true });
   await expect(description).toBeFocused();
   await description.fill('Portraits and stories, made together.');
   await description.press('Tab');
   await expect(
-    page.getByRole('button', {
+    page.frameLocator('[title="Live page canvas"]').getByRole('button', {
       name: 'Edit description, Portraits and stories, made together.',
     }),
   ).toBeVisible();
@@ -44,7 +52,7 @@ test('edits the gallery header in place, autosaves privately, and publishes expl
   ).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'Preview', exact: true }),
-  ).toBeVisible();
+  ).toHaveCount(0);
   await expect(
     page.getByRole('button', { name: 'Publish page', exact: true }),
   ).toBeVisible();
@@ -74,9 +82,7 @@ test('edits the gallery header in place, autosaves privately, and publishes expl
     publishedSlug: null,
   });
 
-  await page
-    .getByRole('button', { name: 'Select albums', exact: true })
-    .click();
+  await page.getByRole('button', { name: 'Add albums', exact: true }).click();
   await page
     .getByRole('checkbox', { name: 'Include Liberty Family Camp ’26' })
     .check();
@@ -88,7 +94,9 @@ test('edits the gallery header in place, autosaves privately, and publishes expl
   ).toBe(404);
 
   await confirmPublication(page, 'Publish page');
-  await expect(page.getByRole('status')).toContainText('Page published');
+  await expect(page.locator('.notice[role="status"]')).toContainText(
+    'Page published',
+  );
   const client = await visitor.newPage();
   await client.goto('/page/jane-doe-photography');
   await expect(

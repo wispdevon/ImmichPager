@@ -26,6 +26,7 @@ export const albums = [
 ].map(([albumName, startDate, endDate, assetCount, photo], i) => ({
   id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
   albumName,
+  description: `Highlights and behind-the-scenes moments from ${albumName}.`,
   createdAt: albumCreatedAt[i],
   startDate,
   endDate,
@@ -130,9 +131,14 @@ export function createFixture() {
       id: share.id,
       key: share.key,
       slug: share.slug,
-      type: 'ALBUM',
+      type: share.type ?? 'ALBUM',
       password: share.password ? 'protected' : null,
-      album: nativeAlbum(albums.find((a) => a.id === share.albumId)),
+      ...(share.albumId
+        ? { album: nativeAlbum(albums.find((a) => a.id === share.albumId)) }
+        : {}),
+      assets: (share.assetIds ?? [])
+        .map((id) => photos.find((p) => p.id === id))
+        .filter(Boolean),
       allowDownload: share.allowDownload ?? true,
       allowUpload: false,
     });
@@ -188,7 +194,22 @@ export function createFixture() {
       if (/^\/api\/assets\/[^/]+\/(thumbnail|original)$/.test(url.pathname)) {
         const photo = photos.find((p) => p.id === url.pathname.split('/')[3]);
         if (photo) {
-          if (photo.ownerId !== owner) return json({}, 404);
+          const share = byCapability();
+          if (
+            photo.ownerId !== owner &&
+            !(
+              authorized(share) &&
+              (share.albumId === photo.albumId ||
+                share.assetIds?.includes(photo.id))
+            )
+          )
+            return json({}, 404);
+          if (
+            url.pathname.endsWith('/original') &&
+            owner !== photo.ownerId &&
+            !share.allowDownload
+          )
+            return json({}, 403);
           const bytes = await readFile(
             new URL(`./photos/${photo.photo}.webp`, import.meta.url),
           );
@@ -196,6 +217,66 @@ export function createFixture() {
           res.end(bytes);
           return;
         }
+      }
+      if (url.pathname.startsWith('/api/timeline/')) {
+        const albumId = url.searchParams.get('albumId');
+        const album = albums.find((a) => a.id === albumId);
+        const share = byCapability();
+        if (
+          !album ||
+          !(
+            album.ownerId === owner ||
+            (authorized(share) && share.albumId === albumId)
+          )
+        )
+          return json({}, 401);
+        const list = photos.filter((p) => p.albumId === albumId);
+        if (url.pathname.endsWith('/buckets'))
+          return json([{ timeBucket: '2026-10-01', count: list.length }]);
+        return json({
+          id: list.map((p) => p.id),
+          isImage: list.map(() => true),
+          isTrashed: list.map(() => false),
+          ratio: list.map((_, i) => (i % 3 === 0 ? 0.75 : 1.5)),
+          fileCreatedAt: list.map((p) => p.fileCreatedAt),
+          visibility: list.map((p) => p.visibility),
+        });
+      }
+      if (url.pathname.startsWith('/api/download/')) {
+        const share = byCapability();
+        if (!owner && !(authorized(share) && share.allowDownload))
+          return json({}, 403);
+        const { assetIds } = await parse();
+        const list = assetIds.map((id) => photos.find((p) => p.id === id));
+        if (
+          list.some(
+            (p) =>
+              !p ||
+              !(
+                p.ownerId === owner ||
+                (authorized(share) &&
+                  (share.albumId === p.albumId ||
+                    share.assetIds?.includes(p.id)))
+              ),
+          )
+        )
+          return json({}, 403);
+        if (url.pathname.endsWith('/info'))
+          return json({
+            archives: [{ assetIds, size: list.length * 1024 }],
+            totalSize: list.length * 1024,
+          });
+        const files = await Promise.all(
+          list.map(async (p, i) => ({
+            name: `${i + 1}-${p.originalFileName}`,
+            data: await readFile(
+              new URL(`./photos/${p.photo}.webp`, import.meta.url),
+            ),
+          })),
+        );
+        res.writeHead(200, { 'content-type': 'application/zip' });
+        res.end(storedZip(files));
+        return;
       }
       if (url.pathname === '/api/albums')
         return owner
@@ -233,7 +314,14 @@ export function createFixture() {
               .map(publicShare),
           );
         const body = await parse();
-        if (!albums.some((a) => a.id === body.albumId && a.ownerId === owner))
+        if (
+          body.type === 'INDIVIDUAL'
+            ? !body.assetIds?.length ||
+              body.assetIds.some(
+                (id) => !photos.some((p) => p.id === id && p.ownerId === owner),
+              )
+            : !albums.some((a) => a.id === body.albumId && a.ownerId === owner)
+        )
           return json({}, 403);
         if ([...shares.values()].some((s) => s.slug === body.slug))
           return json({}, 400);
@@ -243,9 +331,24 @@ export function createFixture() {
         return json(publicShare(share), 201);
       }
       if (url.pathname.startsWith('/api/shared-links/')) {
-        const id = url.pathname.split('/').pop(),
+        const id = url.pathname.split('/')[3],
           share = shares.get(id);
         if (!owner || share?.ownerId !== owner) return json({}, 404);
+        if (url.pathname.endsWith('/assets')) {
+          const { assetIds } = await parse();
+          if (
+            assetIds.some(
+              (id) => !photos.some((p) => p.id === id && p.ownerId === owner),
+            )
+          )
+            return json({}, 403);
+          share.assetIds =
+            req.method === 'DELETE'
+              ? share.assetIds.filter((id) => !assetIds.includes(id))
+              : [...new Set([...share.assetIds, ...assetIds])];
+          return json(assetIds.map((assetId) => ({ assetId, success: true })));
+        }
+        if (req.method === 'GET') return json(publicShare(share));
         if (req.method === 'DELETE') {
           shares.delete(id);
           res.writeHead(204);
@@ -370,4 +473,48 @@ export function createFixture() {
       json({ message: 'Fixture request failed' }, 500);
     }
   });
+}
+
+function storedZip(files) {
+  const local = [],
+    central = [];
+  let offset = 0;
+  for (const file of files) {
+    const name = Buffer.from(file.name);
+    const data = file.data;
+    let crc = 0xffffffff;
+    for (const byte of data) {
+      crc ^= byte;
+      for (let i = 0; i < 8; i++)
+        crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+    crc = (crc ^ 0xffffffff) >>> 0;
+    const head = Buffer.alloc(30);
+    head.writeUInt32LE(0x04034b50);
+    head.writeUInt16LE(20, 4);
+    head.writeUInt32LE(crc, 14);
+    head.writeUInt32LE(data.length, 18);
+    head.writeUInt32LE(data.length, 22);
+    head.writeUInt16LE(name.length, 26);
+    local.push(head, name, data);
+    const entry = Buffer.alloc(46);
+    entry.writeUInt32LE(0x02014b50);
+    entry.writeUInt16LE(20, 4);
+    entry.writeUInt16LE(20, 6);
+    entry.writeUInt32LE(crc, 16);
+    entry.writeUInt32LE(data.length, 20);
+    entry.writeUInt32LE(data.length, 24);
+    entry.writeUInt16LE(name.length, 28);
+    entry.writeUInt32LE(offset, 42);
+    central.push(entry, name);
+    offset += head.length + name.length + data.length;
+  }
+  const directory = Buffer.concat(central),
+    end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50);
+  end.writeUInt16LE(files.length, 8);
+  end.writeUInt16LE(files.length, 10);
+  end.writeUInt32LE(directory.length, 12);
+  end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...local, directory, end]);
 }

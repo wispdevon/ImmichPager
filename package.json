@@ -1,6 +1,6 @@
 {
   "name": "immichpager",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "Persistent, customizable client album pages for Immich. Self-hosted with Docker.",
   "private": true,
   "type": "module",
@@ -44,11 +44,14 @@
     "@mdi/js": "7.4.47",
     "@sveltejs/adapter-node": "5.5.7",
     "@sveltejs/kit": "2.70.2",
+    "@tiptap/core": "3.32.0",
+    "@tiptap/pm": "3.32.0",
+    "@tiptap/starter-kit": "3.32.0",
     "css-tree": "^3.2.1",
     "qrcode": "1.5.4",
     "sharp": "0.35.5",
     "svelte": "5.56.9",
-    "zod": "4.1.12"
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@eslint/js": "9.39.1",

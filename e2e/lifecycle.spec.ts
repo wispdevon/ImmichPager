@@ -38,7 +38,14 @@ test('monthly additions keep the URL, password rotation invalidates sessions, an
   await client.getByPlaceholder('Password', { exact: true }).fill('old-pin');
   await client.getByRole('button', { name: 'View albums' }).click();
   await expect(client.locator('.album')).toHaveCount(1);
-  const native = await client.locator('.album').first().getAttribute('href');
+  const shares = await (await page.request.get('/api/shared-links')).json();
+  const native =
+    '/s/' +
+    shares.find(
+      (s: { slug: string; album?: { id: string } }) =>
+        s.album?.id === albums[0].id &&
+        s.slug?.startsWith(`pager-${record.id}-`),
+    ).slug;
   const updated = await page.request.put(`/page/api/pages/${record.id}`, {
     headers,
     data: {

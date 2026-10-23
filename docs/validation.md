@@ -98,3 +98,127 @@ iframe's initial focus. The test now asserts iframe focus readiness before its
 next keyboard action; the separate deliberately delayed-load test still verifies
 that host interaction prevents late iframe focus. No assertion or test was
 removed.
+
+## Live composer — development review
+
+The live composer is verified against the isolated Immich fixture, using attributed
+NASA images. It has not been deployed to a live library. Browser coverage exercises
+mixed/repeated blocks, all album/photo layouts, row duplication/removal/keyboard
+ordering, rich-text formatting and caret retention, direct banner/crop/logo controls,
+phone focus containment, explicit publication, password-protected source membership,
+viewer Back/Escape/navigation/slideshow, exact ZIP contents, and unpublish revocation.
+
+The media integration was checked against Immich v3.3.3's
+[shared-link controller](https://github.com/immich-app/immich/blob/v3.3.3/server/src/controllers/shared-link.controller.ts),
+[asset update results](https://github.com/immich-app/immich/blob/v3.3.3/server/src/dtos/asset-ids.response.dto.ts),
+[timeline DTOs](https://github.com/immich-app/immich/blob/v3.3.3/server/src/dtos/time-bucket.dto.ts),
+and [download DTOs](https://github.com/immich-app/immich/blob/v3.3.3/server/src/dtos/download.dto.ts).
+The fixture and HTTP-client regression use `assetId` results for individual-share
+updates. Schema 3 migration preserves the original album shares and sessions.
+
+Visual review captures: [desktop composer](screenshots/live-composer-desktop.png),
+[phone canvas](screenshots/live-composer-phone.png), and
+[on-page viewer](screenshots/live-composer-viewer.png). The browser integration
+was unavailable in this session; Playwright/Chromium provided runtime and visual
+verification against the fixture instead.
+
+Final verification: Node 22.23.3 / pnpm 11.28.5 passed 213 domain/integration
+tests and all 72 production Chromium scenarios with no skips or retries. Type
+checks reported zero errors/warnings; lint, formatting, and the production build
+passed. Production dependency audit reported no known advisories.
+
+## Composer layout and reorder corrections
+
+Regression tests reproduce narrow inspector controls extending beyond the sidebar,
+block labels covering their headings, missing album descriptions, symbol-based
+icons, and autosaves occurring during a drag. The corrected editor fits controls
+and focus rings inside the inspector, separates labels from headings, uses compact
+editorial covers and the upstream album description, and uses Material SVG icons.
+
+Album dragging stages an insertion marker without moving DOM rows or saving until
+drop. Tests cover distant and grouped selections, edge scrolling, Escape/outside
+cancellation, touch, keyboard alternatives, and reload/publication. An explicit
+canvas-ready exchange prevents initial selection from being lost during hydration.
+The publication scenario now waits for actual completion; the earlier CI artifact
+showed navigation to a still-unpublished URL after only waiting for autosave status.
+
+Visual review: [desktop](screenshots/composer-polish-desktop.png),
+[phone](screenshots/composer-polish-phone.png), and
+[viewer controls](screenshots/composer-polish-viewer.png). These are NASA fixture
+images. Album descriptions follow the reviewed
+[Immich v3.3.3 album DTO](https://github.com/immich-app/immich/blob/v3.3.3/server/src/dtos/album.dto.ts).
+
+The corrected checkout passed all 216 domain/integration tests and 78 production
+Chromium scenarios with no skips or retries, plus type checks, lint, formatting,
+and the production build using the pinned Node/pnpm toolchain.
+
+CI subsequently reported [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5)
+for the old Zod pin. Zod is now pinned to patched version 4.6.6 with its lockfile
+integrity. Shared input fields are defined before publication-only refinements so
+private drafts can derive their schema without dropping or copying cross-field
+checks. Type checks, all 216 domain tests, lint, build, and the dependency audit
+pass with the patched version; the audit reports no known vulnerabilities.
+
+## Composer settings and default restoration
+
+The inspector uses Content and Design; Page settings opens the sharing dialog
+beside Publish. Browser regressions cover dialog focus return and phone focus
+containment, visible album-style radio cards, individual setting resets, and a
+full presentation reset that preserves content, selected albums, and publication.
+Album rows expose one actions menu and an explicit selection mode; the existing
+single/group drag, scrolling, cancellation, touch, and keyboard checks remain in place.
+
+Reset defaults come from the page and block schemas. Domain tests check content,
+media, passwords, and download permissions remain intact, reset values do not
+mutate another page, and restoring album visibility retains a usable link.
+Visual review used the running fixture demo at port 3360 with desktop and phone
+viewports. The in-app browser runtime reported `Browser is not available: iab`;
+the established Playwright fallback provided runtime and screenshot verification.
+
+Settings review captures: [desktop style cards](screenshots/composer-settings-desktop.png),
+[phone album rows](screenshots/composer-settings-phone.png),
+[default resets](screenshots/composer-settings-reset-phone.png), and
+[phone sharing dialog](screenshots/composer-settings-dialog-phone.png).
+Captures use the attributed NASA fixtures. Menu contrast is checked against its
+actual surface in both host themes, and reset controls restore focus to the setting.
+
+Final settings verification passed 219 domain/integration tests and all 81
+production Chromium scenarios with no skips or retries, plus type checks, lint,
+formatting, and the production build on Node 22.23.3 / pnpm 11.28.5.
+
+## Album covers in the ordering list
+
+Each selected album has an 80px cover in its drag handle, loaded through the
+existing owner-checked cover route. The image geometry stays reserved while
+loading; selection checkboxes overlay the cover without reducing the name width.
+Missing or failed covers use an icon placeholder. A listener on the image wrapper
+also detects failures before hydration without generating inline image handlers.
+Browser regressions check matching loaded covers on desktop and phone, selection
+geometry, failure fallbacks, CSP, and the existing drag/scroll/keyboard flows.
+
+Local verification passed all 219 domain/integration tests, 12 focused production
+Chromium scenarios, type checks, lint, formatting, and the production build.
+[Desktop](screenshots/composer-album-covers-desktop.png) and
+[phone selection](screenshots/composer-album-covers-phone.png) captures use NASA
+fixtures. Inspection confirmed all nine cover images emit no inline handlers.
+The Vite demo retains its existing iframe-load bootstrap CSP warning; production
+cover-failure and host-theme CSP checks pass. Temporary visual-review drafts were
+removed after capture.
+
+## v0.4.0 release preparation
+
+The release version is 0.4.0, with upgrade and rollback instructions for the
+schema-3 migration. Local validation passed 219 domain/integration tests and all
+five version/About browser scenarios, plus type checks, lint, formatting, audit at
+the moderate threshold, and the production build. Version browser fixtures derive
+the installed and next patch versions from the package metadata.
+
+The audit reports two low SvelteKit advisories, with no moderate/high/critical
+findings. The [enhanced-form redirect advisory](https://github.com/sveltejs/kit/security/advisories/GHSA-pfhg-q3qv-9q6r)
+requires an enhanced route accepting leading double-slash paths; Pager's enhanced
+password form uses the single-segment `/page/[slug]` route, with no catch-all form
+route. The [prerendered-header advisory](https://github.com/sveltejs/kit/security/advisories/GHSA-27mw-82g8-phjj)
+requires prerendering with an untrusted cache-control value; Pager does not
+prerender and sets a fixed private/no-store policy. Source inspection found no
+matching affected paths. The dependency remains flagged; the upstream fix
+requires a separately reviewed SvelteKit 3 migration.

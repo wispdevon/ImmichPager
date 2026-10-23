@@ -117,7 +117,9 @@ test('failed saves keep edits visible and can be retried', async ({ page }) => {
   const changedWeight = Number(await titleWeight.inputValue()) + 50;
   await titleWeight.focus();
   await page.keyboard.press('ArrowRight');
-  await expect(page.getByTestId('save-state')).toHaveText('Couldn’t save');
+  await expect(page.getByTestId('save-state')).toHaveText(
+    'Couldn’t save draft',
+  );
   await expect(page.getByRole('alert')).toContainText(
     'Draft save is temporarily unavailable',
   );
@@ -135,7 +137,7 @@ test('failed saves keep edits visible and can be retried', async ({ page }) => {
   await closeCustomize(page);
 });
 
-test('phone customization previews and restores focus, and CSS loads only on its tab', async ({
+test('phone inspector keeps the live canvas and CSS editing reachable with focus restoration', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -145,64 +147,26 @@ test('phone customization previews and restores focus, and CSS loads only on its
   const panel = dialog.locator('.customize-panel');
   const frame = dialog.getByTestId('responsive-preview-frame');
   await expect(panel).toBeVisible();
-  await expect(
-    dialog.locator('.customize-dialog > div > div:first-child'),
-  ).toBeHidden();
-  await expect(dialog.locator('.customize-preview')).toBeHidden();
   await expect(dialog.locator('.cm-editor')).toHaveCount(0);
-  await dialog.getByRole('button', { name: /Back to editor/ }).focus();
-  await page.keyboard.press('Shift+Tab');
-  expect(
-    await dialog.evaluate((element) =>
-      element.contains(document.activeElement),
-    ),
-  ).toBe(true);
-  await page.keyboard.press('Tab');
   await expect(
-    dialog.getByRole('button', { name: /Back to editor/ }),
-  ).toBeFocused();
-
-  await dialog.getByRole('button', { name: 'Preview', exact: true }).click();
-  await expect(panel).toBeHidden();
-  await expect(frame).toBeVisible();
-  await expect(frame).toBeFocused();
-  await expect(
-    dialog.getByRole('button', { name: 'Settings', exact: false }),
+    page.getByRole('dialog', { name: 'Page inspector' }),
   ).toBeVisible();
-  await page.keyboard.press('Shift+Tab');
-  expect(
-    await dialog.evaluate((element) =>
-      element.contains(document.activeElement),
-    ),
-  ).toBe(true);
-  await page.keyboard.press('Tab');
-  expect(
-    await dialog.evaluate((element) =>
-      element.contains(document.activeElement),
-    ),
-  ).toBe(true);
-  await dialog.getByRole('button', { name: /Settings/ }).click();
-  await expect(panel).toBeVisible();
-  await expect(
-    dialog.getByRole('tab', { name: 'Design', exact: true }),
-  ).toBeFocused();
-
+  await dialog.getByRole('button', { name: 'Close settings' }).click();
+  await expect(frame).toBeVisible();
+  await openCustomize(page);
   await dialog.getByRole('tab', { name: 'CSS', exact: true }).click();
   await page.setViewportSize({ width: 390, height: 600 });
   const editor = dialog.getByLabel('Custom CSS', { exact: true });
   await expect(dialog.locator('.cm-editor')).toBeVisible();
   const panelFooter = dialog.locator('.panel-footer');
-  const previewButton = dialog.getByRole('button', {
-    name: 'Preview',
-    exact: true,
-  });
-  await expect(panelFooter).toBeInViewport();
-  await expect(previewButton).toBeInViewport();
+  const closeButton = dialog.getByRole('button', { name: 'Close settings' });
+  await expect(closeButton).toBeInViewport();
+  await expect(closeButton).toBeInViewport();
   await dialog.locator('.css-panel').evaluate((element) => {
     element.scrollTop = element.scrollHeight;
   });
-  await expect(panelFooter).toBeInViewport();
-  await expect(previewButton).toBeInViewport();
+  await expect(closeButton).toBeInViewport();
+  await expect(closeButton).toBeInViewport();
   expect(
     await panelFooter.evaluate((element) =>
       Math.round(element.getBoundingClientRect().bottom),
@@ -233,11 +197,12 @@ test('phone customization previews and restores focus, and CSS loads only on its
   await expect(dialog.getByLabel('Text color')).toHaveValue('#e5e7eb');
   await expect(dialog.getByLabel('Accent color')).toHaveValue('#accbfa');
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
+
   await page.keyboard.press('Escape');
-  await expect(dialog).toHaveCount(0);
   await expect(
-    page.getByRole('button', { name: 'Customize', exact: true }),
-  ).toBeFocused();
+    page.getByRole('dialog', { name: 'Page inspector' }),
+  ).toHaveCount(0);
+  await expect(page.locator('.mobile-settings')).toBeFocused();
 });
 
 test('element controls let hidden album sections be configured while enforcing a visible album label', async ({

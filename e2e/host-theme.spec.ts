@@ -1,3 +1,4 @@
+import { openHeader } from './composer-helper';
 import {
   expect,
   test,
@@ -75,33 +76,6 @@ async function contrastAgainst(element: Locator, backgroundColor?: string) {
     const darker = Math.min(foreground, background);
     return (lighter + 0.05) / (darker + 0.05);
   }, backgroundColor);
-}
-
-async function photoOverlayContrast(button: Locator) {
-  return button.evaluate((element) => {
-    const style = getComputedStyle(element);
-    const channels = style.backgroundColor.match(/[\d.]+/g)?.map(Number);
-    if (!channels || channels.length < 3)
-      throw new Error(`Unexpected overlay: ${style.backgroundColor}`);
-    const alpha = channels[3] ?? 1;
-    const composite = channels
-      .slice(0, 3)
-      .map((channel) => channel * alpha + 255 * (1 - alpha));
-    const linear = composite.map((channel) => {
-      const value = channel / 255;
-      return value <= 0.04045
-        ? value / 12.92
-        : ((value + 0.055) / 1.055) ** 2.4;
-    });
-    const background =
-      0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
-    const foreground = getComputedStyle(element).color;
-    return {
-      foreground,
-      background: style.backgroundColor,
-      contrast: 1.05 / (background + 0.05),
-    };
-  });
 }
 
 test('management iframe follows Immich themes while page themes stay independent', async ({
@@ -205,32 +179,29 @@ test('management iframe follows Immich themes while page themes stay independent
   await setPageTheme(management, 'light');
   await setHostTheme(page, 'dark');
   await expect(managementRoot).toHaveAttribute('data-pager-host-theme', 'dark');
-  const pageHeaderEdit = management.getByRole('button', {
-    name: 'Edit title, Host theme parity QA',
+  const albumActions = management.getByRole('button', {
+    name: 'Actions for Liberty Family Camp ’26',
     exact: true,
   });
-  const removeAlbum = management.getByRole('button', {
-    name: 'Remove Liberty Family Camp ’26',
+  await albumActions.click();
+  const removeAlbum = management.getByRole('menuitem', {
+    name: 'Remove album',
     exact: true,
   });
-  const darkPhotoOverlay = await photoOverlayContrast(removeAlbum);
-  expect(darkPhotoOverlay.foreground).toBe('rgb(255, 255, 255)');
-  expect(darkPhotoOverlay.contrast).toBeGreaterThanOrEqual(4.5);
+  await expect(removeAlbum).toBeVisible();
+  const menuBackground = () =>
+    removeAlbum.evaluate(
+      (node) => getComputedStyle(node.closest('[role=menu]')!).backgroundColor,
+    );
+  expect(
+    await contrastAgainst(removeAlbum, await menuBackground()),
+  ).toBeGreaterThanOrEqual(4.5);
   await setHostTheme(page, 'light');
-  const lightPhotoOverlay = await photoOverlayContrast(removeAlbum);
-  expect(lightPhotoOverlay.foreground).toBe('rgb(255, 255, 255)');
-  expect(lightPhotoOverlay.contrast).toBeGreaterThanOrEqual(4.5);
-  await setHostTheme(page, 'dark');
-  await pageHeaderEdit.focus();
-  const pageThemeFocus = await pageHeaderEdit.evaluate((element) => ({
-    color: getComputedStyle(element).color,
-    outline: getComputedStyle(element).outlineColor,
-  }));
-  expect(pageThemeFocus.outline).toBe(pageThemeFocus.color);
-  await management
-    .getByRole('button', { name: 'Preview', exact: true })
-    .click();
+  expect(
+    await contrastAgainst(removeAlbum, await menuBackground()),
+  ).toBeGreaterThanOrEqual(4.5);
 
+  await removeAlbum.press('Escape');
   let preview = management.frameLocator(
     '[data-testid="responsive-preview-frame"]',
   );
@@ -244,11 +215,9 @@ test('management iframe follows Immich themes while page themes stay independent
   await expect(managementRoot).toHaveAttribute('data-pager-host-theme', 'dark');
   await expect.poll(() => galleryBackground(preview)).toBe(pageLightBackground);
 
-  await management.getByRole('button', { name: 'Back to editor' }).click();
+  await closeCustomize(management);
   await setPageTheme(management, 'dark');
-  await management
-    .getByRole('button', { name: 'Preview', exact: true })
-    .click();
+
   preview = management.frameLocator('[data-testid="responsive-preview-frame"]');
   await expect(preview.locator('.ip-gallery')).not.toHaveClass(/\blight\b/);
   const pageDarkBackground = await galleryBackground(preview);
@@ -260,12 +229,10 @@ test('management iframe follows Immich themes while page themes stay independent
   );
   await expect.poll(() => galleryBackground(preview)).toBe(pageDarkBackground);
 
-  await management.getByRole('button', { name: 'Back to editor' }).click();
+  await closeCustomize(management);
   await setPageTheme(management, 'system');
   await page.emulateMedia({ colorScheme: 'dark' });
-  await management
-    .getByRole('button', { name: 'Preview', exact: true })
-    .click();
+
   preview = management.frameLocator('[data-testid="responsive-preview-frame"]');
   await expect(preview.locator('.ip-gallery')).toHaveClass(/\bsystem\b/);
   const systemDarkBackground = await galleryBackground(preview);
@@ -279,7 +246,7 @@ test('management iframe follows Immich themes while page themes stay independent
     .poll(() => galleryBackground(preview))
     .toBe('rgb(255, 255, 255)');
 
-  await management.getByRole('button', { name: 'Back to editor' }).click();
+  await closeCustomize(management);
   await setHostTheme(page, 'light');
   await expect(managementRoot).toHaveAttribute(
     'data-pager-host-theme',
@@ -330,8 +297,9 @@ test('management iframe follows Immich themes while page themes stay independent
       body: JSON.stringify({ message: 'Fixture photo search is unavailable.' }),
     }),
   );
+  await openHeader(management);
   await management
-    .getByRole('button', { name: 'Choose from Immich', exact: true })
+    .getByRole('button', { name: 'Choose logo from Immich', exact: true })
     .first()
     .click();
   const photoDialog = management.getByRole('dialog', {
@@ -353,8 +321,9 @@ test('management iframe follows Immich themes while page themes stay independent
 
   await page.setViewportSize({ width: 390, height: 844 });
   await closeMobileMenu(page);
+  await openHeader(management);
   await management
-    .getByRole('button', { name: '＋ Add albums', exact: true })
+    .getByRole('button', { name: 'Add albums', exact: true })
     .click();
   const albumsDialog = management.getByRole('dialog', {
     name: 'Add albums',
@@ -383,13 +352,19 @@ test('management iframe follows Immich themes while page themes stay independent
   await albumsDialog.getByRole('button', { name: 'Done', exact: true }).click();
 
   await page.setViewportSize({ width: 1440, height: 900 });
-  await management
+  const canvas = management.frameLocator('[title="Live page canvas"]');
+  const closePhone = management.getByRole('button', {
+    name: 'Close settings',
+    exact: true,
+  });
+  if (await closePhone.isVisible()) await closePhone.click();
+  await canvas
     .getByRole('button', {
       name: 'Edit title, Host theme parity QA',
       exact: true,
     })
     .click();
-  const title = management.getByLabel('Title', { exact: true });
+  const title = canvas.getByLabel('Title', { exact: true });
   await title.fill('Host theme parity QA updated');
   await title.press('Tab');
   await expect(management.getByTestId('save-state')).toHaveText(
@@ -414,18 +389,16 @@ test('management iframe follows Immich themes while page themes stay independent
   });
   await review.getByRole('button', { name: 'Cancel', exact: true }).click();
 
+  await albumActions.click();
   await management
-    .getByRole('button', {
-      name: 'Remove Liberty Family Camp ’26',
-      exact: true,
-    })
+    .getByRole('menuitem', { name: 'Remove album', exact: true })
     .click();
-  await expect(management.locator('.empty-albums')).toBeVisible();
+  await expect(albumActions).toHaveCount(0);
   await expect(management.getByTestId('save-state')).toHaveText(
     'All changes saved',
   );
   const addAlbums = management.getByRole('button', {
-    name: 'Select albums',
+    name: 'Add albums',
     exact: true,
   });
   const lightNativeAccent = await addAlbums.evaluate((element) => {
@@ -437,6 +410,7 @@ test('management iframe follows Immich themes while page themes stay independent
     return color;
   });
   await addAlbums.hover();
+  await expect(addAlbums).toHaveCSS('color', lightNativeAccent);
   const lightHover = await addAlbums.evaluate((element) => ({
     foreground: getComputedStyle(element).color,
     background: getComputedStyle(element).backgroundColor,
@@ -469,6 +443,7 @@ test('management iframe follows Immich themes while page themes stay independent
     return color;
   });
   await addAlbums.hover();
+  await expect(addAlbums).toHaveCSS('color', darkNativeAccent);
   const darkHover = await addAlbums.evaluate((element) => ({
     foreground: getComputedStyle(element).color,
     background: getComputedStyle(element).backgroundColor,

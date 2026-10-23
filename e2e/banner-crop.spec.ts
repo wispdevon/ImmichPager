@@ -1,3 +1,4 @@
+import { openHeader } from './composer-helper';
 import { test, expect, type Page } from '@playwright/test';
 import { confirmPublication } from './publication-helper';
 import {
@@ -21,6 +22,7 @@ async function createBannerDraft(page: Page, slug: string) {
   expect(created.ok()).toBe(true);
   const record = await created.json();
   await page.goto(`/page/manage/${record.id}`);
+  await openHeader(page);
   await page
     .getByLabel('Banner', { exact: true })
     .setInputFiles('fixtures/photos/earthrise.webp');
@@ -41,7 +43,9 @@ test('banner crop preview supports drag and touch while the slider remains keybo
   await closeCustomize(page);
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await confirmPublication(page, 'Publish page');
-  await expect(page.getByRole('status')).toContainText('Page published');
+  await expect(page.locator('.notice[role="status"]')).toContainText(
+    'Page published',
+  );
 
   const visitorContext = await browser.newContext();
   const visitor = await visitorContext.newPage();
@@ -66,6 +70,7 @@ test('banner crop preview supports drag and touch while the slider remains keybo
   await expect(slider).toHaveValue('51');
   await expect(crop.locator('img')).toHaveCSS('object-position', '50% 51%');
 
+  await crop.scrollIntoViewIfNeeded();
   const box = await crop.boundingBox();
   expect(box).not.toBeNull();
   const startY = box!.y + box!.height / 2;
@@ -100,7 +105,9 @@ test('banner crop preview supports drag and touch while the slider remains keybo
   ).toHaveValue(savedPosition!);
   await closeCustomize(page);
   await confirmPublication(page, 'Update live page');
-  await expect(page.getByRole('status')).toContainText('Page published');
+  await expect(page.locator('.notice[role="status"]')).toContainText(
+    'Page published',
+  );
   await visitor.reload();
   await expect(visitor.locator('.ip-banner img')).toHaveCSS(
     'object-position',

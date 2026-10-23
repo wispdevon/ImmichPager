@@ -41,7 +41,9 @@ test('settings share only the live URL and export scannable images before and af
     .getByRole('dialog', { name: 'Review publication' })
     .getByRole('button', { name: 'Publish page', exact: true })
     .click();
-  await expect(page.getByRole('status')).toContainText('Page published');
+  await expect(page.locator('.notice[role="status"]')).toContainText(
+    'Page published',
+  );
   await expect(
     page.getByRole('button', { name: 'Update live page', exact: true }),
   ).toBeDisabled();
@@ -94,7 +96,9 @@ test('settings share only the live URL and export scannable images before and af
         .getByRole('dialog', { name: 'Review publication' })
         .getByRole('button', { name: 'Update live page' })
         .click();
-      await expect(page.getByRole('status')).toContainText('Page published');
+      await expect(page.locator('.notice[role="status"]')).toContainText(
+        'Page published',
+      );
     }
   }
   expect((await page.request.get('/page/settings-sharing')).status()).toBe(404);
@@ -136,7 +140,9 @@ test('password review is conditional, survives failure, and clears transient pas
   await expect(review).toContainText('Set a page and album password.');
   await expect(review.getByLabel('Current page password')).toHaveCount(0);
   await review.getByRole('button', { name: 'Publish page' }).click();
-  await expect(page.getByRole('status')).toContainText('Page published');
+  await expect(page.locator('.notice[role="status"]')).toContainText(
+    'Page published',
+  );
   settings = await openSettings();
   await expect(settings.getByPlaceholder('At least 4 characters')).toHaveCount(
     0,
@@ -247,15 +253,16 @@ for (const theme of ['light', 'dark']) {
     ).toBe(true);
     await settings.getByRole('button', { name: 'Delete page' }).click();
     await expect(page.getByRole('dialog').last()).toContainText(
-      'revoke its dedicated album links',
+      'revoke its dedicated shares',
     );
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   });
 }
 
-test('settings traps keyboard focus and returns to its toolbar button', async ({
+test('phone Page settings dialog traps focus and returns to its toolbar button', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/dev-login/alice');
   await page.goto('/page/manage/new');
   const trigger = page.getByRole('button', {
@@ -278,6 +285,6 @@ test('settings traps keyboard focus and returns to its toolbar button', async ({
     ).toBe(true);
   }
   await page.keyboard.press('Escape');
-  await expect(dialog).toHaveCount(0);
+  await expect(dialog).toBeHidden();
   await expect(trigger).toBeFocused();
 });

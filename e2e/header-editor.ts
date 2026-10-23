@@ -5,9 +5,15 @@ export async function setHeaderText(
   field: 'Title' | 'Description',
   value: string,
 ) {
+  const close = page.getByRole('button', {
+    name: 'Close settings',
+    exact: true,
+  });
+  if (await close.isVisible()) await close.click();
+  const canvas = page.frameLocator('[title="Live page canvas"]');
   const buttonName = new RegExp(`^Edit ${field.toLowerCase()},`);
-  await page.getByRole('button', { name: buttonName }).click();
-  const input = page.getByLabel(field, { exact: true });
+  await canvas.getByRole('button', { name: buttonName }).click();
+  const input = canvas.getByLabel(field, { exact: true });
   await input.fill(value);
   await input.press('Tab');
 }

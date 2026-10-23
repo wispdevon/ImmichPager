@@ -17,8 +17,10 @@ async function createManualDraft(page: Page, slug: string) {
   expect(created.ok()).toBe(true);
   const record = await created.json();
   await page.goto(`/page/manage/${record.id}`);
+  if (!(await page.locator('.inspector-tabs').isVisible()))
+    await page.locator('.mobile-settings').click();
   await page
-    .getByRole('button', { name: 'Page settings', exact: true })
+    .getByRole('button', { name: 'Content inspector', exact: true })
     .click();
   return albums;
 }
@@ -58,6 +60,9 @@ test('manual album order supports drag and keyboard without crossing years and p
     .locator('[data-album-order-row]')
     .filter({ hasText: 'Captured by Me' });
   await source.scrollIntoViewIfNeeded();
+  await target.scrollIntoViewIfNeeded();
+  await expect(source).toBeInViewport();
+  await expect(target).toBeInViewport();
   const sourceBox = await source.boundingBox();
   const targetBox = await target.boundingBox();
   expect(sourceBox).not.toBeNull();
@@ -101,8 +106,15 @@ test('manual album order supports drag and keyboard without crossing years and p
       'February stories',
       'The year begins',
     ]);
-  const moveUp = page.getByRole('button', {
-    name: 'Move Liberty Family Camp ’26 up within 2026',
+  await page
+    .getByRole('button', {
+      name: 'Actions for Liberty Family Camp ’26',
+      exact: true,
+    })
+    .click();
+  const moveUp = page.getByRole('menuitem', {
+    name: 'Move up',
+    exact: true,
   });
   await moveUp.focus();
   await page.keyboard.press('Enter');
@@ -118,20 +130,25 @@ test('manual album order supports drag and keyboard without crossing years and p
       'February stories',
       'The year begins',
     ]);
+  await page
+    .getByRole('button', { name: 'Actions for Captured by Me', exact: true })
+    .click();
   await expect(
-    page.getByRole('button', {
-      name: 'Move Captured by Me up within 2026',
-    }),
-  ).toBeDisabled();
+    page.getByRole('menuitem', { name: 'Move up', exact: true }),
+  ).toHaveCount(0);
+  await page.keyboard.press('Escape');
   await expect(await albumNames(year2025)).toEqual(['December, together']);
 
   const anonymous = await browser.newPage();
   expect((await anonymous.request.get(`/page/${slug}`)).status()).toBe(404);
-  await page.getByRole('button', { name: 'Close', exact: true }).last().click();
+  if (await page.getByRole('button', { name: 'Close settings' }).isVisible())
+    await page.getByRole('button', { name: 'Close settings' }).click();
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await page.reload();
+  if (!(await page.locator('.inspector-tabs').isVisible()))
+    await page.locator('.mobile-settings').click();
   await page
-    .getByRole('button', { name: 'Page settings', exact: true })
+    .getByRole('button', { name: 'Content inspector', exact: true })
     .click();
   const reloaded2026 = page.locator('.order-year').filter({
     has: page.getByRole('heading', { name: '2026', exact: true }),
@@ -146,9 +163,12 @@ test('manual album order supports drag and keyboard without crossing years and p
     'February stories',
     'The year begins',
   ]);
-  await page.getByRole('button', { name: 'Close', exact: true }).last().click();
+  if (await page.getByRole('button', { name: 'Close settings' }).isVisible())
+    await page.getByRole('button', { name: 'Close settings' }).click();
   await confirmPublication(page, 'Publish page');
-  await expect(page.getByRole('status')).toContainText('Page published');
+  await expect(page.locator('.notice[role="status"]')).toContainText(
+    'Page published',
+  );
 
   await anonymous.goto(`/page/${slug}`);
   const publicGroups = anonymous.locator('.ip-year-group');

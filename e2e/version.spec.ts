@@ -1,12 +1,15 @@
 import { test, expect } from '@playwright/test';
 import packageInfo from '../package.json' with { type: 'json' };
 const { version } = packageInfo;
+const [major, minor, patch] = version.split('.').map(Number);
+const nextPatch = `${major}.${minor}.${patch + 1}`;
+const laterPatch = `${major}.${minor}.${patch + 2}`;
 
 const info = {
-  installedVersion: '0.3.3',
-  installedReleaseUrl: 'https://gitlab.com/wispd/ImmichPager/-/releases/v0.3.3',
-  latestVersion: '0.3.4',
-  latestReleaseUrl: 'https://gitlab.com/wispd/ImmichPager/-/releases/v0.3.4',
+  installedVersion: version,
+  installedReleaseUrl: `https://gitlab.com/wispd/ImmichPager/-/releases/v${version}`,
+  latestVersion: nextPatch,
+  latestReleaseUrl: `https://gitlab.com/wispd/ImmichPager/-/releases/v${nextPatch}`,
   updateAvailable: true,
   checkedAt: '2026-10-23T00:00:00Z',
   status: 'available',
@@ -61,13 +64,13 @@ for (const dark of [false, true])
       await expect(page.locator('[data-pager-version]')).toHaveCount(1);
       await expect(page.locator('#immich')).toHaveText('v3.3.3');
       await expect(
-        page.getByRole('link', { name: 'v0.3.3', exact: true }),
+        page.getByRole('link', { name: `v${version}`, exact: true }),
       ).toHaveAttribute('href', info.installedReleaseUrl);
       await expect(
         page.getByText('Update check unavailable; showing last result.'),
       ).toBeVisible();
       await expect(
-        page.getByRole('link', { name: 'v0.3.4 available' }),
+        page.getByRole('link', { name: `v${nextPatch} available` }),
       ).toHaveAttribute('href', info.latestReleaseUrl);
       expect(
         await page.evaluate(
@@ -105,8 +108,8 @@ test('admin patch announcements support Escape and remember dismissal per releas
     route.fulfill({
       json: {
         ...info,
-        latestVersion: '0.3.5',
-        latestReleaseUrl: info.latestReleaseUrl.replace('0.3.4', '0.3.5'),
+        latestVersion: laterPatch,
+        latestReleaseUrl: `https://gitlab.com/wispd/ImmichPager/-/releases/v${laterPatch}`,
       },
     }),
   );

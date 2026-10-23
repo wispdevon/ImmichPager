@@ -1,28 +1,48 @@
 # Customize a client gallery
 
-Open **Pages → your page → Customize**. All client appearance settings belong to this page. Changes autosave as a private working draft; use **Preview** to check them, then **Publish page** or **Update live page** to show them to clients. Your existing client URL stays the same.
+Open **Pages → your page → Design**. All client appearance settings belong to this page. The persistent canvas shows working edits immediately, with desktop, tablet, and phone widths. Changes autosave as a private draft; choose **Publish page** or **Update live page** to show them to clients. Your existing client URL stays the same.
 
-The Customize panel, element switches, gallery controls, and portable tokens ship in v0.3.0. Deployments change only when their operator upgrades.
+The live composer is available in v0.4.0. Deployments change only when their operator upgrades.
 
 ## Check what clients see
 
-After publishing, choose **Open published page** in the editor to open the actual published URL in a new tab. It shows the published version while your working edits remain private. The editor explains whether the published version has a password, independently of any pending password changes in Options. A previously unlocked browser may skip the page prompt; use a private window to check a first visit. Immich can ask for the password again in its native album viewer. Private Preview still shows draft changes.
+After publishing, choose **Open published page** in the editor to open the actual published URL in a new tab. It shows the published version while your working edits remain private. The editor explains whether the published version has a password, independently of any pending password changes in Options. A previously unlocked browser may skip the page prompt; use a private window to check a first visit. Pager checks the page password for the on-page photo viewer and downloads. Retained direct native links still follow Immich’s own password flow. The private canvas shows draft changes.
+
+## Add content rows
+
+In **Content**, add Photos, Albums, or Text rows. Select a row to set its heading,
+layout, and spacing. Drag rows or use their move buttons/arrow keys to reorder;
+Duplicate row and Delete row operate on the selected row. Editorial albums use
+compact covers and show each album’s description from Immich. Albums can appear in
+multiple rows while sharing one native album link. Photo rows create a native
+individual share for exactly the selected images. Empty rows stay private.
+
+Select album checkboxes to move several together, then drag a grip to the
+insertion line. The list scrolls near its edges. Reordering saves on release;
+Escape or a drop outside the list cancels. With year grouping, selections stay
+inside their year; choose No grouping for free ordering across years. Arrow keys
+on the grip and the adjacent move buttons remain available.
+
+Write text directly on the canvas with headings, bold, italic, links, and lists.
+Albums expand on the same page; photos open the common viewer. Use its arrow
+buttons, keyboard arrows, or swipe to navigate. Escape or Back closes it. Slideshow
+is opt-in. Originals and ZIP downloads are available when Page settings allows downloads.
 
 ## Colors and accent
 
-Choose Dark, Light, or System under **Customize → Design**. Use the color controls to override background, text, and accent colors. The default accent is Immich blue (`#accbfa`). Currently, accent changes **album-title text on hover**; it does not recolor the page title, banner, management buttons, or native Immich album viewer. CSS can use the same accent for other gallery elements.
+Choose Dark, Light, or System under **Design → Design**. Use the color controls to override background, text, and accent colors. The default accent is Immich blue (`#accbfa`). Currently, accent changes **album-title text on hover**; it does not recolor the page title, banner, management buttons, or native Immich album viewer. CSS can use the same accent for other gallery elements.
 
 ## Move a design between pages
 
-In **Customize → Themes**, export the current design as
+In **Design → Themes**, export the current design as
 `immichpager-appearance.json` or choose a file to import. New exports use
-appearance-file version 2. They include the theme, custom colors, header
-settings, custom CSS, every visibility switch, and all gallery-style settings.
+appearance-file version 3. They include the theme, custom colors, header
+settings including banner height, custom CSS, every visibility switch, and all gallery-style settings.
 They do not contain the page title or description, URL, album names or
 identifiers, album order, passwords, share links, or logo and banner images.
 Choose content and branding separately on each page.
 
-Version 1 files are still supported. Importing one updates the appearance
+Version 1 and 2 files are still supported; settings they cannot express are preserved. Importing one updates the appearance
 fields it can express and preserves the current visibility and gallery-style
 settings. If there are no current settings, compatibility defaults keep the
 existing gallery appearance. Older version 1 files that omit the five size
@@ -32,7 +52,7 @@ settings import with these defaults: Standard, 80 px, 3 rem, 1.125 rem, and
 Import applies only the visual settings to the current page's private draft.
 The page's content, URL, albums, password, and branding images remain unchanged,
 and clients see the design only after you publish. Files are limited to 96 KiB
-and must use the supported version 1 or version 2 format. Unknown fields and
+and must use the supported version 1, 2, or 3 format. Unknown fields and
 invalid settings are rejected. Custom CSS goes through the same gallery
 compiler used by preview and publication, so imports cannot add external
 resources or styles outside the gallery.
@@ -112,19 +132,19 @@ are shaped like this:
 Use the separate [DTCG token file format](design-tokens.md) to share colors and
 gallery styling without visibility settings or custom CSS.
 
-## Edit directly in Customize
+## Edit directly on the canvas
 
-Click the title or description in the private preview to edit it. Empty visible
+Click the title or description on the private canvas to edit it. Empty visible
 text has an Add a title or Add a description placeholder. Enter finishes title
 editing; Ctrl+Enter finishes description editing; Escape returns to the text
 button. Text autosaves to the draft, including while you type. A save failure
-keeps your edits and offers Retry save. The preview stays mounted through saved
+keeps your edits and offers Retry save. The canvas stays mounted through saved
 updates so your caret stays in place.
 
-On phones, use Preview to reach the text, then Settings to return to the Design
-panel. Hidden title and description fields are editable at the top of Design;
-they stay hidden in the preview. Public galleries and the standalone read-only
-Preview do not expose editing controls.
+On phones, close the inspector to edit the canvas and open it again to reach
+Content or Design. Open **Page settings** beside Publish for sharing options. Hidden title and description fields remain editable
+in Content → Header and branding. Public galleries and the standalone read-only
+owner view do not expose editing controls.
 
 Design begins with visual header presets, logo options, fonts, and colors.
 Expand Advanced design at the end for detailed sizing and spacing. Preset cards
@@ -133,7 +153,7 @@ can leave no preset selected.
 
 ## Compose the header over a banner
 
-Add a banner using **Choose from Immich**, an upload, or a file drop. In **Customize → Design → Advanced design**, change **Header layout** from **Below banner** to **Over banner**. Your logo, title, and description move together onto the image. Header alignment controls left or centered composition. Banner crop position controls the image's vertical focal point.
+Add a banner using **Choose from Immich**, an upload, or a file drop. In **Design → Design → Advanced design**, change **Header layout** from **Below banner** to **Over banner**. Your logo, title, and description move together onto the image. Header alignment controls left or centered composition. Banner crop position controls the image's vertical focal point.
 
 Overlay mode uses white text and a dark gradient to keep the header readable. The banner grows to fit longer text on narrow screens. If you remove the banner, the header returns to the normal layout; the saved overlay choice takes effect when you add a banner again. Existing pages default to Below banner.
 
@@ -141,24 +161,24 @@ Overlay mode uses white text and a dark gradient to keep the header readable. Th
 
 ## Set header size
 
-In **Customize → Design → Advanced design**, choose **Compact**, **Standard**, or **Tall** for the banner composition. Standard keeps the existing responsive banner height. Compact and Tall give you shorter or deeper compositions in both Below banner and Over banner layouts. Use the logo-size slider to choose a size from 48–160 px; existing and new pages default to 80 px.
+In **Design → Design → Advanced design**, choose **Compact**, **Standard**, or **Tall** for the banner composition. Standard keeps the existing responsive banner height. Compact and Tall give you shorter or deeper compositions in both Below banner and Over banner layouts. Use the logo-size slider to choose a size from 48–160 px; existing and new pages default to 80 px.
 
 Choose a logo shape of square, rounded, or circle, and place it above or to the
 left of the title and description. Existing and new pages default to rounded
 corners and the logo above the text. The left layout stacks above the text on
 small screens unless custom CSS changes `--pager-mobile-logo-layout`.
 
-Changes autosave to the private draft, appear in Preview, and only update your client page after you publish. Existing pages receive these defaults without a database migration.
+Changes autosave to the private draft, appear on the canvas, and only update your client page after you publish. Existing pages receive these defaults without a database migration.
 
 ## Set typography and spacing
 
-In **Customize → Design → Advanced design**, use the sliders to set title size (1.5–4 rem), description size (0.875–1.5 rem), and header spacing (1.5–5 rem). The title scales with page width while preserving the selected size at phone widths, and spacing adjusts on narrow screens. Google Sans remains the default font. Existing and new pages start with a 3 rem title, 1.125 rem description, and 2.5 rem header spacing.
+In **Design → Design → Advanced design**, use the sliders to set title size (1.5–4 rem), description size (0.875–1.5 rem), and header spacing (1.5–5 rem). The title scales with page width while preserving the selected size at phone widths, and spacing adjusts on narrow screens. Google Sans remains the default font. Existing and new pages start with a 3 rem title, 1.125 rem description, and 2.5 rem header spacing.
 
-Changes autosave to the private draft and appear in Preview. Your client page changes only after you publish. Existing pages receive defaults without a database migration.
+Changes autosave to the private draft and appear on the canvas. Your client page changes only after you publish. Existing pages receive defaults without a database migration.
 
 ## Choose what clients can see
 
-Open **Customize → Elements** to control the banner, logo, title, description,
+Open **Design → Elements** to control the banner, logo, title, description,
 browsing tools, album details, year headings, and footer branding separately.
 Turning off an element only hides it from the client page; its text, images, and
 settings remain in the draft. New pages start with browsing tools off. Existing
@@ -172,7 +192,7 @@ is hidden.
 
 ## Adjust the gallery layout
 
-Open **Customize → Design** to choose the gallery font. Google Sans remains the
+Open **Design → Design** to choose the gallery font. Google Sans remains the
 default; six additional open-license families are bundled locally, and System
 uses installed fonts. See the [font catalog and licenses](fonts.md). Expand
 **Advanced design** at the end of the tab for title/body/card typography, content
@@ -185,13 +205,25 @@ The settings are page-specific and stay private until publication. Existing
 header presets continue to update header composition and sizing while keeping
 these gallery settings unchanged.
 
+## Restore defaults
+
+**Reset all customization** at the top of Design restores the new-page design,
+visibility, CSS, and row layout defaults. It keeps your title, description, text,
+row headings, selected photos and albums, branding images, page URL, password,
+and download permissions. The restore icon beside a changed setting resets
+that value. These changes autosave privately; publish to apply them to the live page.
+
+Choose album and photo styles from illustrated cards in Content. Each album row shows its existing Immich cover as the drag handle. Missing covers
+use a placeholder. Album rows have an actions menu for moving or removing an album. Choose **Select albums** to show
+checkboxes, then drag a grip to move the selected albums together within their group.
+
 ## Apply a header preset
 
-Choose **Classic**, **Centered**, or **Editorial** in **Customize → Design** to start with a complete header composition. Each preset sets only layout, alignment, banner size, logo size, title size, description size, and header spacing for the current page. It keeps your title and description text, theme and colors, banner crop, CSS, logo and banner images, albums and their order, password, and page URL. Presets are private draft edits until you publish; Google Sans remains the default font.
+Choose **Classic**, **Centered**, or **Editorial** in **Design → Design** to start with a complete header composition. Each preset sets only layout, alignment, banner size, logo size, title size, description size, and header spacing for the current page. It keeps your title and description text, theme and colors, banner crop, CSS, logo and banner images, albums and their order, password, and page URL. Presets are private draft edits until you publish; Google Sans remains the default font.
 
 ## Add CSS
 
-Open **Customize → CSS** to enter ordinary CSS and use Preview. CSS is limited to 20,000 characters. **Clear custom CSS** removes the draft stylesheet; publish that change to reset the live gallery too.
+Open **Design → CSS** to enter ordinary CSS and see it on the canvas. CSS is limited to 20,000 characters. **Clear custom CSS** removes the draft stylesheet; publish that change to reset the live gallery too.
 
 CSS is parsed and limited to this gallery. Selectors cannot change the management UI, preview toolbar, other pages, or native Immich album views. Positioned content is clipped to the gallery boundary, so fixed elements behave relative to the gallery rather than the browser viewport. There is no JavaScript or HTML editor.
 
@@ -230,7 +262,7 @@ The documented hooks and variables are the customization interface. Other classe
 
 ### Theme variables
 
-Set these on `:scope`. When omitted, the corresponding Customize setting or
+Set these on `:scope`. When omitted, the corresponding Design setting or
 selected theme remains in use.
 
 | Variable             | Effect                                                               |
@@ -369,7 +401,7 @@ font requests. The gallery uses Google Sans by default; see the
 
 ## Contributor implementation notes
 
-`headerLayout`, `headerSize`, `logoSize`, `titleSize`, `descriptionSize`, `headerSpacing`, and `customCss` (raw CSS text) are additive settings on working drafts, published records, and gallery DTOs. Missing fields in older stored JSON receive defaults on read; the SQLite schema stays at version 2. Draft writes preserve invalid CSS text so an unfinished edit is recoverable. Publication validates the stylesheet before changing any live data or native shares.
+`headerLayout`, `headerSize`, `logoSize`, `titleSize`, `descriptionSize`, `headerSpacing`, and `customCss` (raw CSS text) are additive settings on working drafts, published records, and gallery DTOs. Missing fields in older stored JSON receive defaults on read; the block-content migration uses SQLite schema version 3. Draft writes preserve invalid CSS text so an unfinished edit is recoverable. Publication validates the stylesheet before changing any live data or native shares.
 
 The shared compiler uses CSS Tree to parse, validate supported constructs, and add a page-specific guard to each selector's target, including selectors with pseudo-elements. `:scope` maps to the gallery root. A separate, untargetable layout/paint containment wrapper isolates positioned descendants. The renderer only serializes compiled CSS and escapes `<` as a CSS escape before placing it in a style element; raw author text is never inserted as HTML. Existing CSP directives remain unchanged. Browser tests cover style-closing strings, selector escape attempts, containment, private drafts, publication and resetting.
 

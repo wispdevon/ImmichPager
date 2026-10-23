@@ -1,7 +1,14 @@
+import {
+  normalizeContent,
+  hasContent,
+  pageBlocks,
+  photoSources,
+} from '../blocks';
 import { randomUUID } from 'node:crypto';
 import { AppError, type PageInput, type PageRecord } from '../contracts';
 import { Store } from './store';
 import { Immich } from './immich';
+import { requiresShareSynchronization } from '../publication-summary';
 import { exclusive, hashPassword, verifyPassword } from './security';
 
 export class PageService {
@@ -17,6 +24,7 @@ export class PageService {
     stagingId?: string,
   ) {
     return exclusive(id ?? `new:${ownerId}`, async () => {
+      input = normalizeContent(input);
       const previous = id ? this.store.owned(id, ownerId) : null;
       if (previous?.status === 'syncing' || previous?.status === 'error')
         throw new AppError(
@@ -34,10 +42,7 @@ export class PageService {
       if (passwordMode === 'remove') passwordHash = null;
       const accessChanged =
         previous &&
-        (passwordMode !== 'keep' ||
-          previous.allowDownload !== settings.allowDownload ||
-          JSON.stringify(previous.albumIds) !==
-            JSON.stringify(settings.albumIds));
+        requiresShareSynchronization(settings, previous, passwordMode);
       const now = new Date().toISOString();
       const page: PageRecord = {
         ...settings,
@@ -87,10 +92,10 @@ export class PageService {
     return exclusive(id, async () => {
       const page = this.store.owned(id, ownerId);
       if (intent === 'publish') {
-        if (!page.albumIds.length)
+        if (!hasContent(pageBlocks(page)))
           throw new AppError(
             400,
-            'Select at least one album before publishing',
+            'Add at least one nonempty content block before publishing',
           );
         if (
           page.passwordHash &&
@@ -105,6 +110,10 @@ export class PageService {
             throw new AppError(403, 'Album ownership has changed');
         }
       }
+      if (intent === 'publish')
+        for (const block of photoSources(page))
+          for (const photo of block.photos)
+            await this.immich.photo(photo.id, ownerId);
       page.status = 'syncing';
       page.intent = intent;
       page.revision++;
@@ -128,6 +137,67 @@ export class PageService {
             });
           }
         }
+        const photoPrefix = `pager-${page.id}-photos-`;
+        for (const share of native) {
+          if (share.slug?.startsWith(photoPrefix)) {
+            const blockId = share.slug.slice(photoPrefix.length);
+            if (/^[a-zA-Z0-9_-]{1,100}$/.test(blockId))
+              this.store.putPhotoShare({
+                pageId: id,
+                blockId,
+                shareId: share.id,
+                key: share.key,
+                slug: share.slug,
+              });
+          }
+        }
+        const photoBlocks = photoSources(page);
+        for (const share of this.store.photoShares(id)) {
+          if (
+            intent !== 'publish' ||
+            !photoBlocks.some((b) => b.id === share.blockId)
+          ) {
+            await this.immich.deleteShare(share.shareId);
+            this.store.deletePhotoShare(id, share.blockId);
+          }
+        }
+        if (intent === 'publish')
+          for (const block of photoBlocks) {
+            let share = this.store
+              .photoShares(id)
+              .find((s) => s.blockId === block.id);
+            if (share && !native.some((s) => s.id === share!.shareId)) {
+              this.store.deletePhotoShare(id, block.id);
+              share = undefined;
+            }
+            if (!share) {
+              const slug = photoPrefix + block.id;
+              const created = await this.immich.createPhotoShare(
+                block.photos.map((p) => p.id),
+                slug,
+                page.passwordHash ? password : null,
+                page.allowDownload,
+              );
+              share = {
+                pageId: id,
+                blockId: block.id,
+                shareId: created.id,
+                key: created.key,
+                slug,
+              };
+              this.store.putPhotoShare(share);
+            }
+            await this.immich.syncPhotoShare(
+              share.shareId,
+              block.photos.map((p) => p.id),
+            );
+            await this.immich.updateShare(
+              share.shareId,
+              page.passwordHash ? password : null,
+              share.slug,
+              page.allowDownload,
+            );
+          }
         for (const share of this.store.shares(id)) {
           if (intent !== 'publish' || !page.albumIds.includes(share.albumId)) {
             await this.immich.deleteShare(share.shareId);

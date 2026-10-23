@@ -17,8 +17,7 @@
     Opens the published version. Draft changes stay private.
     {#if hasPassword}
       Password protected. A previous unlock may skip the prompt in this browser.
-      Use a private window to check a first visit. Immich may ask for the
-      password again when opening an album.
+      Use a private window to check a first visit.
     {:else}
       No page password is set on the published version.
     {/if}
