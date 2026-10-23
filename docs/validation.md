@@ -73,3 +73,28 @@ auto-focus stealing sidebar focus after history navigation. [Desktop inline edit
 [phone settings](screenshots/customize-v031-phone.png) were inspected in the
 production fixture app with native dark Immich styling. Images use the repository's
 attributed NASA fixtures; no live client content was used.
+
+## v0.3.3 — CI and version awareness
+
+Node 22.23.3 / pnpm 11.28.5 passed 200 unit tests and 67 Chromium scenarios,
+including authenticated version metadata, About reopening/light/dark/phone
+layouts, administrator patch notices, dismissal on Escape and immediate reload,
+and deferral while another dialog is open. Release-check tests cover stable
+version ordering, future/prerelease filtering, disabled checks, concurrency,
+request bounds and stale results. Live authenticated About rendering remains a
+manual compatibility check; fixture DOM structure follows Immich v3.3.3.
+
+[Cold-cache pipeline 2979113084](https://gitlab.com/wispd/ImmichPager/-/pipelines/2979113084)
+completed all required gates in 220 seconds versus the
+[v0.3.2 baseline](https://gitlab.com/wispd/ImmichPager/-/pipelines/2978961866)
+at 398 seconds (45% less elapsed time). Summed runner time increased from 397 to
+491 seconds. Browser shards executed 34 and 33 tests in isolated processes and
+databases. Warm-cache MR/dev/tag measurements are recorded in the v0.3.3 release
+notes. Timings include runner setup and artifacts, exclude optional publication,
+and are observations rather than a hosted-runner latency guarantee.
+
+A warm-cache repetition exposed an existing mobile history test racing the
+iframe's initial focus. The test now asserts iframe focus readiness before its
+next keyboard action; the separate deliberately delayed-load test still verifies
+that host interaction prevents late iframe focus. No assertion or test was
+removed.

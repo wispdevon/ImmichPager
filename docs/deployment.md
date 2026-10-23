@@ -97,3 +97,12 @@ For rollback, point the HTTPS proxy back at its previous upstream. Immich itself
 The autosave/branding update uses Pager schema version 2. Stop the Pager container and back up the entire data volume (including any WAL files) before first startup of this version. Keep the previous image and Compose configuration. The migration adds working copies while retaining published pages, native link records, branding, and sessions.
 
 An older image refuses a version 2 database. To roll back, stop Pager, restore the complete pre-upgrade volume, restore the previous Compose image, and start it again. Do not restore a SQLite backup over a running process. Keep backup archives private: they contain share capabilities and client-session authorization. New changes made after the backup are not included in a restore. Immich's database and media are not part of this migration.
+
+### Update awareness
+
+From v0.3.3, Immich's About dialog includes the installed ImmichPager version and
+a link to its GitLab release. Pager checks public stable releases at startup and
+hourly; administrators receive a dismissible notice for newer releases, including
+patches. Upgrades remain manual. Set `PAGER_UPDATE_CHECK_ENABLED=false` in the
+container environment to disable checks. An unavailable GitLab connection does
+not affect application readiness, and About distinguishes stale/failed checks.

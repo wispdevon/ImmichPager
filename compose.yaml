@@ -8,6 +8,7 @@ services:
       IMMICH_URL: ${IMMICH_URL:?Set the internal Immich upstream URL}
       ORIGIN: ${ORIGIN:?Set the public HTTPS Immich origin}
       TRUST_PROXY: ${TRUST_PROXY:-false}
+      PAGER_UPDATE_CHECK_ENABLED: ${PAGER_UPDATE_CHECK_ENABLED:-true}
       DATA_DIR: /data
     ports:
       - '${BIND_ADDRESS:-127.0.0.1}:${PAGER_PORT:-3102}:3000'

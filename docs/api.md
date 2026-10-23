@@ -76,3 +76,12 @@ Appearance-file version 2 carries visibility, visual settings, and CSS; version 
 Draft inputs and owner editor responses include `allowDownload: boolean` (default `true`, including legacy records). This setting remains private until publication; permission changes synchronize every retained and new dedicated share. It is excluded from appearance and design-token exports, and duplicated designs start with downloads enabled.
 
 The publication-review GET endpoint accepts `passwordMode=keep|set|remove` alongside `expectedDraftRevision`, without a password value. Its response adds `passwordAction` (`keep`, `set`, `change`, or `remove`), `requiresCurrentPassword`, and `downloadChange` (`null` or `{ before: boolean | null, after: boolean }`). The synchronization predicate is shared with publication. Passwords are submitted only in the explicit publish/retry body, never autosaved. Both draft and published revision checks still protect a reviewed publication.
+
+### Version awareness
+
+`GET /page/api/version` requires an Immich session. It returns `installedVersion`,
+`installedReleaseUrl`, `latestVersion`, `latestReleaseUrl`, `updateAvailable`,
+`checkedAt`, and `status` (`disabled`, `current`, `available`, `unavailable`, or
+`stale`), plus the authenticated `userId` and server-verified `isAdmin` flag.
+The response is private and uncached. Release URLs are constructed from validated
+stable tags in the fixed ImmichPager GitLab project, never supplied by clients.

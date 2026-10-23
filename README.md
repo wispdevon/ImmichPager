@@ -47,7 +47,7 @@ Screenshots use attributed [NASA Apollo photographs](fixtures/photos/README.md) 
 - **Publication review:** see albums being added or removed and page appearance changes before updating the live page.
 - **Easy sharing:** Copy link on each published page, with Page settings for access, download permissions, and local PNG/SVG QR exports.
 - **Password protection:** optional page password/PIN applied to dedicated Immich album shares too. The native viewer may prompt again.
-- **Inside Immich:** a Pages sidebar entry and existing session authentication; each photographer manages their own pages.
+- **Inside Immich:** a Pages sidebar entry and existing session authentication; each photographer manages their own pages. About shows the installed Pager version, with administrator notices for newer stable releases.
 - **Dedicated share links:** existing shares remain untouched. Interrupted operations are tracked and can be retried.
 - **Docker companion:** one container and SQLite volume; GitLab release workflow prepares amd64/arm64 images for manual publication, with no changes to Immich's image or database.
 - **Contributor-friendly:** typed boundaries, local Immich fixtures, browser tests, CI, issue forms, and architecture documentation.

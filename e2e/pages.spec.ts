@@ -775,6 +775,17 @@ test('mobile sidebar active state and focus stay usable across history', async (
   await expect(page).toHaveURL(/\/sharing#client-pages$/);
   await expect(frame).toBeVisible();
   await expect(sidebar).toHaveAttribute('inert', '');
+  // The iframe is visible before its initial focus settles. Re-focusing an
+  // already focused menu emits no user interaction event. Wait for readiness;
+  // the next test separately exercises host input during a delayed load.
+  await expect
+    .poll(() =>
+      page
+        .frameLocator('iframe[title="Client pages"]')
+        .locator('main')
+        .evaluate((main) => main.ownerDocument.activeElement === main),
+    )
+    .toBe(true);
   await menu.focus();
   await page.keyboard.press('Enter');
   await expect(sidebar).toBeVisible();

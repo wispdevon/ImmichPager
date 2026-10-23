@@ -9,3 +9,6 @@ data
 test-results
 playwright-report
 .pnpm-store/
+
+ci-timings.tsv
+ci-image.txt

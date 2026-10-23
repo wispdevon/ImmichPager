@@ -13,3 +13,6 @@ coverage/
 *.sqlite*
 *.log
 .pnpm-store/
+
+ci-timings.tsv
+ci-image.txt
