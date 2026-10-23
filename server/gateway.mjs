@@ -43,7 +43,11 @@ export function createGateway({
     )
   )
     throw Error('Use HTTP(S) server root URLs without credentials');
-  const script = readFileSync(new URL('./sidebar.js', import.meta.url));
+  const script = Buffer.concat([
+    readFileSync(new URL('./sidebar.js', import.meta.url)),
+    Buffer.from('\n'),
+    readFileSync(new URL('./version.js', import.meta.url)),
+  ]);
   const scriptPath = `/page/assets/sidebar.js?v=${createHash('sha256').update(script).digest('hex').slice(0, 12)}`;
   function proxy(req, res, url, inject) {
     const headers = clean(req.headers);

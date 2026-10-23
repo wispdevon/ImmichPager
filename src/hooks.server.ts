@@ -1,3 +1,4 @@
+import '$lib/server/version-runtime';
 import { error, type Handle } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { upstream } from '$lib/server/runtime';

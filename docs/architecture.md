@@ -70,3 +70,20 @@ Header composition presets, banner and logo size, typography, spacing, and custo
 The shared renderer emits gallery-scoped `--pager-*` defaults with zero specificity so authored CSS can override visual controls. The Customize panel renders acknowledged draft revisions in the owner-only preview iframe, keeping client CSS isolated from native editor controls. Failed saves retain the local working fields and show retry feedback.
 
 Appearance-file version 2 carries visibility, visual settings, and CSS; version 1 imports leave newer settings intact. DTCG 2025.10 token files carry only recognized style values, resolve local aliases without network access, and present recognized/unsupported tokens before applying. Imports remain bounded at 96 KiB, and custom CSS retains its 20,000-character limit and resource-loading restrictions.
+
+## Version awareness
+
+The existing external bridge also augments Immich's About grid using the stable
+`immich` and `version-history` IDs reviewed in Immich v3.3.3. Unknown layouts are
+left untouched. This remains a maintained DOM integration, not an upstream API.
+The installed version comes from the shipped package. A server-side checker reads
+public GitLab release metadata at startup and hourly, deduplicating concurrent
+requests and bounding response size/time. Failures preserve the last successful
+result as stale; they never affect readiness or page publication.
+
+The authenticated version endpoint verifies administrator status through Immich.
+Only administrators receive announcements; dismissals are namespaced per user
+and release in browser storage. Announcements wait while an editor or dialog is
+active. No Immich credentials are sent to GitLab and no SQLite migration is used.
+Set `PAGER_UPDATE_CHECK_ENABLED=false` to disable outbound checks. Demo fixtures
+always disable them.

@@ -94,7 +94,13 @@ export class Immich {
   }
   async user() {
     const data = await (await this.request('users/me')).json();
-    return z.object({ id: z.string(), name: z.string() }).parse(data);
+    return z
+      .object({
+        id: z.string(),
+        name: z.string(),
+        isAdmin: z.boolean().default(false),
+      })
+      .parse(data);
   }
   async albums(): Promise<Album[]> {
     const data = z

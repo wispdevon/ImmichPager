@@ -3,6 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { createFixture, albums } from '../fixtures/immich.mjs';
 import { createGateway } from '../server/gateway.mjs';
 
+process.env.PAGER_UPDATE_CHECK_ENABLED = 'false';
 const production = process.argv.includes('--production');
 const port = Number(process.env.DEMO_PORT || 3000),
   fixturePort = port + 1,

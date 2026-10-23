@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.3] - 2026-10-23
+
+### Added
+
+- Immich About now includes the installed ImmichPager version and its GitLab release link.
+- Administrators receive dismissible notifications for newer stable releases, including patches. Checks run server-side and can be disabled for offline installations.
+
+### Improved
+
+- CI runs isolated browser shards and Docker smoke checks concurrently, reuses the production build, and uses a pinned browser toolchain image. All existing quality gates remain required.
+
+### Upgrade notes
+
+- No database migration. Set `PAGER_UPDATE_CHECK_ENABLED=false` to disable public GitLab release checks.
+
 ## [0.3.2] - 2026-10-23
 
 ### Added

@@ -153,6 +153,7 @@ export function createFixture() {
         return owner
           ? json({
               id: owner,
+              isAdmin: owner === 'alice',
               name: owner === 'alice' ? 'Alex Morgan' : 'Bob Parker',
             })
           : json({}, 401);
