@@ -2,15 +2,21 @@
 
 ## Install beside Immich
 
-Build the stable version from source, or import the prebuilt ARM64 package below. The GitLab registry target is `registry.gitlab.com/wispd/immichpager`; no image has been published there yet. Registry publishing is available only from a protected semantic-version tag after the checks pass and a maintainer manually starts the job. See the [GitLab distribution guide](gitlab-distribution.md) for the migration steps.
+The GitLab registry provides `registry.gitlab.com/wispd/immichpager:0.4.0` for Linux amd64 and arm64. Pin an exact version in production. Registry publishing requires a protected release ref, all required checks, and a maintainer starting the manual job. See the [GitLab distribution guide](gitlab-distribution.md) for the release workflow.
 
 ```sh
 git clone --branch v0.4.0 --depth 1 https://gitlab.com/wispd/ImmichPager.git
 cd ImmichPager
 cp .env.example .env
 # Edit IMMICH_URL and ORIGIN, plus IMMICH_NETWORK if necessary.
-docker compose up -d --build
+# Set PAGER_TAG=0.4.0 in .env.
+docker compose pull immichpager
+docker compose up -d --no-build
 ```
+
+To build from the checked-out source instead, use `docker compose up -d --build`.
+The compiled runtime archive and historical ARM64 package below are alternative
+installation methods.
 
 `IMMICH_URL` must be the internal original server, such as `http://immich-server:2283`, or an existing companion gateway. It must not point back at the public domain routed through Pager. The companion joins the existing Immich Docker network; no original-photo or database mounts are needed.
 
