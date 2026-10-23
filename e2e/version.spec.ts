@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { version } from '../package.json';
+import packageInfo from '../package.json' with { type: 'json' };
+const { version } = packageInfo;
 
 const info = {
   installedVersion: '0.3.3',

@@ -21,7 +21,7 @@ stages:
   cache:
     key:
       files: [pnpm-lock.yaml]
-      prefix: node-22.23.3-pnpm-11.28.5-v2
+      prefix: node-22.23.3-pnpm-11.28.5-v3
     paths: [.pnpm-store/]
     policy: pull
   before_script:

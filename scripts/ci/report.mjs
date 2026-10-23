@@ -14,7 +14,7 @@ for (const id of pipelines) {
   ).filter(
     (job) =>
       ['verify', 'quality', 'build', 'docker_smoke'].includes(job.name) ||
-      job.name.startsWith('browser:'),
+      /^browser[ :]/.test(job.name),
   );
   if (!jobs.length || jobs.some((job) => job.status !== 'success'))
     throw Error(`Pipeline ${id}: required jobs have not all passed`);
