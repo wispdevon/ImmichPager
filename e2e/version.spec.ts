@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { version } from '../package.json';
 
 const info = {
   installedVersion: '0.3.3',
@@ -31,7 +32,7 @@ test('version endpoint requires a session and verifies administrator status', as
   expect((await request.get('/page/api/version')).status()).toBe(401);
   await request.get('/dev-login/alice');
   expect(await (await request.get('/page/api/version')).json()).toMatchObject({
-    installedVersion: '0.3.3',
+    installedVersion: version,
     status: 'disabled',
     isAdmin: true,
   });
@@ -115,6 +116,7 @@ test('admin patch announcements support Escape and remember dismissal per releas
 test('a pending announcement does not interrupt another modal', async ({
   page,
 }) => {
+  await page.clock.install();
   let release!: () => void;
   const wait = new Promise<void>((resolve) => {
     release = resolve;
@@ -130,5 +132,10 @@ test('a pending announcement does not interrupt another modal', async ({
   await expect(page.locator('[data-pager-update]')).toHaveCount(0);
   await expect(
     page.getByRole('dialog', { name: 'About', exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Close About' }).click();
+  await page.clock.fastForward(15000);
+  await expect(
+    page.getByRole('dialog', { name: 'ImmichPager update available' }),
   ).toBeVisible();
 });

@@ -1,28 +1,50 @@
-# GitLab distribution and repository migration
+# GitLab CI and distribution
 
-## Repository migration status
+GitLab is the active host. Merge requests target `dev`; `main` is unchanged by the
+0.3.x release workflow. Historical GitHub upstream links and downloads remain.
 
-The user authorized moving the active repository and reviews to `https://gitlab.com/wispd/ImmichPager`. All 26 review branches and descriptions now have GitLab merge requests targeting `dev`; local `origin` and branch upstreams use GitLab. No feature merge or image publication is implied. The stable `main` commit and existing `v0.1.0` tag are unchanged; historical release downloads remain available on GitHub. See [the migration record on dev](https://gitlab.com/wispd/ImmichPager/-/blob/dev/docs/gitlab-migration.md) and [the approval index](https://gitlab.com/wispd/ImmichPager/-/blob/dev/tasks/review.md).
+## Required checks
 
-This MR prepares the CI configuration and registry publishing behavior for review. GitLab attempted pipelines after the transfer but created no jobs because it reports that the user is not verified. Account verification is required before hosted checks can run; local checks do not certify runner or registry operation.
+Quality checks (format, lint, types, unit tests and audit), production build, and
+source Dockerfile smoke testing start concurrently. Two Chromium jobs consume the
+same production build artifact and shard test files. Each job has one worker and
+an isolated fixture process/database; local browser runs remain serialized.
+The browser jobs use `needs: build`; release publication requires every gate.
+No tests are skipped to improve timing.
 
-## CI and image publishing
+Node 22.23.3 and pnpm 11.28.5 are asserted. The build job alone writes the
+lockfile-keyed pnpm cache; other jobs read it. Missing caches remain supported.
+Superseded verification jobs are interruptible; publishing jobs are not.
 
-`.gitlab-ci.yml` runs on merge requests, branches, and tags with Node `22.23.3` from `.nvmrc` and pnpm `11.28.5` from `package.json`. The verification job runs formatting, lint, type checks, domain tests, dependency audit, production build, and serialized browser tests. A separate job builds the Docker image and checks `/page/health`.
+`Dockerfile.ci` pins the browser toolchain to Playwright 1.56.0 and Node/pnpm.
+When a pin changes, run the manual `ci_tools` job, inspect its trace and
+`ci-image.txt` artifact, then update the browser image digest in `.gitlab-ci.yml`.
+Keep the previous digest until the replacement build succeeds. Do not remove
+referenced CI image tags during registry cleanup. This job publishes only a CI
+toolchain image, never an application release.
 
-The `publish_image` job is available only for a protected tag matching `vMAJOR.MINOR.PATCH`. It waits for verification and the Docker smoke test, then requires a maintainer to start it manually. It uses GitLab's per-job registry credentials, builds amd64 and arm64 images, and publishes `MAJOR.MINOR.PATCH`, `MAJOR.MINOR`, and `latest` tags. No rolling branch tag is published. The Compose file defaults to `latest`; pin `PAGER_TAG` to an exact version for production.
+Each command records seconds and exit status in `ci-timings.tsv`. Browser jobs
+retain JUnit reports and failure traces. To compare hosted required-job elapsed
+time and summed runner usage (excluding optional publishing/toolchain jobs):
 
-Docker-in-Docker is used for the smoke test and image publication. GitLab runners must allow privileged Docker-in-Docker jobs; confirm the destination runner supports that before relying on these jobs. GitLab documents this runner requirement and the TLS configuration in its [Docker-in-Docker guide](https://docs.gitlab.com/ci/docker/docker_in_docker/). Registry authentication uses the temporary [`CI_REGISTRY_USER` and `CI_REGISTRY_PASSWORD` variables](https://docs.gitlab.com/user/packages/container_registry/authenticate_with_container_registry/), so no long-lived registry token is stored in the repository.
+```sh
+node scripts/ci/report.mjs 2978961866 PIPELINE_ID
+```
 
-The configuration can be checked with GitLab's [CI Lint API](https://docs.gitlab.com/api/lint/) using static validation (`dry_run` omitted or `false`). That endpoint validates YAML without creating a pipeline. A successful lint response does not test runner availability or publish images.
+The v0.3.2 baseline is about 398 seconds elapsed and 397 runner-seconds. Measure
+cold cache separately from three warm-cache runs. The goal is at least 30% less
+elapsed time; parallel setup may increase total runner usage.
 
-## Remaining CI and release steps
+## Releases
 
-1. Review and approve the proposed CI and feature changes through GitLab merge requests. The combined candidate is draft !26; all features remain unmerged.
-2. Complete the GitLab account verification required to start CI jobs, then run the candidate pipeline. Confirm Node/pnpm setup, browser tests, Docker smoke tests, and the runner's privileged Docker-in-Docker support.
-3. Before any release, verify `main` protection and configure a protected tag rule for `v*` with Maintainer-level release access. Confirm that CI marks release tags as protected and that manual `publish_image` is absent from ordinary branches and unprotected tags.
-4. Review the proposed GitLab issue/MR templates and verify a private vulnerability-reporting path before replacing existing security contact guidance.
-5. Retain historical v0.1.0 downloads on GitHub. Test image pulls before updating installation guidance to a newly published GitLab image. GitHub is retained for history, upstream references, and existing download links.
-6. Create a new protected semantic-version tag only after release checks pass. A maintainer can then start the manual image job and verify the manifest and version tags before updating a deployment.
+The manual `publish_image` job is restricted to protected `vMAJOR.MINOR.PATCH`
+tags. It waits for quality, build, both browser shards and Docker smoke. It uses
+GitLab job credentials and Buildx to publish amd64/arm64 images with exact-version,
+minor and latest tags. Production should use an exact version.
 
-Repository and review migration is complete. Feature approval, release verification, registry publication, and deployment remain separate from that transfer.
+Runners must support privileged Docker-in-Docker with TLS. Static CI Lint checks
+validate configuration; successful hosted jobs establish runtime operation.
+Release the reviewed tagged commit, verify downloadable checksums, preserve a
+recoverable configuration and complete stopped-volume backup (including SQLite
+WAL/SHM), and verify live version, readiness and data fingerprints after upgrade.
+See [deployment](deployment.md) for recovery and runtime-bundle deployment.
