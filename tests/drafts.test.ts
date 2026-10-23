@@ -133,7 +133,7 @@ it('reviews changes only for the owner and the expected saved draft revision', a
     appearanceChanges: ['title', 'logo'],
   });
   expect(JSON.stringify(review)).not.toMatch(
-    /passwordHash|password|shareId|native-cookie/,
+    /passwordHash|source-pin|shareId|native-cookie/,
   );
   expect(() => drafts.review('bob', page.id, page.draftRevision)).toThrow(
     'not found',
@@ -173,6 +173,7 @@ it('never stores password values in a draft', async () => {
 it('duplicates only an owned page design into an empty private draft', async () => {
   const { store, drafts, upstream } = setup();
   let source = await drafts.save('alice', null, {
+    allowDownload: false,
     title: 'Acme monthly work',
     slug: 'acme-monthly-work',
     description: 'Client-specific copy',
@@ -251,6 +252,7 @@ it('duplicates only an owned page design into an empty private draft', async () 
   expect(duplicate.id).not.toBe(source.id);
   expect(duplicate).toMatchObject({
     ownerId: 'alice',
+    allowDownload: true,
     title: '',
     description: '',
     slug: '',
@@ -405,6 +407,7 @@ it('defaults older JSON records and publishes appearance changes only explicitly
   const old = store.draft(d.id, 'alice') as Partial<
     import('../src/lib/contracts').DraftRecord
   >;
+  delete old.allowDownload;
   delete old.headerLayout;
   delete old.titleSize;
   delete old.descriptionSize;
@@ -416,6 +419,7 @@ it('defaults older JSON records and publishes appearance changes only explicitly
     .prepare('UPDATE drafts SET document=? WHERE id=?')
     .run(JSON.stringify(old), d.id);
   expect(store.draft(d.id, 'alice')).toMatchObject({
+    allowDownload: true,
     headerLayout: 'below',
     titleSize: 3,
     descriptionSize: 1.125,
@@ -438,6 +442,7 @@ it('defaults older JSON records and publishes appearance changes only explicitly
   const oldLive = store.get(d.id)! as Partial<
     import('../src/lib/contracts').PageRecord
   >;
+  delete oldLive.allowDownload;
   delete oldLive.headerLayout;
   delete oldLive.titleSize;
   delete oldLive.descriptionSize;
@@ -449,6 +454,7 @@ it('defaults older JSON records and publishes appearance changes only explicitly
     .prepare('UPDATE pages SET document=? WHERE id=?')
     .run(JSON.stringify(oldLive), d.id);
   expect(store.publicPage('client')).toMatchObject({
+    allowDownload: true,
     headerLayout: 'below',
     titleSize: 3,
     descriptionSize: 1.125,
@@ -566,4 +572,174 @@ it('rejects header settings outside their supported ranges', async () => {
       }),
     ).rejects.toThrow();
   }
+});
+
+it('reviews and publishes download permissions privately on new and retained shares', async () => {
+  const { store, drafts, upstream } = setup();
+  let d = await drafts.save('alice', null, { ...values, allowDownload: false });
+  expect(d.allowDownload).toBe(false);
+  expect(upstream.createShare).not.toHaveBeenCalled();
+  expect(drafts.review('alice', d.id, d.draftRevision).downloadChange).toEqual({
+    before: null,
+    after: false,
+  });
+  d = await drafts.publish('alice', d.id, {
+    password: '',
+    passwordMode: 'keep',
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(upstream.createShare).toHaveBeenLastCalledWith(
+    'a',
+    expect.any(String),
+    null,
+    false,
+  );
+  expect(upstream.updateShare).toHaveBeenLastCalledWith(
+    expect.any(String),
+    null,
+    expect.any(String),
+    false,
+  );
+  d = await drafts.save('alice', d.id, {
+    ...values,
+    allowDownload: true,
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(store.publicPage('client')?.allowDownload).toBe(false);
+  const review = drafts.review('alice', d.id, d.draftRevision);
+  expect(review.downloadChange).toEqual({ before: false, after: true });
+  upstream.updateShare.mockRejectedValueOnce(Error('offline'));
+  await expect(
+    drafts.publish('alice', d.id, {
+      password: '',
+      passwordMode: 'keep',
+      expectedDraftRevision: d.draftRevision,
+      expectedPublishedRevision: review.expectedPublishedRevision,
+    }),
+  ).rejects.toThrow('sharing is incomplete');
+  expect(store.get(d.id)).toMatchObject({
+    allowDownload: true,
+    intent: 'publish',
+    status: 'error',
+  });
+  await drafts.operation('alice', d.id, 'retry');
+  expect(store.publicPage('client')?.allowDownload).toBe(true);
+  expect(upstream.createShare).toHaveBeenCalledTimes(1);
+  expect(upstream.updateShare).toHaveBeenLastCalledWith(
+    expect.any(String),
+    null,
+    expect.any(String),
+    true,
+  );
+});
+
+it('requires the current password exactly when protected shares must synchronize', async () => {
+  const { store, drafts, upstream } = setup();
+  let d = await drafts.save('alice', null, values);
+  expect(
+    drafts.review('alice', d.id, d.draftRevision, 'set').passwordAction,
+  ).toBe('set');
+  d = await drafts.publish('alice', d.id, {
+    password: 'original',
+    passwordMode: 'set',
+    expectedDraftRevision: d.draftRevision,
+  });
+  d = await drafts.save('alice', d.id, {
+    ...values,
+    title: 'New appearance',
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(
+    drafts.review('alice', d.id, d.draftRevision).requiresCurrentPassword,
+  ).toBe(false);
+  d = await drafts.publish('alice', d.id, {
+    password: '',
+    passwordMode: 'keep',
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(upstream.updateShare).toHaveBeenCalledTimes(1);
+  d = await drafts.save('alice', d.id, {
+    ...values,
+    allowDownload: false,
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(drafts.review('alice', d.id, d.draftRevision)).toMatchObject({
+    requiresCurrentPassword: true,
+    passwordAction: 'keep',
+  });
+  await expect(
+    drafts.publish('alice', d.id, {
+      password: 'incorrect',
+      passwordMode: 'keep',
+      expectedDraftRevision: d.draftRevision,
+    }),
+  ).rejects.toThrow('current page password');
+  expect(store.publicPage('client')?.allowDownload).toBe(true);
+  d = await drafts.publish('alice', d.id, {
+    password: 'original',
+    passwordMode: 'keep',
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(upstream.updateShare).toHaveBeenLastCalledWith(
+    expect.any(String),
+    'original',
+    expect.any(String),
+    false,
+  );
+  expect(drafts.review('alice', d.id, d.draftRevision, 'set')).toMatchObject({
+    passwordAction: 'change',
+    requiresCurrentPassword: false,
+  });
+  d = await drafts.publish('alice', d.id, {
+    password: 'replacement',
+    passwordMode: 'set',
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(upstream.updateShare).toHaveBeenLastCalledWith(
+    expect.any(String),
+    'replacement',
+    expect.any(String),
+    false,
+  );
+  expect(drafts.review('alice', d.id, d.draftRevision, 'remove')).toMatchObject(
+    { passwordAction: 'remove', requiresCurrentPassword: false },
+  );
+  d = await drafts.publish('alice', d.id, {
+    password: '',
+    passwordMode: 'remove',
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(d.hasPassword).toBe(false);
+  expect(upstream.updateShare).toHaveBeenLastCalledWith(
+    expect.any(String),
+    null,
+    expect.any(String),
+    false,
+  );
+  expect(JSON.stringify(store.draft(d.id, 'alice'))).not.toMatch(
+    /original|replacement/,
+  );
+  expect(JSON.stringify(store.get(d.id))).not.toMatch(/original|replacement/);
+});
+
+it('does not mark reverted draft settings as unpublished changes', async () => {
+  const { drafts } = setup();
+  let d = await drafts.save('alice', null, values);
+  d = await drafts.publish('alice', d.id, {
+    password: '',
+    passwordMode: 'keep',
+    expectedDraftRevision: d.draftRevision,
+  });
+  d = await drafts.save('alice', d.id, {
+    ...values,
+    allowDownload: false,
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(d.hasUnpublishedChanges).toBe(true);
+  d = await drafts.save('alice', d.id, {
+    ...values,
+    allowDownload: true,
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(d.hasUnpublishedChanges).toBe(false);
 });

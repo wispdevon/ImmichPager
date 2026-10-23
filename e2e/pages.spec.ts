@@ -67,9 +67,11 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
   await setHeaderText(page, 'Title', 'Acme monthly photography');
   await expect(page).not.toHaveURL(/\/manage\/new$/);
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Page settings', exact: true })
+    .click();
   await expect(
-    page.getByRole('dialog', { name: 'Options', exact: true }),
+    page.getByRole('dialog', { name: 'Page settings', exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole('textbox', { name: 'Page URL', exact: true }),
@@ -77,7 +79,7 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
   await page
     .getByRole('textbox', { name: 'Page URL', exact: true })
     .fill('protected-client');
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await page.getByRole('button', { name: 'Close', exact: true }).last().click();
   await page
     .getByRole('button', { name: 'Select albums', exact: true })
     .click();
@@ -136,11 +138,13 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
       )
     ).status(),
   ).toBe(404);
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
-  await page.getByRole('switch', { name: 'Password protection' }).click();
+  await page
+    .getByRole('button', { name: 'Page settings', exact: true })
+    .click();
+  await page.getByRole('button', { name: 'Set password' }).click();
   await page.getByPlaceholder('At least 4 characters').fill('2468');
   await page.screenshot({ path: 'test-results/options.png', fullPage: true });
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await page.getByRole('button', { name: 'Close', exact: true }).last().click();
   await page.getByRole('button', { name: 'Preview', exact: true }).click();
   const gallery = page.frameLocator('[data-testid="responsive-preview-frame"]');
   await expect(

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto, replaceState, beforeNavigate } from '$app/navigation';
   import { untrack, onMount, tick } from 'svelte';
-  import { Button, Modal, ModalBody } from '@immich/ui';
+  import { Button, Modal, ModalBody, ConfirmModal } from '@immich/ui';
   import Gallery from '$lib/components/Gallery.svelte';
   import AlbumPicker from '$lib/components/AlbumPicker.svelte';
   import BrandingSlot from '$lib/components/BrandingSlot.svelte';
@@ -50,6 +50,7 @@
     customCss: initial?.customCss ?? '',
     albumIds: [...(initial?.albumIds ?? [])],
     order: initial?.order ?? 'newest',
+    allowDownload: initial?.allowDownload ?? true,
     passwordMode: 'keep',
     password: '',
   });
@@ -69,6 +70,16 @@
     slugLocked = $state(!!initial?.slug),
     conflict = $state(false),
     failedSnapshot = $state<string | null>(null);
+  let settingsTrigger = $state<HTMLButtonElement | null>(null);
+  async function closeSettings() {
+    optionsOpen = false;
+    await tick();
+    settingsTrigger?.focus();
+  }
+  let currentPassword = $state('');
+  let reviewSubmitting = $state(false);
+  let retryReview = $state(false);
+  let pendingAction = $state<'unpublish' | 'delete' | null>(null);
   let customizeDraftRevision = $state<number | null>(null);
   let customizeSyncSequence = $state(0);
   function snapshot() {
@@ -79,6 +90,21 @@
   }
   let acknowledged = $state(untrack(() => snapshot()));
   const dirty = $derived(snapshot() !== acknowledged);
+  const canPublish = $derived(
+    !saved?.publishedSlug ||
+      dirty ||
+      !!saved?.hasUnpublishedChanges ||
+      fields.passwordMode !== 'keep',
+  );
+  const saveStatus = $derived(
+    failedSnapshot
+      ? 'Couldn’t save draft'
+      : dirty
+        ? 'Unsaved changes'
+        : fields.passwordMode !== 'keep'
+          ? 'Draft saved · password action pending'
+          : 'All changes saved',
+  );
   const selected = $derived(
     fields.albumIds
       .map((id) => data.albums.find((a) => a.id === id))
@@ -363,6 +389,8 @@
     message = '';
     success = '';
     publicationReview = null;
+    retryReview = false;
+    currentPassword = '';
     optionsOpen = false;
     albumsOpen = false;
     photoKind = null;
@@ -370,7 +398,7 @@
       await flush(true);
       if (!saved) throw Error('Save the draft before publishing');
       publicationReview = await api<PublicationSummary>(
-        `/page/api/pages/${saved.id}/publication-review?expectedDraftRevision=${saved.draftRevision}`,
+        `/page/api/pages/${saved.id}/publication-review?expectedDraftRevision=${saved.draftRevision}&passwordMode=${fields.passwordMode}`,
         'GET',
       );
     } catch (cause) {
@@ -386,21 +414,38 @@
     const review = publicationReview;
     if (!review || !saved) return;
     const id = saved.id;
-    publicationReview = null;
+    if (reviewSubmitting) return;
+    reviewSubmitting = true;
     message = '';
     success = '';
     try {
-      saved = await enqueue(() =>
-        api<DraftEditorPage>(`/page/api/pages/${id}/publish`, 'POST', {
-          password: fields.password,
-          passwordMode: fields.passwordMode,
-          expectedDraftRevision: review.draftRevision,
-          expectedPublishedRevision: review.expectedPublishedRevision,
-        }),
+      const result = await enqueue(() =>
+        api<DraftEditorPage | { deleted: true }>(
+          `/page/api/pages/${id}/${retryReview ? 'retry' : 'publish'}`,
+          'POST',
+          {
+            password: review.requiresCurrentPassword
+              ? currentPassword
+              : fields.password,
+            passwordMode: fields.passwordMode,
+            expectedDraftRevision: review.draftRevision,
+            expectedPublishedRevision: review.expectedPublishedRevision,
+          },
+        ),
       );
+      if ('deleted' in result) {
+        publicationReview = null;
+        await goto('/page/manage');
+        return;
+      }
+      saved = result;
       fields.password = '';
       fields.passwordMode = 'keep';
-      success = 'Page published. Your client link is ready.';
+      currentPassword = '';
+      publicationReview = null;
+      success = retryReview
+        ? 'Synchronization complete.'
+        : 'Page published. Your client link is ready.';
     } catch (cause) {
       message =
         cause instanceof Error
@@ -413,30 +458,55 @@
           /* Preserve the last known draft. */
         }
       }
-      if (message.toLowerCase().includes('password')) optionsOpen = true;
+      if (saved?.status === 'error') {
+        retryReview = true;
+        publicationReview = {
+          ...review,
+          requiresCurrentPassword:
+            saved.intent === 'publish' && saved.hasPassword,
+        };
+      }
     } finally {
-      busy = false;
+      reviewSubmitting = false;
+      busy = !!publicationReview;
     }
   }
   function cancelPublicationReview() {
+    if (reviewSubmitting) return;
+    currentPassword = '';
     publicationReview = null;
     busy = false;
+  }
+  function requestAction(action: 'retry' | 'unpublish' | 'delete') {
+    if (action !== 'retry') {
+      pendingAction = action;
+      return;
+    }
+    if (!saved) return;
+    optionsOpen = false;
+    retryReview = true;
+    currentPassword = '';
+    message = '';
+    busy = true;
+    publicationReview = {
+      draftRevision: saved.draftRevision,
+      expectedPublishedRevision: null,
+      currentlyPublished: false,
+      previousSlug: null,
+      nextSlug: saved.slug,
+      addedAlbumIds: [],
+      removedAlbumIds: [],
+      appearanceChanges: [],
+      passwordAction: 'keep',
+      downloadChange: null,
+      requiresCurrentPassword: saved.intent === 'publish' && saved.hasPassword,
+    };
   }
   async function perform(action: 'publish' | 'retry' | 'unpublish' | 'delete') {
     if (action === 'publish') {
       await reviewPublication();
       return;
     }
-    if (
-      action === 'delete' &&
-      !confirm('Delete this page and revoke its dedicated album links?')
-    )
-      return;
-    if (
-      action === 'unpublish' &&
-      !confirm('Unpublish this page and revoke its album links?')
-    )
-      return;
     busy = true;
     message = '';
     success = '';
@@ -479,7 +549,6 @@
           /* Preserve the last known draft. */
         }
       }
-      if (message.toLowerCase().includes('password')) optionsOpen = true;
     } finally {
       busy = false;
     }
@@ -720,7 +789,8 @@
           >{/if}<CopyLink slug={saved?.publishedSlug ?? null} /><Button
           variant="ghost"
           color="secondary"
-          onclick={() => (optionsOpen = true)}>Options</Button
+          bind:ref={settingsTrigger}
+          onclick={() => (optionsOpen = true)}>Page settings</Button
         ><Button variant="ghost" color="secondary" onclick={openPreview}
           >Preview</Button
         ><Button
@@ -730,7 +800,10 @@
           onclick={openCustomize}>Customize</Button
         ><Button
           shape="round"
-          disabled={busy || conflict || saved?.status === 'error'}
+          disabled={busy ||
+            conflict ||
+            !canPublish ||
+            saved?.status === 'error'}
           onclick={() => perform('publish')}
           >{busy
             ? 'Working…'
@@ -746,7 +819,7 @@
         hasPassword={saved.hasPassword}
       />
     {/if}
-    {#if message && !optionsOpen && !photoKind}<div
+    {#if message && !optionsOpen && !photoKind && !publicationReview}<div
         class="notice error"
         role="alert"
       >
@@ -756,9 +829,9 @@
     {#if saved?.status === 'error'}<div class="notice">
         <p>
           This page is hidden while its album links need synchronization. Open
-          Options to enter its password if protected.
+          Page settings to retry the pending operation.
         </p>
-        <Button disabled={busy} onclick={() => perform('retry')}
+        <Button disabled={busy} onclick={() => requestAction('retry')}
           >Retry synchronization</Button
         >
       </div>{/if}
@@ -843,7 +916,9 @@
         {message}
         {busy}
         {saving}
-        onClose={() => (optionsOpen = false)}
+        {saveStatus}
+        canPublish={canPublish && !conflict}
+        onClose={closeSettings}
         onSlugEdit={() => (slugLocked = true)}
         onpublish={() => {
           optionsOpen = false;
@@ -851,7 +926,7 @@
         }}
         onaction={(action) => {
           optionsOpen = false;
-          void perform(action);
+          requestAction(action);
         }}
       />{/if}
     {#if photoKind}<PhotoPicker
@@ -860,8 +935,26 @@
         onClose={() => (photoKind = null)}
         onchoose={(id) => branding(photoKind!, id)}
       />{/if}
+    {#if pendingAction}<ConfirmModal
+        title={pendingAction === 'delete' ? 'Delete page' : 'Unpublish page'}
+        prompt={pendingAction === 'delete'
+          ? 'Delete this page and revoke its dedicated album links?'
+          : 'Unpublish this page and revoke its album links?'}
+        confirmText={pendingAction === 'delete'
+          ? 'Delete page'
+          : 'Unpublish page'}
+        onClose={(confirmed) => {
+          const action = pendingAction;
+          pendingAction = null;
+          if (confirmed && action) void perform(action);
+        }}
+      />{/if}
     {#if publicationReview}<PublicationReview
         review={publicationReview}
+        bind:password={currentPassword}
+        {message}
+        submitting={reviewSubmitting}
+        retry={retryReview}
         albums={data.albums}
         onClose={cancelPublicationReview}
         onConfirm={publishReviewed}

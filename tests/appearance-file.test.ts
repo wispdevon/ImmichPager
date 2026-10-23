@@ -102,19 +102,24 @@ it('imports version 1 files with compatibility defaults and current new settings
   );
 });
 
-it.each(['albumIds', 'title', 'slug', 'password', 'shareToken', 'ownerId'])(
-  'rejects portable files containing %s',
-  (field) => {
-    const input = {
-      format: 'immichpager-appearance',
-      version: 2,
-      appearance: { ...appearance, [field]: 'private-value' },
-    };
+it.each([
+  'albumIds',
+  'title',
+  'slug',
+  'password',
+  'shareToken',
+  'ownerId',
+  'allowDownload',
+])('rejects portable files containing %s', (field) => {
+  const input = {
+    format: 'immichpager-appearance',
+    version: 2,
+    appearance: { ...appearance, [field]: 'private-value' },
+  };
 
-    expect(appearanceFileSchema.safeParse(input).success).toBe(false);
-    expect(() => parseAppearanceFile(JSON.stringify(input))).toThrow();
-  },
-);
+  expect(appearanceFileSchema.safeParse(input).success).toBe(false);
+  expect(() => parseAppearanceFile(JSON.stringify(input))).toThrow();
+});
 
 it('rejects unsupported versions and malformed JSON', () => {
   expect(() =>

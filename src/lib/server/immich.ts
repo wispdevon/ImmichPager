@@ -239,7 +239,12 @@ export class Immich {
       .array(shareSchema)
       .parse(await (await this.request('shared-links')).json());
   }
-  async createShare(albumId: string, slug: string, password: string | null) {
+  async createShare(
+    albumId: string,
+    slug: string,
+    password: string | null,
+    allowDownload = true,
+  ) {
     return shareSchema.parse(
       await (
         await this.request('shared-links', {
@@ -251,14 +256,19 @@ export class Immich {
             slug,
             password,
             allowUpload: false,
-            allowDownload: true,
+            allowDownload,
             showMetadata: true,
           }),
         })
       ).json(),
     );
   }
-  async updateShare(id: string, password: string | null, slug: string) {
+  async updateShare(
+    id: string,
+    password: string | null,
+    slug: string,
+    allowDownload = true,
+  ) {
     await this.request(`shared-links/${encodeURIComponent(id)}`, {
       method: 'PATCH',
       headers: { 'content-type': 'application/json' },
@@ -266,7 +276,7 @@ export class Immich {
         password,
         slug,
         allowUpload: false,
-        allowDownload: true,
+        allowDownload,
         showMetadata: true,
         expiresAt: null,
       }),

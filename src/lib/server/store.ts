@@ -9,6 +9,7 @@ import {
   type DraftEditorPage,
   type PageRecord,
 } from '../contracts';
+import { summarizePublicationChanges } from '../publication-summary';
 import { tokenHash } from './security';
 
 export type ShareRecord = {
@@ -95,7 +96,10 @@ export class Store {
       .prepare('SELECT document FROM drafts WHERE id=? AND owner_id=?')
       .get(id, ownerId) as { document: string } | undefined;
     if (!row) throw new AppError(404, 'Page not found');
-    return appearanceDefaults(JSON.parse(row.document));
+    return {
+      allowDownload: true,
+      ...appearanceDefaults(JSON.parse(row.document)),
+    };
   }
   putDraft(page: DraftRecord) {
     this.db
@@ -139,6 +143,13 @@ export class Store {
   editor(id: string, ownerId: string): DraftEditorPage {
     const draft = this.draft(id, ownerId),
       live = this.get(id);
+    const changes = summarizePublicationChanges(draft, live);
+    const brandingChanged = (['logo', 'banner'] as const).some(
+      (kind) =>
+        !Buffer.from(this.draftBranding(id, kind) ?? []).equals(
+          Buffer.from(this.branding(id, kind) ?? []),
+        ),
+    );
     return {
       ...draft,
       status: live?.status ?? 'draft',
@@ -149,7 +160,12 @@ export class Store {
       publishedRevision: live?.status === 'published' ? live.revision : null,
       publishedSlug: live?.status === 'published' ? live.slug : null,
       hasUnpublishedChanges:
-        !live || draft.publishedDraftRevision !== draft.revision,
+        live?.status !== 'published' ||
+        changes.addedAlbumIds.length > 0 ||
+        changes.removedAlbumIds.length > 0 ||
+        changes.appearanceChanges.length > 0 ||
+        !!changes.downloadChange ||
+        brandingChanged,
     };
   }
   editors(ownerId: string) {
@@ -225,7 +241,9 @@ export class Store {
     const row = this.db
       .prepare('SELECT document FROM pages WHERE id=?')
       .get(id) as { document: string } | undefined;
-    return row ? appearanceDefaults(JSON.parse(row.document)) : null;
+    return row
+      ? { allowDownload: true, ...appearanceDefaults(JSON.parse(row.document)) }
+      : null;
   }
   owned(id: string, ownerId: string) {
     const page = this.get(id);
@@ -240,7 +258,10 @@ export class Store {
           'SELECT document FROM pages WHERE owner_id=? ORDER BY rowid DESC',
         )
         .all(ownerId) as { document: string }[]
-    ).map((r) => appearanceDefaults(JSON.parse(r.document)));
+    ).map((r) => ({
+      allowDownload: true,
+      ...appearanceDefaults(JSON.parse(r.document)),
+    }));
   }
   publicPage(slug: string): PageRecord | null {
     const row = this.db

@@ -1,51 +1,78 @@
-# API and URL contracts
+# Architecture
 
-All Pager routes use `/page/`. Management routes require a verified Immich session and enforce owner checks. Mutations require the configured `Origin`. Errors return `{ "message": "…" }` with a 4xx/5xx status.
+## Request flow
 
-| Method       | Route                                    | Behavior                                                                      |
-| ------------ | ---------------------------------------- | ----------------------------------------------------------------------------- |
-| GET          | `/page/api/pages`                        | Owner's working copies, publication state, and live URL                       |
-| POST         | `/page/api/pages`                        | Create an incomplete private draft                                            |
-| GET, PUT     | `/page/api/pages/:id`                    | Read or replace working settings                                              |
-| GET          | `/page/api/pages/:id/publication-review` | Compare an expected draft revision with the current live page                 |
-| POST         | `/page/api/pages/:id/duplicate`          | Copy owned appearance and branding into a new empty private draft             |
-| DELETE       | `/page/api/pages/:id`                    | Revoke dedicated links and delete draft/live data                             |
-| POST         | `/page/api/pages/:id/publish`            | Validate and publish the expected draft revision                              |
-| POST         | `/page/api/pages/:id/unpublish`          | Hide page and revoke links                                                    |
-| POST         | `/page/api/pages/:id/retry`              | Resume a persisted publication/revocation                                     |
-| POST, DELETE | `/page/api/pages/:id/branding/:kind`     | Change working `logo` or `banner`                                             |
-| GET          | `/page/api/photos`                       | Owned Photos search, favorites, and album filtering                           |
-| GET          | `/page/api/photos/:id/thumbnail`         | Owner-checked library thumbnail                                               |
-| GET          | `/page/api/albums`                       | Owned albums                                                                  |
-| GET          | `/page/api/albums/:id/cover`             | Owner-authorized cover                                                        |
-| GET, POST    | `/page/:slug`                            | Published overview / password form                                            |
-| GET          | `/page/media/:id/album/:albumId`         | Authorized published album cover                                              |
-| GET          | `/page/media/:id/branding/:kind`         | Authorized published branding; `?preview=1` reads owner-only working branding |
+```mermaid
+flowchart LR
+    Browser --> TLS[Existing HTTPS reverse proxy]
+    TLS --> Gateway[ImmichPager gateway]
+    Gateway -->|/page/*| App[SvelteKit application]
+    Gateway -->|All other routes| Immich[Existing Immich upstream]
+    App -->|Transient editor session / native share authorization| Immich
+    App --> SQLite[(SQLite and branding)]
+```
 
-## Draft and publication contracts
+One Node process serves the application and proxies Immich. Immich's database, image, originals, and configuration are not modified. Only Pager-owned shared links are created, updated, or deleted through Immich's HTTP API.
 
-`draftInputSchema` defines full working settings. Blank/incomplete titles and slugs are allowed privately. PUT replaces settings, not a partial patch, and **requires `expectedDraftRevision`** matching the latest response. Each settings or branding change increments that revision. A stale revision returns 409 without overwriting another tab.
+## Code boundaries
 
-Responses include `draftRevision`, `publishedRevision` (nullable), `publishedSlug` (nullable), `hasUnpublishedChanges`, publication status, working branding flags, and `hasPassword`. They never include password hashes or native share credentials. `revision` is the live page revision, not the working revision.
+- `src/lib/contracts.ts`: validated inputs, typed domain records, public/editor DTOs.
+- `src/lib/server`: SQLite persistence, Immich HTTP client, authorization, page lifecycle, public gallery assembly.
+- `src/lib/components`: reusable public gallery presentation.
+- `src/routes`: thin HTTP adapters and editor/client screens, all mounted under `/page`.
+- `server`: same-origin gateway and credential-free sidebar bridge.
+- `fixtures`, `tests`, `e2e`: local Immich fixture, domain/integration tests, production-browser tests.
 
-A reviewed publish sends `{ "expectedDraftRevision": 3, "expectedPublishedRevision": 7, "passwordMode": "keep", "password": "" }`; `expectedPublishedRevision` is `null` before a page has been published. It is optional for older direct clients. `passwordMode` is `keep`, `set`, or `remove`. The password is transient and supplied only when changing protection or synchronizing protected album links; it is not saved with the draft. Header/order-only updates with unchanged membership/protection reuse existing links. Publication applies strict title/slug validation and requires at least one owned album. System slugs `manage`, `api`, `assets`, `media`, `health`, and `ready` remain reserved; a live slug collision returns 409.
+## Authentication and ownership
 
-Before publishing, the editor requests the owner-only publication review with the saved `expectedDraftRevision` query parameter. The response lists added/removed album IDs, changed page/appearance fields, the prior and next page URL, and both the draft and live revisions. It contains no passwords, password hashes, or native share capabilities. The publish request supplies both reviewed revisions; a 409 asks the editor to review again if either the draft or live page changed in another tab.
+The editor forwards the current browser's Immich session to `GET /api/users/me`. Pager then verifies the returned user ID against each stored page's owner. Browser-supplied owner IDs are never accepted. Only owned albums can be selected. The Immich client normalizes v3 ownership from `albumUsers[0].user.id` (the upstream DTO guarantees the owner is first), with `ownerId` retained as a legacy fallback. Shared-with-me collaborators never become owners. HTTP fixtures use the v3 DTO so client/schema drift cannot silently empty the picker. No global API key or persistent editor credentials are needed.
 
-Autosaving never changes the public version or its sessions. Publication commits the working branding and matching settings together. Failed native synchronization remains hidden until retry succeeds. Retry/unpublish bodies accept `{ "password": "…" }` when needed. For an uncertain native outcome, retry adopts deterministic native links rather than creating duplicates. Draft creation itself is not idempotent; after an unreadable success response, check the page list before repeating creation.
+Public page passwords use salted scrypt hashes. Unlocking obtains native shared-link authorization using the submitted password and retains only the resulting cookie capabilities in a 12-hour server-side session. The browser receives an opaque, HttpOnly, SameSite cookie scoped to `/page`. Passwords are never persisted by Pager; Immich manages the native links according to its own implementation.
 
-`POST /page/api/pages/:id/duplicate` checks ownership of the source draft, then creates a new private draft with its appearance settings and processed logo/banner copies. It starts with a blank title, description, URL, and album list, with default album ordering; no live page, password, or native share capabilities are copied. This creation is not idempotent, so inspect the page list before retrying after an unreadable response.
+Metadata and all image routes independently enforce publication and session checks. Owner previews require a freshly verified Immich session. Published revisions invalidate client sessions after publication changes; autosaving a working draft does not touch the live revision or sessions. Native album links are independent of the overview: Immich can prompt again, and previously authorized native sessions follow Immich's lifecycle.
 
-## Appearance settings (dev)
+## Durable sharing operations
 
-Working settings and gallery responses include per-page `headerLayout` (`"below"` or `"overlay"`, default `"below"`), `headerSize` (`"compact"`, `"standard"`, or `"tall"`, default `"standard"`), `logoSize` (integer pixels, 48–160, default 80), `titleSize` (rem, 1.5–4, default 3), `descriptionSize` (rem, 0.875–1.5, default 1.125), `headerSpacing` (rem, 1.5–5, default 2.5), and `customCss` (string, default `""`, maximum 20,000 characters). These settings use the existing autosave revision and explicit publication endpoints. Existing stored records receive defaults on read; database schema version remains 2.
+DraftService owns working-copy persistence and revision checks. Draft saves do not publish albums or update live settings/media. Incomplete titles and URLs can be saved privately; publication applies the strict page schema. Password values are never part of the autosave document.
 
-Draft saves accept unfinished or invalid CSS within the size limit. Publication validates CSS server-side and returns 400 with a `Custom CSS` message for invalid or unsupported rules before touching live data or shares. Gallery rendering independently compiles the stylesheet and omits it on error. See the [customization guide](customization.md) for selectors, variables and supported syntax. No external resources or global selectors are enabled.
+Publication flushes the editor queue, checks the expected draft revision and album ownership, and stages a durable intent before changing native links. After synchronization, published settings, branding copies, and the matching draft marker commit in one SQLite transaction. Header/order-only updates retain existing native links and do not need the album password. Publication review and publishing share the same synchronization predicate: membership, password actions, and download-permission changes require native synchronization. `allowDownload` is additive JSON with a compatibility default of `true`; it applies to new and retained Pager-owned shares only. Design duplication and appearance transfer exclude access policy.
 
-## Branding and library media
+Publishing creates one dedicated native link per page–album association, with deterministic custom slugs `pager-{page UUID}-{album UUID}`. Their custom URLs open the native viewer; the branded overview uses `/page/{client slug}`.
 
-File uploads use multipart `image` and `expectedDraftRevision`. Library selection uses JSON `{ "assetId": "<uuid>", "expectedDraftRevision": 3 }`. DELETE uses JSON `{ "expectedDraftRevision": 3 }`. Both paths process the image into page-specific WebP bytes and never modify Immich assets. Limits are 5 MiB input and 32 megapixels.
+Before changing links, persist `syncing` and the operation intent. Persist each successful create or delete. On retry, list the owner's native shares and adopt matching deterministic slugs, recovering creates whose response was lost. Missing links can be recreated. Native updates always include the slug because the reviewed Immich service otherwise clears it.
 
-Photo search accepts `q` (filename), `favorite=true`, optional owned `albumId`, and opaque `cursor`. It returns `{ "items": [{ "id", "name", "takenAt", "thumbnail" }], "nextCursor": null }`, with up to 60 items per upstream page. Only selectable, owned images are returned; ownership is checked again on thumbnails and selection. Client-provided upstream URLs are not accepted. Media redirects must stay on the configured Immich origin and the same asset's thumbnail/original routes.
+Errors and interrupted operations hide the public overview. Restart recovery converts `syncing` to `error`; the owner can retry publishing, unpublishing, or deletion with their current session. Removing protected albums or changing passwords hides the overview until synchronization succeeds. Already issued direct native links may remain usable until revocation reaches Immich; Pager does not claim to revoke an upstream link while Immich is offline.
 
-Other limits: 500 albums/page, 256 KiB JSON. Management mutations are serialized per draft; overlapping requests return 409. Editors serialize their autosave/upload queue, debounce text changes, flush before publishing, and retain unsaved fields after errors.
+Use exactly one Pager process/container per database. A process-local mutation lock prevents concurrent operations on the same page. SQLite WAL and foreign keys protect local consistency. Scaling multiple replicas against the same volume is unsupported.
+
+## Storage and migrations
+
+SQLite schema version 2 is initialized and migrated transactionally in `Store`. Version 2 adds independent `drafts` and `draft_branding` tables; existing `pages` and `branding` retain the live version. Migration copies existing pages/media into working copies and preserves native shares, password hashes, and client sessions. Brand-new drafts need no published row until publication. Tables hold pages, dedicated links, expiring public sessions, branding images, and password-attempt buckets. Forward migrations must use `PRAGMA user_version` and remain covered by tests. A newer database is refused by an older application. Future migrations must be added sequentially; do not modify the meaning of an existing version.
+
+Branding uploads accept JPEG, PNG, and WebP up to 5 MB / 32 megapixels and are decoded, rotated, resized, stripped of metadata, and re-encoded to WebP. The photo picker searches owned images using Immich v3 metadata filters, with cursor pagination, filenames, album scope, and favorites. Results expose minimal metadata; each thumbnail and branding selection rechecks ownership and excludes locked, trashed, offline, or non-image assets. PNG/WebP selections use bounded originals to retain transparency; other images use previews. Only same-upstream, same-asset media redirects are followed. Selected branding becomes a processed local copy, so removal of the Immich original does not break it. Photo covers are streamed from Immich. Protect the data volume: it contains share capabilities and session authorization, even though it contains no photo originals.
+
+## Integration boundary
+
+The gateway injects a small external sidebar script into eligible uncompressed Immich HTML. The bridge clones the Sharing entry and mounts the editor in a same-origin iframe. If the main layout is unavailable, the link falls back to the standalone editor. This is a maintained DOM integration, not an official Immich plugin API. Native API requests, share pages, binary responses, uploads, and WebSocket upgrades remain upstream.
+
+The management screen inherits the host's exclusive `light` or `dark` root class while embedded. In standalone mode, it reads only Immich's `immich-ui-theme` preference and falls back to the system color scheme. A self-hosted script applies the first theme before paint; the editor then follows same-origin root-class changes, preference storage events, and system changes. The bridge is limited to `/page/manage`, excluding nested Gallery previews, and does not read credentials or use `postMessage`. Editor surfaces use Immich UI palette tokens; public Gallery theme and custom CSS stay scoped to each page. This mirrors Immich 3.3.3's [theme initializer](https://github.com/immich-app/immich/blob/v3.3.3/web/src/app.html#L515-L536) and its separate [user appearance preference](https://github.com/immich-app/immich/blob/v3.3.3/web/src/routes/%28user%29/user-settings/AppSettings.svelte#L534-L553).
+
+Initial source review targets Immich v3.3.1. See [validation](validation.md) for the distinction between fixture verification and live compatibility.
+
+## Gallery customization (dev)
+
+Header composition presets, banner and logo size, typography, spacing, and custom CSS are additive per-page JSON settings with defaults applied on read, so no schema upgrade is needed. They remain in the working copy until explicit publication. The shared CSS Tree compiler validates allowed syntax, guards each selector's target with the page's gallery boundary, and blocks resource loading. Invalid CSS is preserved privately, omitted from preview, and rejected by publication before changing live settings or shares. A separate layout/paint containment wrapper protects editor controls from positioned gallery content. The renderer escapes HTML-opening characters in compiled CSS before serializing the stylesheet. Documented selectors and theme variables form the supported styling interface; see [customization](customization.md).
+
+## Per-page controls and portable themes
+
+`clientUi` and `galleryStyle` are validated additive JSON settings in drafts, published records, and gallery DTOs. Reading legacy JSON fills compatibility defaults; creating a page disables browsing controls by default. Duplication copies these settings, and publication review identifies visibility and style changes before they reach clients. No SQLite schema migration is needed.
+
+The shared renderer emits gallery-scoped `--pager-*` defaults with zero specificity so authored CSS can override visual controls. The Customize panel renders acknowledged draft revisions in the owner-only preview iframe, keeping client CSS isolated from native editor controls. Failed saves retain the local working fields and show retry feedback.
+
+Appearance-file version 2 carries visibility, visual settings, and CSS; version 1 imports leave newer settings intact. DTCG 2025.10 token files carry only recognized style values, resolve local aliases without network access, and present recognized/unsupported tokens before applying. Imports remain bounded at 96 KiB, and custom CSS retains its 20,000-character limit and resource-loading restrictions.
+
+## Page access and publication review
+
+Draft inputs and owner editor responses include `allowDownload: boolean` (default `true`, including legacy records). This setting remains private until publication; permission changes synchronize every retained and new dedicated share. It is excluded from appearance and design-token exports, and duplicated designs start with downloads enabled.
+
+The publication-review GET endpoint accepts `passwordMode=keep|set|remove` alongside `expectedDraftRevision`, without a password value. Its response adds `passwordAction` (`keep`, `set`, `change`, or `remove`), `requiresCurrentPassword`, and `downloadChange` (`null` or `{ before: boolean | null, after: boolean }`). The synchronization predicate is shared with publication. Passwords are submitted only in the explicit publish/retry body, never autosaved. Both draft and published revision checks still protect a reviewed publication.

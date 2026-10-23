@@ -122,6 +122,7 @@ export const pageInputSchema = z
       .default([])
       .refine((a) => new Set(a).size === a.length, 'Albums must be unique'),
     order: z.enum(['newest', 'manual']).default('newest'),
+    allowDownload: z.boolean().default(true),
     passwordMode: z.enum(['keep', 'set', 'remove']).default('keep'),
     password: z.string().max(256).default(''),
   })

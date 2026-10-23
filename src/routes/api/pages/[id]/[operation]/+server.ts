@@ -20,6 +20,9 @@ export const GET: RequestHandler = (event) =>
       owner,
       event.params.id,
       expectedDraftRevision,
+      z
+        .enum(['keep', 'set', 'remove'])
+        .parse(event.url.searchParams.get('passwordMode') ?? 'keep'),
     );
   });
 export const POST: RequestHandler = (event) =>

@@ -80,7 +80,7 @@ test('management actions stay compact and work by touch and keyboard', async ({
       page.getByRole('menuitem', { name: 'Open client page' }),
     ).toHaveCount(0);
     await expect(
-      page.getByRole('menuitem', { name: 'Options', exact: true }),
+      page.getByRole('menuitem', { name: 'Page settings', exact: true }),
     ).toBeVisible();
 
     const heading = page.getByRole('heading', { name: 'Pages', exact: true });
@@ -106,7 +106,7 @@ test('management actions stay compact and work by touch and keyboard', async ({
     await expect(duplicateItem).toBeFocused();
     await page.keyboard.press('ArrowDown');
     const optionsItem = page.getByRole('menuitem', {
-      name: 'Options',
+      name: 'Page settings',
       exact: true,
     });
     await expect(optionsItem).toBeFocused();
@@ -164,7 +164,7 @@ test('management actions stay compact and work by touch and keyboard', async ({
         const findOptions = () =>
           Array.from(
             document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-          ).find((item) => item.textContent?.includes('Options'));
+          ).find((item) => item.textContent?.includes('Page settings'));
         const observer = new MutationObserver(() => {
           if (findOptions()) {
             observer.disconnect();
@@ -180,13 +180,13 @@ test('management actions stay compact and work by touch and keyboard', async ({
       });
       const optionsItem = Array.from(
         document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-      ).find((item) => item.textContent?.includes('Options'));
+      ).find((item) => item.textContent?.includes('Page settings'));
       if (!optionsItem) throw new Error('Options menu item did not mount');
       optionsItem.click();
     }, draft.id);
     await expect(page).toHaveURL(optionsUrl);
     const optionsDialog = page.getByRole('dialog', {
-      name: 'Options',
+      name: 'Page settings',
       exact: true,
     });
     await expect(optionsDialog).toBeVisible();
@@ -210,18 +210,23 @@ test('management actions stay compact and work by touch and keyboard', async ({
         };
       }),
     ).toEqual(dialogFocus);
-    await optionsDialog.getByRole('button', { name: 'Done' }).click();
+    await optionsDialog.getByRole('button', { name: 'Close' }).last().click();
     await page.goto(`${origin}/page/manage`);
 
     await draftMenu.tap();
-    await page.getByRole('menuitem', { name: 'Options', exact: true }).tap();
+    await page
+      .getByRole('menuitem', { name: 'Page settings', exact: true })
+      .tap();
     await expect(page).toHaveURL(
       new RegExp(`/page/manage/${draft.id}\\?options=1$`),
     );
     await expect(
-      page.getByRole('dialog', { name: 'Options', exact: true }),
+      page.getByRole('dialog', { name: 'Page settings', exact: true }),
     ).toBeVisible();
-    await page.getByRole('button', { name: 'Done', exact: true }).click();
+    await page
+      .getByRole('button', { name: 'Close', exact: true })
+      .last()
+      .click();
     await page.goto(`${origin}/page/manage`);
 
     const publishedRow = page
@@ -312,7 +317,7 @@ test('desktop page actions use native icon buttons with hover and focus tooltips
   await expect(
     row
       .getByRole('link', {
-        name: 'Options for A collection of our work',
+        name: 'Page settings for A collection of our work',
         exact: true,
       })
       .locator('svg'),

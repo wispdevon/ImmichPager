@@ -17,7 +17,9 @@ async function createManualDraft(page: Page, slug: string) {
   expect(created.ok()).toBe(true);
   const record = await created.json();
   await page.goto(`/page/manage/${record.id}`);
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Page settings', exact: true })
+    .click();
   return albums;
 }
 
@@ -125,10 +127,12 @@ test('manual album order supports drag and keyboard without crossing years and p
 
   const anonymous = await browser.newPage();
   expect((await anonymous.request.get(`/page/${slug}`)).status()).toBe(404);
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await page.getByRole('button', { name: 'Close', exact: true }).last().click();
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await page.reload();
-  await page.getByRole('button', { name: 'Options', exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Page settings', exact: true })
+    .click();
   const reloaded2026 = page.locator('.order-year').filter({
     has: page.getByRole('heading', { name: '2026', exact: true }),
   });
@@ -142,7 +146,7 @@ test('manual album order supports drag and keyboard without crossing years and p
     'February stories',
     'The year begins',
   ]);
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await page.getByRole('button', { name: 'Close', exact: true }).last().click();
   await confirmPublication(page, 'Publish page');
   await expect(page.getByRole('status')).toContainText('Page published');
 

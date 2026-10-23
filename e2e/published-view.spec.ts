@@ -65,7 +65,7 @@ test('opens the published revision with password guidance while drafts remain pr
     client.getByRole('heading', { name: 'Published client version' }),
   ).toBeVisible();
   await expect(
-    client.getByRole('button', { name: 'Options', exact: true }),
+    client.getByRole('button', { name: 'Page settings', exact: true }),
   ).toHaveCount(0);
   await expect(
     client.getByText('Private changed title', { exact: true }),

@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.2] - 2026-10-23
+
+### Added
+
+- Page settings groups status, the live client link, access, album ordering, and page management in a wider desktop dialog and full-screen phone sheet.
+- Local QR generation with 1024-pixel PNG and scalable SVG downloads. Codes always contain the current published URL, including while a different URL is drafted.
+- Allow downloads controls Immich's download feature on every dedicated page album share after publication. Existing pages and new designs default to enabled.
+
+### Improved
+
+- Password Set, Change, and Remove actions stay transient. Publication review explains access changes and requests the current password only when protected album links require synchronization; failed reviews remain open.
+- Live and pending URLs are shown separately. URL edits explain when the old link stops working, without an early browser confirmation.
+- Settings shows saving failures and pending password actions, disables unchanged publications, and keeps its footer reachable on phones. Destructive actions use Immich confirmation dialogs.
+
+### Upgrade notes
+
+- Storage remains schema version 2. Download permissions use additive JSON defaults and remain private until published; appearance files and design tokens do not transfer access policy.
+- Download restrictions cannot prevent screenshots or saving displayed images. QR codes never contain passwords or session credentials.
+
 ## [0.3.1.1] - 2026-10-23
 
 ### Fixed

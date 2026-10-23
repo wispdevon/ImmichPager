@@ -75,6 +75,9 @@ it('summarizes the persisted draft against the currently published page', () => 
   );
 
   expect(summary).toEqual({
+    passwordAction: 'keep',
+    requiresCurrentPassword: true,
+    downloadChange: null,
     draftRevision: 4,
     expectedPublishedRevision: 3,
     currentlyPublished: true,
@@ -105,12 +108,15 @@ it('summarizes the persisted draft against the currently published page', () => 
     ],
   });
   expect(JSON.stringify(summary)).not.toMatch(
-    /password|do-not-return|shareId|native/i,
+    /passwordHash|do-not-return|shareId|native/i,
   );
 });
 
 it('treats a first publication as all selected albums being included', () => {
   expect(summarizePublicationChanges(draft(), null)).toEqual({
+    passwordAction: 'keep',
+    requiresCurrentPassword: false,
+    downloadChange: { before: null, after: true },
     draftRevision: 4,
     expectedPublishedRevision: null,
     currentlyPublished: false,
