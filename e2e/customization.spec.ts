@@ -222,6 +222,10 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await confirmPublication(page, 'Update live page');
   await expect(page.getByRole('alert')).toContainText('Custom CSS');
+  await page
+    .getByRole('dialog', { name: 'Review publication' })
+    .getByRole('button', { name: 'Cancel', exact: true })
+    .click();
   await client.reload();
   await expect(client.locator('.ip-title')).toHaveCSS(
     'color',

@@ -114,7 +114,7 @@
     }
 
     actions.push({
-      title: 'Options',
+      title: 'Page settings',
       icon: mdiCogOutline,
       onAction: () => goto(`/page/manage/${page.id}?options=1`),
     });
@@ -317,9 +317,9 @@
               variant="ghost"
               color="secondary"
               shape="round"
-              title="Options"
+              title="Page settings"
               href={`/page/manage/${page.id}?options=1`}
-              aria-label={`Options for ${page.title || 'Untitled page'}`}
+              aria-label={`Page settings for ${page.title || 'Untitled page'}`}
             />
           </div>
           <div class="mobile-actions">

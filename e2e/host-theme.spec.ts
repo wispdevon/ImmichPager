@@ -200,7 +200,7 @@ test('management iframe follows Immich themes while page themes stay independent
     .getByRole('link', { name: /Host theme parity QA \/page\// })
     .click();
   await expect(
-    management.getByRole('button', { name: 'Options', exact: true }),
+    management.getByRole('button', { name: 'Page settings', exact: true }),
   ).toBeVisible();
   await setPageTheme(management, 'light');
   await setHostTheme(page, 'dark');
@@ -301,23 +301,26 @@ test('management iframe follows Immich themes while page themes stay independent
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await management
-    .getByRole('button', { name: 'Options', exact: true })
+    .getByRole('button', { name: 'Page settings', exact: true })
     .click();
   const options = management.getByRole('dialog', {
-    name: 'Options',
+    name: 'Page settings',
     exact: true,
   });
   await expect(options).toBeVisible();
   expect(
     await contrastAgainst(
-      options.getByText('Changes autosave privately', { exact: true }),
+      options.getByText('All changes saved', { exact: true }),
     ),
   ).toBeGreaterThanOrEqual(4.5);
   await page.screenshot({
     path: 'test-results/host-theme-options-dark-desktop.png',
     fullPage: true,
   });
-  await options.getByRole('button', { name: 'Done', exact: true }).click();
+  await options
+    .getByRole('button', { name: 'Close', exact: true })
+    .last()
+    .click();
 
   await setHostTheme(page, 'light');
   await page.route('**/page/api/photos**', (route) =>

@@ -15,7 +15,19 @@
     Input,
     Switch,
     PasswordInput,
+    IconButton,
+    Icon,
   } from '@immich/ui';
+  import {
+    mdiOpenInNew,
+    mdiQrcode,
+    mdiDrag,
+    mdiArrowUp,
+    mdiArrowDown,
+  } from '@mdi/js';
+  import PageQr from './PageQr.svelte';
+  import { pageInputSchema } from '$lib/contracts';
+  import { onMount } from 'svelte';
   import CopyLink from './CopyLink.svelte';
   import type { PageInput, DraftEditorPage, Album } from '$lib/contracts';
 
@@ -26,6 +38,8 @@
     message = '',
     busy = false,
     saving = false,
+    saveStatus,
+    canPublish,
     onClose,
     onpublish,
     onaction,
@@ -37,6 +51,8 @@
     message?: string;
     busy?: boolean;
     saving?: boolean;
+    saveStatus: string;
+    canPublish: boolean;
     onClose: () => void;
     onpublish: () => void;
     onaction: (action: 'unpublish' | 'delete' | 'retry') => void;
@@ -47,19 +63,20 @@
   let drag = $state<{ albumId: string; pointerId: number } | null>(null);
   let orderStatus = $state('');
   const orderGroups = $derived(albumOrderGroups(fields.albumIds, albums));
-  const protectedPage = $derived(
-    fields.passwordMode === 'set' ||
-      (fields.passwordMode === 'keep' && !!saved?.hasPassword),
+  let qrOpen = $state(false);
+  let origin = $state('');
+  onMount(() => {
+    origin = location.origin;
+  });
+  const slugResult = $derived(
+    pageInputSchema.shape.slug.safeParse(fields.slug),
   );
-
   function changeUrl() {
-    if (
-      !saved?.publishedSlug ||
-      confirm(
-        'Changing this URL will stop the existing client link working when you publish. Continue?',
-      )
-    )
-      editUrl = true;
+    editUrl = true;
+  }
+  function cancelPassword() {
+    fields.passwordMode = 'keep';
+    fields.password = '';
   }
 
   function applyOrder(next: string[], albumId: string) {
@@ -146,10 +163,177 @@
   }
 </script>
 
-<Modal title="Options" size="small" {onClose} focusOnOpen>
-  <ModalBody>
-    <div class="options-body" use:labelDialog={'Options'}>
+<Modal
+  title="Page settings"
+  size="medium"
+  class="page-settings-dialog"
+  {onClose}
+  focusOnOpen
+>
+  <ModalBody class="page-settings-scroll">
+    <div class="options-body" use:labelDialog={'Page settings'}>
       {#if message}<div role="alert" class="notice error">{message}</div>{/if}
+      <section>
+        <h2>Page status</h2>
+        <strong
+          >{saved?.status === 'error'
+            ? 'Synchronization error'
+            : saved?.publishedSlug
+              ? canPublish
+                ? 'Unpublished changes'
+                : 'Published'
+              : 'Draft'}</strong
+        >
+        <p class="hint">
+          {saved?.publishedSlug
+            ? 'Your live page stays unchanged until you publish. Draft changes are private.'
+            : 'This page is private until published.'}
+        </p>
+        {#if saved?.status === 'error'}
+          <p role="alert">
+            This page is hidden until synchronization finishes.
+          </p>
+          <Button disabled={busy} onclick={() => onaction('retry')}
+            >Retry synchronization</Button
+          >
+        {/if}
+      </section>
+      <section>
+        <h2>Client link</h2>
+        <div class="link-row">
+          <p>
+            {saved?.publishedSlug
+              ? `${origin}/page/${saved.publishedSlug}`
+              : 'Publish this page first.'}
+          </p>
+          <div class="link-actions">
+            <CopyLink compact slug={saved?.publishedSlug ?? null} />
+            <IconButton
+              icon={mdiOpenInNew}
+              variant="ghost"
+              aria-label="Open client page"
+              title={saved?.publishedSlug
+                ? 'Open client page'
+                : 'Publish this page first'}
+              disabled={!saved?.publishedSlug}
+              onclick={() => {
+                if (saved?.publishedSlug)
+                  window.open(
+                    `${origin}/page/${saved.publishedSlug}`,
+                    '_blank',
+                    'noopener,noreferrer',
+                  );
+              }}
+            />
+            <IconButton
+              icon={mdiQrcode}
+              variant="ghost"
+              aria-label="QR code"
+              title={saved?.publishedSlug
+                ? 'QR code'
+                : 'Publish this page first'}
+              disabled={!saved?.publishedSlug}
+              onclick={() => (qrOpen = true)}
+            />
+          </div>
+        </div>
+        {#if saved?.publishedSlug && fields.slug !== saved.publishedSlug}
+          <p class="hint">
+            Pending URL (unpublished): {origin}/page/{fields.slug}
+          </p>
+        {/if}
+        {#if saved?.publishedSlug && !editUrl}
+          <Button variant="ghost" color="secondary" onclick={changeUrl}
+            >Change page URL</Button
+          >
+        {:else}
+          <Field label="Page URL">
+            <div class="url-input">
+              <span>/page/</span><Input
+                maxlength={80}
+                bind:value={fields.slug}
+                oninput={onSlugEdit}
+                aria-invalid={!slugResult.success}
+                aria-describedby="slug-feedback"
+              />
+            </div>
+          </Field>
+          <p id="slug-feedback" class="hint">
+            {slugResult.success
+              ? 'Use lowercase letters, numbers, and single hyphens.'
+              : fields.slug
+                ? 'Use lowercase letters, numbers, and single hyphens; reserved URLs are unavailable.'
+                : 'Enter a URL before publishing.'}
+          </p>
+          {#if saved?.publishedSlug}<p class="hint">
+              The old link stops working after you publish the new URL.
+            </p>{/if}
+        {/if}
+      </section>
+      <section>
+        <h2>Access</h2>
+        <div>
+          <strong>Password protection</strong>
+          <p class="hint">
+            {saved?.hasPassword
+              ? 'The current page is password protected.'
+              : 'No password is set.'} Changes apply when published.
+          </p>
+        </div>
+        {#if fields.passwordMode === 'set'}
+          <Field label="New password or PIN"
+            ><PasswordInput
+              bind:value={fields.password}
+              autocomplete="new-password"
+              placeholder="At least 4 characters"
+            /></Field
+          >
+          <p class="hint">
+            This password is kept only for this editing session and is excluded
+            from autosave.
+          </p>
+          <Button variant="ghost" onclick={cancelPassword}
+            >Cancel password change</Button
+          >
+        {:else if fields.passwordMode === 'remove'}
+          <p>Password protection will be removed when published.</p>
+          <Button variant="ghost" onclick={cancelPassword}
+            >Cancel password removal</Button
+          >
+        {:else}
+          <div class="link-actions">
+            <Button
+              variant="ghost"
+              onclick={() => {
+                fields.password = '';
+                fields.passwordMode = 'set';
+              }}
+              >{saved?.hasPassword ? 'Change password' : 'Set password'}</Button
+            >
+            {#if saved?.hasPassword}<Button
+                variant="ghost"
+                onclick={() => {
+                  fields.password = '';
+                  fields.passwordMode = 'remove';
+                }}>Remove password</Button
+              >{/if}
+          </div>
+        {/if}
+        <div class="protection-row">
+          <div>
+            <strong>Allow downloads</strong>
+            <p class="hint">
+              Applies to all page albums when published. Controls Immich’s
+              download feature; it cannot prevent screenshots or saving
+              displayed images.
+            </p>
+          </div>
+          <Switch
+            aria-label="Allow downloads"
+            bind:checked={fields.allowDownload}
+          />
+        </div>
+      </section>
       <section>
         <h2>Albums</h2>
         <Field label="Album order">
@@ -193,7 +377,7 @@
                     onpointercancel={endDrag}
                     onlostpointercapture={endDrag}
                     onkeydown={(event) => handleReorderKey(event, id)}
-                    ><span aria-hidden="true">⠿</span></button
+                    ><Icon icon={mdiDrag} aria-hidden /></button
                   >
                   <span>{name}</span>
                   <Button
@@ -201,14 +385,16 @@
                     variant="ghost"
                     disabled={index === 0}
                     aria-label={'Move ' + name + ' up within ' + year}
-                    onclick={() => move(id, -1)}>↑</Button
+                    onclick={() => move(id, -1)}
+                    ><Icon icon={mdiArrowUp} aria-hidden /></Button
                   >
                   <Button
                     size="small"
                     variant="ghost"
                     disabled={index === ids.length - 1}
                     aria-label={'Move ' + name + ' down within ' + year}
-                    onclick={() => move(id, 1)}>↓</Button
+                    onclick={() => move(id, 1)}
+                    ><Icon icon={mdiArrowDown} aria-hidden /></Button
                   >
                 </div>
               {/each}
@@ -220,133 +406,97 @@
         {/if}
       </section>
 
-      <section>
-        <h2>Sharing</h2>
-        <div class="link-row">
-          <div>
-            <strong
-              >{saved?.publishedSlug
-                ? 'Client link'
-                : 'Draft — not shared yet'}</strong
-            >
-            <p class="muted">
-              /page/{saved?.publishedSlug || fields.slug || 'your-client'}
-            </p>
-          </div>
-          <CopyLink slug={saved?.publishedSlug ?? null} />
-        </div>
-        {#if saved?.publishedSlug}
-          <Button
-            variant="ghost"
-            href={'/page/' + saved.publishedSlug}
-            target="_blank">Open page ↗</Button
-          >
-        {/if}
-        {#if saved?.publishedSlug && !editUrl}
-          <Button variant="ghost" color="secondary" onclick={changeUrl}
-            >Change page URL</Button
-          >
-        {:else}
-          <Field label="Page URL">
-            <div class="url-input">
-              <Input
-                maxlength={80}
-                bind:value={fields.slug}
-                oninput={onSlugEdit}
-              />
-            </div>
-          </Field>
-        {/if}
-        <div class="protection-row">
-          <div>
-            <strong>Password protection</strong>
-            <p class="hint">Applied when you publish.</p>
-          </div>
-          <Switch
-            aria-label="Password protection"
-            checked={protectedPage}
-            onCheckedChange={(checked) => {
-              fields.passwordMode = checked
-                ? saved?.hasPassword
-                  ? 'keep'
-                  : 'set'
-                : saved?.hasPassword
-                  ? 'remove'
-                  : 'keep';
-              fields.password = '';
-            }}
-          />
-        </div>
-        {#if protectedPage}
-          <Field
-            label={fields.passwordMode === 'set'
-              ? 'New password or PIN'
-              : 'Current password (when album links change)'}
-          >
-            <PasswordInput
-              bind:value={fields.password}
-              autocomplete={fields.passwordMode === 'set'
-                ? 'new-password'
-                : 'current-password'}
-              placeholder="At least 4 characters"
-            />
-          </Field>
-          <p class="hint">
-            Passwords are not included in autosaved drafts. Enter it again after
-            reloading if album links need to change.
-          </p>
-        {/if}
-        {#if saved?.hasPassword && protectedPage}
-          <Button variant="ghost" onclick={() => (fields.passwordMode = 'set')}
-            >Change password</Button
-          >
-        {/if}
-      </section>
-
       {#if saved}
-        <section class="danger-zone">
-          {#if saved.status === 'error'}
-            <Button
-              variant="ghost"
-              onclick={() => onaction('retry')}
-              disabled={busy}>Retry synchronization</Button
-            >
-          {/if}
-          {#if saved.publishedSlug}
-            <Button
-              variant="ghost"
-              onclick={() => onaction('unpublish')}
-              disabled={busy}>Unpublish page</Button
-            >
-          {/if}
-          <Button
-            color="danger"
-            variant="ghost"
-            onclick={() => onaction('delete')}
-            disabled={busy}>Delete page</Button
-          >
+        <section>
+          <details>
+            <summary>Page management</summary>
+            <div class="danger-zone">
+              {#if saved.publishedSlug}<Button
+                  variant="ghost"
+                  disabled={busy}
+                  onclick={() => onaction('unpublish')}>Unpublish page</Button
+                >{/if}
+              <Button
+                color="danger"
+                variant="ghost"
+                disabled={busy}
+                onclick={() => onaction('delete')}>Delete page</Button
+              >
+            </div>
+          </details>
         </section>
       {/if}
     </div>
   </ModalBody>
-  <ModalFooter>
+  <ModalFooter class="page-settings-footer">
     <div class="options-footer">
-      <span class="hint"
-        >{saving ? 'Saving draft…' : 'Changes autosave privately'}</span
+      <span class="hint" role="status"
+        >{saving ? 'Saving draft…' : saveStatus}</span
       >
-      <Button variant="ghost" color="secondary" onclick={onClose}>Done</Button>
+      <Button variant="ghost" color="secondary" onclick={onClose}>Close</Button>
       <Button
         shape="round"
         onclick={onpublish}
-        disabled={busy || saved?.status === 'error'}
+        disabled={busy || !canPublish || saved?.status === 'error'}
+        >{saved?.publishedSlug ? 'Review changes' : 'Publish page'}</Button
       >
-        {saved?.publishedSlug ? 'Update live page' : 'Publish page'}
-      </Button>
     </div>
   </ModalFooter>
 </Modal>
+{#if qrOpen && saved?.publishedSlug}<PageQr
+    slug={saved.publishedSlug}
+    onClose={() => (qrOpen = false)}
+  />{/if}
 
 <style>
+  :global(.page-settings-dialog) {
+    max-block-size: calc(100dvh - 32px);
+    min-block-size: 0;
+  }
+  :global(.page-settings-scroll) {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    min-block-size: 0;
+  }
+  :global(.page-settings-footer) {
+    flex-shrink: 0;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .link-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .link-row > p {
+    min-width: 0;
+    flex: 1;
+  }
+  summary {
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .danger-zone {
+    padding-top: 16px;
+  }
+  .url-input > span {
+    white-space: nowrap;
+  }
+  @media (max-width: 639px) {
+    :global(.page-settings-dialog) {
+      block-size: 100dvh;
+      max-block-size: 100dvh;
+      border-radius: 0;
+    }
+    .options-footer > span {
+      flex-basis: 100%;
+    }
+    .link-row {
+      flex-wrap: wrap;
+    }
+  }
+
   .options-body {
     padding-block: 8px;
   }
@@ -411,8 +561,7 @@
     margin: 5px 0 0;
   }
 
-  .protection-row strong,
-  .link-row strong {
+  .protection-row strong {
     font-size: 14px;
     font-weight: 500;
   }

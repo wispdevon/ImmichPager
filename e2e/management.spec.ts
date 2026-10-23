@@ -174,7 +174,7 @@ test('management status filters, draft branding previews, and mobile rows', asyn
   await expect(mobileActions).toBeVisible();
   await mobileActions.click();
   await expect(
-    page.getByRole('menuitem', { name: 'Options', exact: true }),
+    page.getByRole('menuitem', { name: 'Page settings', exact: true }),
   ).toBeVisible();
   await page.keyboard.press('Escape');
   expect(

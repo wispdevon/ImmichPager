@@ -271,7 +271,7 @@ test('visual settings render in the gallery and authored variables override thei
       'rgb(17, 34, 51)',
     );
     await expect(
-      page.getByRole('button', { name: 'Options', exact: true }),
+      page.getByRole('button', { name: 'Page settings', exact: true }),
     ).toBeVisible();
   } finally {
     await page.request.delete(`/page/api/pages/${draft.id}`, { headers });

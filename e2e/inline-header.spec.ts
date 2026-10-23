@@ -40,7 +40,7 @@ test('edits the gallery header in place, autosaves privately, and publishes expl
 
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await expect(
-    page.getByRole('button', { name: 'Options', exact: true }),
+    page.getByRole('button', { name: 'Page settings', exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'Preview', exact: true }),
