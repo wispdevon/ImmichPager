@@ -102,17 +102,25 @@
     close.textContent = 'Dismiss';
     close.autofocus = true;
     close.style.cssText = `font:inherit;border:0;border-radius:24px;padding:10px 24px;cursor:pointer;background:${dark ? '#accbfa' : '#415f91'};color:${dark ? '#0a305f' : '#fff'};`;
-    close.addEventListener('click', () => dialog.close());
     const dismissalKey = key();
+    function rememberDismissal() {
+      dismissed.add(dismissalKey);
+      try {
+        localStorage.setItem(dismissalKey, 'dismissed');
+      } catch {
+        /* Storage may be disabled. */
+      }
+    }
+    // Persist before the deferred close event, including an immediate reload.
+    close.addEventListener('click', () => {
+      rememberDismissal();
+      dialog.close();
+    });
+    dialog.addEventListener('cancel', rememberDismissal);
     dialog.addEventListener(
       'close',
       () => {
-        dismissed.add(dismissalKey);
-        try {
-          localStorage.setItem(dismissalKey, 'dismissed');
-        } catch {
-          /* Storage may be disabled. */
-        }
+        rememberDismissal();
         dialog.remove();
       },
       { once: true },

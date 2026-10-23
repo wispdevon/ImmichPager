@@ -4,7 +4,8 @@ FROM mcr.microsoft.com/playwright:v1.56.0-noble
 COPY --from=node /usr/local/ /usr/local/
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
-RUN corepack enable && corepack prepare pnpm@11.28.5 --activate \
+RUN rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg \
+    && corepack enable && corepack prepare pnpm@11.28.5 --activate \
     && test "$(node --version)" = v22.23.3 \
     && test "$(pnpm --version)" = 11.28.5 \
     && command -v flock
