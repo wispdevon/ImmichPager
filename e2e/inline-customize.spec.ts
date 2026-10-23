@@ -14,6 +14,7 @@ async function createDraft(
     title: string;
     slug: string;
     description?: string;
+    alignment?: 'left' | 'center';
     clientUi?: { showTitle?: boolean; showDescription?: boolean };
     albumIds?: string[];
   },
@@ -462,4 +463,61 @@ test('published client pages never expose inline edit controls', async ({
     0,
   );
   await visitor.close();
+});
+
+test('edit indicators preserve centered text geometry on desktop and phone', async ({
+  page,
+}) => {
+  const draft = await createDraft(page, {
+    title: 'Centered title',
+    slug: 'centered-edit-indicators',
+    description: 'Centered description',
+    alignment: 'center',
+  });
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`/page/manage/${draft.id}`);
+    const dialog = await openCustomize(page);
+    if (width === 390) {
+      await dialog
+        .getByRole('button', { name: 'Preview', exact: true })
+        .click();
+    }
+    const frame = page.frameLocator('[data-testid="responsive-preview-frame"]');
+    for (const field of ['title', 'description']) {
+      const button = frame.locator(`.${field}-edit-field`);
+      await expect(button).toBeVisible();
+      await button.evaluate(async () => {
+        await document.fonts.ready;
+      });
+      for (const state of ['idle', 'hover', 'focus']) {
+        if (state === 'hover') await button.hover();
+        if (state === 'focus') await button.focus();
+        const geometry = await button.evaluate((element) => {
+          const range = document.createRange();
+          range.selectNode(element.firstChild!);
+          const before = range.getBoundingClientRect();
+          const container = element.getBoundingClientRect();
+          const hint = element.querySelector<HTMLElement>('.edit-hint')!;
+          hint.style.display = 'none';
+          const withoutHint = range.getBoundingClientRect();
+          hint.style.removeProperty('display');
+          return {
+            offset: Math.abs(
+              (before.left + before.right - container.left - container.right) /
+                2,
+            ),
+            shift: Math.abs(before.left - withoutHint.left),
+            heightChange: Math.abs(before.height - withoutHint.height),
+          };
+        });
+        expect(geometry.offset).toBeLessThan(1);
+        expect(geometry.shift).toBeLessThan(1);
+        expect(geometry.heightChange).toBe(0);
+      }
+    }
+    await page.screenshot({
+      path: `/tmp/immichpager-0311-centered-${width}.png`,
+    });
+  }
 });

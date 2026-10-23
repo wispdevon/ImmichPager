@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.1.1] - 2026-10-23
+
+### Fixed
+
+- Title and description stay centered in the editor and Customize preview. Edit indicators sit outside the text flow, including on hover and keyboard focus, without changing text wrapping.
+
 ## [0.3.1] - 2026-10-23
 
 ### Added
