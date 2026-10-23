@@ -674,6 +674,7 @@
     margin-inline: auto;
   }
   .header-edit-field {
+    position: relative;
     display: block;
     width: 100%;
     padding: 0;
@@ -697,10 +698,11 @@
     opacity: 0.7;
   }
   .edit-hint {
-    display: inline-block;
-    margin-inline-start: 0.5em;
+    position: absolute;
+    inset-inline-end: 0;
+    bottom: 100%;
+    pointer-events: none;
     font-size: 0.55em;
-    vertical-align: top;
     opacity: 0;
     transition: opacity 120ms ease;
   }

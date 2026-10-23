@@ -1,5 +1,9 @@
 # Releases
 
+## v0.3.1.1
+
+This hotfix keeps title and description text centered while inline editing is available. The edit indicator no longer consumes text width or changes line wrapping. Storage remains schema version 2. The four-part hotfix identifier follows the requested release name; distribution uses the tagged source and runtime archives.
+
 ## v0.3.1
 
 Version 0.3.1 refines Customize with visual header presets, a simpler Design tab, six additional locally bundled open-license fonts, and logo shape and placement controls. Title and description can be edited directly in the private Customize preview. Partial token imports preserve styling omitted from the file. See [the changelog](../CHANGELOG.md), [customization guide](customization.md), and [font licenses](fonts.md).
