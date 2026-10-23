@@ -122,3 +122,30 @@ publish_image:
       when: manual
       allow_failure: false
     - when: never
+
+# Rebuild only when toolchain pins change; consume the resulting digest below.
+ci_tools:
+  stage: verify
+  image: docker:27.5.1-cli
+  services:
+    - name: docker:27.5.1-dind
+      alias: docker
+      variables:
+        HEALTHCHECK_TCP_PORT: '2376'
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: /certs
+    DOCKER_TLS_VERIFY: '1'
+    DOCKER_CERT_PATH: '$DOCKER_TLS_CERTDIR/client'
+  before_script:
+    - printf '%s' "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" --username "$CI_REGISTRY_USER" --password-stdin
+  script:
+    - docker build -f Dockerfile.ci -t "$CI_REGISTRY_IMAGE/ci:$CI_COMMIT_SHA" .
+    - docker push "$CI_REGISTRY_IMAGE/ci:$CI_COMMIT_SHA"
+    - docker inspect --format '{{index .RepoDigests 0}}' "$CI_REGISTRY_IMAGE/ci:$CI_COMMIT_SHA" > ci-image.txt
+  artifacts:
+    paths: [ci-image.txt]
+  rules:
+    - changes: [Dockerfile.ci]
+      when: manual
+      allow_failure: true
