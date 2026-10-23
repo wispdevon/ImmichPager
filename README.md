@@ -45,7 +45,7 @@ Screenshots use attributed [NASA Apollo photographs](fixtures/photos/README.md) 
 - **Per-page branding:** choose a logo/banner from Immich Photos, drop an image, or upload; adjust crop, alignment, banner and logo size, title and description sizes, header spacing, and colors.
 - **Private autosaved drafts:** edit freely without changing the live page; publish updates explicitly.
 - **Publication review:** see albums being added or removed and page appearance changes before updating the live page.
-- **Easy sharing:** Copy link on each published page, with an Immich-style Options panel for configuration.
+- **Easy sharing:** Copy link on each published page, with Page settings for access, download permissions, and local PNG/SVG QR exports.
 - **Password protection:** optional page password/PIN applied to dedicated Immich album shares too. The native viewer may prompt again.
 - **Inside Immich:** a Pages sidebar entry and existing session authentication; each photographer manages their own pages.
 - **Dedicated share links:** existing shares remain untouched. Interrupted operations are tracked and can be retried.
@@ -57,7 +57,7 @@ Screenshots use attributed [NASA Apollo photographs](fixtures/photos/README.md) 
 
 ![Immich-style editor with inline title, description, and Add albums](docs/screenshots/editor.png)
 
-Start with **Add a title**, **Add a description**, and **Select albums**. Branding areas accept dropped files or **Choose from Immich**. Changes autosave privately. Use **Options** for appearance, ordering, the persistent URL, and password protection; choose **Publish page** or **Update live page** when ready.
+Start with **Add a title**, **Add a description**, and **Select albums**. Branding areas accept dropped files or **Choose from Immich**. Changes autosave privately. Use **Page settings** for ordering, the persistent URL, download permissions, and password protection; use **Customize** for appearance; choose **Publish page** or **Update live page** when ready.
 
 ![Choose branding from Immich Photos](docs/screenshots/photo-picker.png)
 

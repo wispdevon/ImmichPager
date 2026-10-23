@@ -1,5 +1,9 @@
 # Releases
 
+## v0.3.2
+
+Page settings brings live-link sharing, local PNG/SVG QR exports, explicit password actions, and per-page download permissions. Publication review explains access changes and asks for the current password only when native shares need synchronization. Storage remains schema version 2, and legacy pages keep downloads enabled. Release from the reviewed `dev` commit; keep `main` unchanged. Back up configuration and the complete stopped data volume before deployment.
+
 ## v0.3.1.1
 
 This hotfix keeps title and description text centered while inline editing is available. The edit indicator no longer consumes text width or changes line wrapping. Storage remains schema version 2. The four-part hotfix identifier follows the requested release name; distribution uses the tagged source and runtime archives.
