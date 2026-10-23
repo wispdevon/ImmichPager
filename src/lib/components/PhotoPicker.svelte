@@ -14,9 +14,15 @@
     kind,
     albums,
     onchoose,
+    multiple = false,
+    exclude = [],
+    onmany = async () => {},
     onClose,
   }: {
-    kind: 'logo' | 'banner';
+    kind: 'logo' | 'banner' | 'photos';
+    multiple?: boolean;
+    exclude?: string[];
+    onmany?: (ids: string[]) => Promise<void>;
     albums: Album[];
     onchoose: (id: string) => Promise<void>;
     onClose: () => void;
@@ -31,6 +37,7 @@
     loading = $state(false),
     busy = $state(false),
     error = $state('');
+  let selectedMany = $state<string[]>([]);
   let controller: AbortController | undefined;
   let failedThumbs = $state<string[]>([]),
     thumbnailVersion = $state(0);
@@ -91,11 +98,12 @@
     };
   });
   async function choose() {
-    if (!selected) return;
+    if (multiple ? !selectedMany.length : !selected) return;
     busy = true;
     error = '';
     try {
-      await onchoose(selected);
+      if (multiple) await onmany(selectedMany);
+      else await onchoose(selected!);
       onClose();
     } catch (cause) {
       error =
@@ -106,9 +114,17 @@
   }
 </script>
 
-<Modal title={`Choose ${kind} from Immich`} size="giant" {onClose} focusOnOpen>
+<Modal
+  title={multiple ? 'Add photos' : `Choose ${kind} from Immich`}
+  size="giant"
+  {onClose}
+  focusOnOpen
+>
   <ModalBody
-    ><div class="photo-picker" use:labelDialog={`Choose ${kind} from Immich`}>
+    ><div
+      class="photo-picker"
+      use:labelDialog={multiple ? 'Add photos' : `Choose ${kind} from Immich`}
+    >
       <div class="picker-toolbar">
         <div class="tabs" role="group" aria-label="Browse library">
           <Button
@@ -177,11 +193,26 @@
         {:else}
           {#each items as photo (photo.id)}<button
               class="photo-tile"
-              disabled={loading || busy}
-              class:selected={selected === photo.id}
-              aria-pressed={selected === photo.id}
+              disabled={loading ||
+                busy ||
+                exclude.includes(photo.id) ||
+                (multiple &&
+                  selectedMany.length >= 500 - exclude.length &&
+                  !selectedMany.includes(photo.id))}
+              class:selected={multiple
+                ? selectedMany.includes(photo.id)
+                : selected === photo.id}
+              aria-pressed={multiple
+                ? selectedMany.includes(photo.id)
+                : selected === photo.id}
               aria-label={`Select ${photo.name}`}
-              onclick={() => (selected = photo.id)}
+              onclick={() => {
+                if (multiple)
+                  selectedMany = selectedMany.includes(photo.id)
+                    ? selectedMany.filter((id) => id !== photo.id)
+                    : [...selectedMany, photo.id];
+                else selected = photo.id;
+              }}
               >{#if failedThumbs.includes(photo.id)}<span class="unavailable"
                   >Preview unavailable</span
                 >{:else}<img
@@ -191,7 +222,8 @@
                   width="200"
                   height="200"
                   loading="lazy"
-                />{/if}<span>{photo.name}</span>{#if selected === photo.id}<span
+                />{/if}<span>{photo.name}</span
+              >{#if multiple ? selectedMany.includes(photo.id) : selected === photo.id}<span
                   class="check"
                   aria-hidden="true">✓</span
                 >{/if}</button
@@ -213,7 +245,11 @@
   <ModalFooter
     ><div class="picker-footer">
       <span class="muted"
-        >{selected ? '1 photo selected' : 'Select a photo to continue'}</span
+        >{multiple
+          ? `${selectedMany.length} photos selected`
+          : selected
+            ? '1 photo selected'
+            : 'Select a photo to continue'}</span
       ><Button
         variant="ghost"
         color="secondary"
@@ -221,9 +257,16 @@
         disabled={busy}>Cancel</Button
       ><Button
         shape="round"
-        disabled={!selected || busy || loading}
-        onclick={choose}>{busy ? 'Adding…' : `Use as ${kind}`}</Button
-      >
+        disabled={(multiple ? !selectedMany.length : !selected) ||
+          busy ||
+          loading}
+        onclick={choose}
+        >{busy
+          ? 'Adding…'
+          : multiple
+            ? `Add ${selectedMany.length} photos`
+            : `Use as ${kind}`}
+      </Button>
     </div></ModalFooter
   >
 </Modal>

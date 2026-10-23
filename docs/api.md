@@ -37,7 +37,7 @@ DraftService owns working-copy persistence and revision checks. Draft saves do n
 
 Publication flushes the editor queue, checks the expected draft revision and album ownership, and stages a durable intent before changing native links. After synchronization, published settings, branding copies, and the matching draft marker commit in one SQLite transaction. Header/order-only updates retain existing native links and do not need the album password. Publication review and publishing share the same synchronization predicate: membership, password actions, and download-permission changes require native synchronization. `allowDownload` is additive JSON with a compatibility default of `true`; it applies to new and retained Pager-owned shares only. Design duplication and appearance transfer exclude access policy.
 
-Publishing creates one dedicated native link per page–album association, with deterministic custom slugs `pager-{page UUID}-{album UUID}`. Their custom URLs open the native viewer; the branded overview uses `/page/{client slug}`.
+Publishing creates one dedicated native link per unique page–album association with deterministic slugs `pager-{page UUID}-{album UUID}`, reused across blocks. Each Photos block gets an exact-selection individual share named `pager-{page UUID}-photos-{block ID}`. The client stays on `/page/{client slug}` while Pager authorizes metadata, images, and downloads through those server-side capabilities. Retained direct native links still follow Immich’s lifecycle.
 
 Before changing links, persist `syncing` and the operation intent. Persist each successful create or delete. On retry, list the owner's native shares and adopt matching deterministic slugs, recovering creates whose response was lost. Missing links can be recreated. Native updates always include the slug because the reviewed Immich service otherwise clears it.
 
@@ -47,7 +47,7 @@ Use exactly one Pager process/container per database. A process-local mutation l
 
 ## Storage and migrations
 
-SQLite schema version 2 is initialized and migrated transactionally in `Store`. Version 2 adds independent `drafts` and `draft_branding` tables; existing `pages` and `branding` retain the live version. Migration copies existing pages/media into working copies and preserves native shares, password hashes, and client sessions. Brand-new drafts need no published row until publication. Tables hold pages, dedicated links, expiring public sessions, branding images, and password-attempt buckets. Forward migrations must use `PRAGMA user_version` and remain covered by tests. A newer database is refused by an older application. Future migrations must be added sequentially; do not modify the meaning of an existing version.
+SQLite schema version 3 is initialized and migrated transactionally in `Store`. Version 3 normalizes legacy pages/drafts into one Albums block and adds a separate `photo_shares` table while retaining existing album links and client sessions. Version 2 adds independent `drafts` and `draft_branding` tables; existing `pages` and `branding` retain the live version. Migration copies existing pages/media into working copies and preserves native shares, password hashes, and client sessions. Brand-new drafts need no published row until publication. Tables hold pages, dedicated links, expiring public sessions, branding images, and password-attempt buckets. Forward migrations must use `PRAGMA user_version` and remain covered by tests. A newer database is refused by an older application. Future migrations must be added sequentially; do not modify the meaning of an existing version.
 
 Branding uploads accept JPEG, PNG, and WebP up to 5 MB / 32 megapixels and are decoded, rotated, resized, stripped of metadata, and re-encoded to WebP. The photo picker searches owned images using Immich v3 metadata filters, with cursor pagination, filenames, album scope, and favorites. Results expose minimal metadata; each thumbnail and branding selection rechecks ownership and excludes locked, trashed, offline, or non-image assets. PNG/WebP selections use bounded originals to retain transparency; other images use previews. Only same-upstream, same-asset media redirects are followed. Selected branding becomes a processed local copy, so removal of the Immich original does not break it. Photo covers are streamed from Immich. Protect the data volume: it contains share capabilities and session authorization, even though it contains no photo originals.
 
@@ -67,9 +67,9 @@ Header composition presets, banner and logo size, typography, spacing, and custo
 
 `clientUi` and `galleryStyle` are validated additive JSON settings in drafts, published records, and gallery DTOs. Reading legacy JSON fills compatibility defaults; creating a page disables browsing controls by default. Duplication copies these settings, and publication review identifies visibility and style changes before they reach clients. No SQLite schema migration is needed.
 
-The shared renderer emits gallery-scoped `--pager-*` defaults with zero specificity so authored CSS can override visual controls. The Customize panel renders acknowledged draft revisions in the owner-only preview iframe, keeping client CSS isolated from native editor controls. Failed saves retain the local working fields and show retry feedback.
+The shared renderer emits gallery-scoped `--pager-*` defaults with zero specificity so authored CSS can override visual controls. The inspector sends validated local working state to the owner-only canvas iframe immediately. Autosave acknowledgments update persisted membership without reloading the iframe or disturbing focus. Client CSS stays isolated from native inspector controls, and compiler guards exclude canvas editor controls. Failed saves retain local working fields and show retry feedback.
 
-Appearance-file version 2 carries visibility, visual settings, and CSS; version 1 imports leave newer settings intact. DTCG 2025.10 token files carry only recognized style values, resolve local aliases without network access, and present recognized/unsupported tokens before applying. Imports remain bounded at 96 KiB, and custom CSS retains its 20,000-character limit and resource-loading restrictions.
+Appearance-file version 3 carries visibility, visual settings, banner height, and CSS. Version 1 and 2 imports leave unsupported newer settings intact. Content and resource identifiers are excluded. DTCG 2025.10 token files carry only recognized style values, resolve local aliases without network access, and present recognized/unsupported tokens before applying. Imports remain bounded at 96 KiB, and custom CSS retains its 20,000-character limit and resource-loading restrictions.
 
 ## Page access and publication review
 
@@ -85,3 +85,35 @@ The publication-review GET endpoint accepts `passwordMode=keep|set|remove` along
 `stale`), plus the authenticated `userId` and server-verified `isAdmin` flag.
 The response is private and uncached. Release URLs are constructed from validated
 stable tags in the fixed ImmichPager GitLab project, never supplied by clients.
+
+## Block content and media
+
+Draft inputs accept an ordered `blocks` array with unique stable IDs and types
+`albums`, `photos`, and `text`. Albums blocks select `albumIds`; Photos blocks
+select `{id, caption, alt}` photo entries; Text blocks contain restricted rich-text
+JSON. Legacy requests without blocks still select one album row. When both blocks
+and `albumIds` are supplied their unique album memberships must agree.
+
+Limits: 100 blocks, 500 unique albums per page, 500 unique photos per Photos
+block, 20,000 text characters per Text block, and the existing 256 KiB JSON body
+limit. Empty blocks may be saved but do not render publicly. Publishing requires
+at least one nonempty block; text-only and photo-only pages are supported.
+
+- `GET /page/content/{id}/{album|photos}/{source}?cursor=…` returns
+  `{items, nextCursor}`. Items include IDs, aspect ratio, date, caption, alternative
+  text, Pager thumbnail/preview URLs, and an original URL only when allowed.
+- `GET /page/media/{id}/{album|photos}/{source}/{asset}/{thumbnail|preview|original}`
+  streams an authorized image. Original requests return an attachment.
+- `POST /page/download/{id}/{album|photos}/{source}` with `{revision}` prepares
+  `{revision, parts:[{index,count,size}]}`. Submit `{revision,part}` to stream a ZIP
+  part. URL-encoded form submissions are also supported for browser streaming.
+
+These are page-session routes, not management API routes. Every request checks
+publication and source membership. Append `preview=1` for an authenticated owner
+draft; that mode never falls back to public access. Download requests also check
+permissions and revision; arbitrary asset lists are rejected. Existing same-origin
+write protection applies to archive preparation and streaming.
+
+Appearance-file version 3 adds optional numeric `bannerHeight` (140–900 pixels).
+Versions 1 and 2 still import and preserve newer height settings. Appearance files
+continue to exclude block documents, asset identifiers, passwords and capabilities.

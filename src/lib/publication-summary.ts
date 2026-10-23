@@ -1,3 +1,4 @@
+import { pageBlocks, photoSources } from './blocks';
 import type { DraftRecord, PageRecord, PageInput } from './contracts';
 
 export type PublicationAppearanceChange =
@@ -19,7 +20,9 @@ export type PublicationAppearanceChange =
   | 'galleryStyle'
   | 'albumOrder'
   | 'logo'
-  | 'banner';
+  | 'banner'
+  | 'blocks'
+  | 'bannerHeight';
 
 export type PublicationSummary = {
   passwordAction: 'keep' | 'set' | 'change' | 'remove';
@@ -37,7 +40,7 @@ export type PublicationSummary = {
 
 /** Shared with publication: only these changes require native share synchronization. */
 export function requiresShareSynchronization(
-  draft: Pick<DraftRecord, 'albumIds' | 'allowDownload'>,
+  draft: Pick<DraftRecord, 'albumIds' | 'allowDownload' | 'blocks'>,
   live: PageRecord | null,
   passwordMode: PageInput['passwordMode'],
 ) {
@@ -45,6 +48,16 @@ export function requiresShareSynchronization(
     live?.status !== 'published' ||
     passwordMode !== 'keep' ||
     live.allowDownload !== draft.allowDownload ||
+    JSON.stringify(
+      photoSources(draft)
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .map((b) => [b.id, b.photos.map((p) => p.id).sort()]),
+    ) !==
+      JSON.stringify(
+        photoSources(live)
+          .sort((a, b) => a.id.localeCompare(b.id))
+          .map((b) => [b.id, b.photos.map((p) => p.id).sort()]),
+      ) ||
     live.albumIds.length !== draft.albumIds.length ||
     !live.albumIds.every((id) => draft.albumIds.includes(id))
   );
@@ -70,6 +83,15 @@ export function summarizePublicationChanges(
   const appearanceChanges: PublicationAppearanceChange[] = [];
 
   if (published) {
+    if (
+      JSON.stringify(pageBlocks(draft)) !==
+        JSON.stringify(pageBlocks(published)) &&
+      (draft.blocks?.some((b) => b.id !== 'legacy-albums') ||
+        published.blocks?.some((b) => b.id !== 'legacy-albums'))
+    )
+      appearanceChanges.push('blocks');
+    if ((draft.bannerHeight ?? null) !== (published.bannerHeight ?? null))
+      appearanceChanges.push('bannerHeight');
     if (draft.title !== published.title) appearanceChanges.push('title');
     if (draft.description !== published.description)
       appearanceChanges.push('description');

@@ -51,6 +51,8 @@
     albumOrder: 'Album order',
     logo: 'Logo image',
     banner: 'Banner image',
+    bannerHeight: 'Banner height',
+    blocks: 'Page blocks and photo selections',
   } satisfies Record<PublicationSummary['appearanceChanges'][number], string>;
 
   function albumName(id: string) {

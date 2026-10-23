@@ -108,15 +108,13 @@ test('logo shape and placement render in client and owner headers', async ({
     await expect(page.locator('.ip-title')).toBeVisible();
 
     await page.goto(`/page/manage/${draft.id}`);
-    await expect(page.locator('.ip-logo')).toBeVisible();
-    await expect(page.locator('.ip-logo')).toHaveCSS('border-radius', '16px');
-    await expect(page.locator('.header-content')).toHaveCSS(
-      'flex-direction',
-      'row',
-    );
+    const canvas = page.frameLocator('[title="Live page canvas"]');
+    await expect(canvas.locator('.ip-logo')).toHaveCount(0);
     await expect(
-      page.getByRole('button', { name: /Edit title, Logo layout test/ }),
+      canvas.getByRole('button', { name: /Edit title, Logo layout test/ }),
     ).toBeVisible();
+    await page.locator('.header-settings summary').click();
+    await expect(page.getByAltText('Logo preview')).toBeVisible();
   } finally {
     await page.request.delete(`/page/api/pages/${draft.id}`, { headers });
   }

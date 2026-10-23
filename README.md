@@ -12,7 +12,7 @@ Persistent, customizable client album pages for [Immich](https://immich.app). Gi
 https://photos.example.com/page/acme
 ```
 
-An independent, self-hosted community companion. Photos stay in Immich; albums open in its native shared viewer. No client account or global API key required.
+An independent, self-hosted community companion. Photos stay in Immich; clients browse albums and open photos directly on the page. No client account or global API key required.
 
 [Docker setup](#quick-start) · [Development](#development) · [Documentation](#documentation) · [Report a bug](https://gitlab.com/wispd/ImmichPager/-/issues/new)
 
@@ -43,10 +43,12 @@ Screenshots use attributed [NASA Apollo photographs](fixtures/photos/README.md) 
 - **Persistent client links:** one `/page/custom-slug` URL across months of work.
 - **Immich-style albums:** square covers, dates, item counts, collapsible years, and manual or chronological ordering.
 - **Per-page branding:** choose a logo/banner from Immich Photos, drop an image, or upload; adjust crop, alignment, banner and logo size, title and description sizes, header spacing, and colors.
+- **Live page composer:** add, reorder, duplicate, and remove Photos, Albums, and rich Text rows on the finished page.
+- **On-page photo viewer:** expand albums, navigate photos with keyboard or swipe, play slideshows, and download photos or ZIPs when permitted.
 - **Private autosaved drafts:** edit freely without changing the live page; publish updates explicitly.
 - **Publication review:** see albums being added or removed and page appearance changes before updating the live page.
 - **Easy sharing:** Copy link on each published page, with Page settings for access, download permissions, and local PNG/SVG QR exports.
-- **Password protection:** optional page password/PIN applied to dedicated Immich album shares too. The native viewer may prompt again.
+- **Password protection:** optional page password/PIN applied to dedicated Immich album shares too. The page unlock also authorizes its photos.
 - **Inside Immich:** a Pages sidebar entry and existing session authentication; each photographer manages their own pages. About shows the installed Pager version, with administrator notices for newer stable releases.
 - **Dedicated share links:** existing shares remain untouched. Interrupted operations are tracked and can be retried.
 - **Docker companion:** one container and SQLite volume; GitLab release workflow prepares amd64/arm64 images for manual publication, with no changes to Immich's image or database.
@@ -57,7 +59,7 @@ Screenshots use attributed [NASA Apollo photographs](fixtures/photos/README.md) 
 
 ![Immich-style editor with inline title, description, and Add albums](docs/screenshots/editor.png)
 
-Start with **Add a title**, **Add a description**, and **Select albums**. Branding areas accept dropped files or **Choose from Immich**. Changes autosave privately. Use **Page settings** for ordering, the persistent URL, download permissions, and password protection; use **Customize** for appearance; choose **Publish page** or **Update live page** when ready.
+Edit the title and description on the live canvas. Use **Content** to add Albums, Photos, or Text rows and choose branding from Immich or uploaded files. **Design** controls appearance; **Page settings**, beside Publish, opens sharing options for the persistent URL, downloads, and password protection. Changes autosave privately. Choose **Publish page** or **Update live page** when ready.
 
 ![Choose branding from Immich Photos](docs/screenshots/photo-picker.png)
 
@@ -82,7 +84,7 @@ Version 0.3.1 makes Design easier to use: visual header preset cards, logo shape
 Requires Docker Compose v2, an existing Immich installation, and control of its HTTPS reverse proxy.
 
 ```sh
-git clone --branch v0.3.0 --depth 1 https://gitlab.com/wispd/ImmichPager.git
+git clone --branch v0.4.0 --depth 1 https://gitlab.com/wispd/ImmichPager.git
 cd ImmichPager
 cp .env.example .env
 ```
@@ -93,21 +95,21 @@ Set `IMMICH_URL` to the **internal** Immich root, such as `http://immich-server:
 docker compose up -d --build
 ```
 
-Point the existing HTTPS proxy at Pager's default `127.0.0.1:3102` listener. Sign in to Immich and choose **Pages → Create page**. Add albums, choose branding, preview, and publish. Later edits autosave as a working draft until you update the live page.
+Point the existing HTTPS proxy at Pager's default `127.0.0.1:3102` listener. Sign in to Immich and choose **Pages → Create page**. Add albums, choose branding, compose the live canvas, and publish. Later edits autosave as a working draft until you update the live page.
 
 All Pager routes and assets use `/page/`; native Immich `/api/`, `/s/`, and `/share/` routes continue to the upstream. You can chain Pager in front of Immichinko or keep an Immicull custom server. See [deployment and configuration](docs/deployment.md) for exact setup, image tags, proxy trust, backups, and rollback.
 
-The [v0.3.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.3.0) includes tagged source and a compiled runtime build context with SHA-256 checksums. Historical v0.1.0 ARM64 packages remain available through the [deployment guide](docs/deployment.md#prebuilt-arm64-package).
+The [v0.4.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.4.0) includes tagged source and a compiled runtime build context with SHA-256 checksums. Historical v0.1.0 ARM64 packages remain available through the [deployment guide](docs/deployment.md#prebuilt-arm64-package).
 
 ## Compatibility and current status
 
 Initial source review targets **Immich v3.3.1**, with an ARM64 runtime deployment and public HTTP smoke checks verified on **v3.3.3** alongside Immichinko and a RAW/JPEG companion. Authenticated editing and publishing tests use an isolated fixture; the signed-in live workflow remains to be checked. This is an early implementation, not a claim of compatibility with every Immich release.
 
-The v0.3.0 feature set passed 160 unit tests, 45 Chromium scenarios, type checking, lint, formatting, audit, production build, and a hosted Docker smoke check. Source, releases, and active reviews live on [GitLab](https://gitlab.com/wispd/ImmichPager); see the [migration record](docs/gitlab-migration.md). Historical v0.1.0 downloads remain on GitHub. Source builds support amd64 and arm64. Registry image publication is a separate manual release action.
+The v0.4.0 feature set passed 219 unit tests, 83 Chromium scenarios, type checking, lint, formatting, audit, production build, and a hosted Docker smoke check. Source, releases, and active reviews live on [GitLab](https://gitlab.com/wispd/ImmichPager); see the [migration record](docs/gitlab-migration.md). Historical v0.1.0 downloads remain on GitHub. Source builds support amd64 and arm64. Registry image publication is a separate manual release action.
 
 The sidebar bridge is a maintained DOM integration rather than an official Immich plugin API. Use one Pager container per database. When upstream revocation fails, the overview is hidden; existing native links remain subject to Immich until the owner finishes synchronization. See [validation notes](docs/validation.md).
 
-**Upgrading an existing installation:** this update migrates Pager to schema version 2. Back up the complete stopped Pager volume first. Rolling back to an older image requires restoring that backup too. See [upgrade and rollback](docs/deployment.md#schema-upgrades).
+**Upgrading an existing installation:** this update migrates Pager to schema version 3. Back up the complete stopped Pager volume first. Rolling back to an older image requires restoring that backup too. See [upgrade and rollback](docs/deployment.md#schema-upgrades).
 
 ## Development
 
@@ -171,3 +173,24 @@ ImmichPager is not affiliated with the Immich team or NASA.
 ## License
 
 [AGPL-3.0-only](LICENSE). See [NOTICE](NOTICE) for upstream attribution and fixture-image credits. Contributions use the same license.
+
+## Live composer (v0.4.0)
+
+The editor has Content and Design beside one persistent live canvas, with Page settings beside Publish.
+There is no separate Preview action: desktop, tablet, and phone controls resize
+the same canvas. Working edits autosave privately; Publish/Update changes the
+client page explicitly.
+
+Add any number of rows within the documented content limits: Albums uses Cards,
+Tiles, or Editorial; Photos uses Justified, Masonry, Square, Large, or Carousel;
+Text supports headings, paragraphs, bold, italic, links, and lists. Pick photos
+from your owned Immich library. Caption and reorder them in Content. Drag header
+height, crop, and logo-size handles on the canvas, or use Design controls.
+
+Albums expand into photos on the same page. Photos open an accessible dark viewer
+with keyboard/swipe navigation, captions, fullscreen, and an opt-in slideshow.
+Download permissions apply to individual originals and album/photo-row ZIPs.
+Existing pages retain their album presentation and dedicated shares.
+
+This feature requires schema version 3. Restore a complete pre-upgrade stopped
+volume backup before rolling back to a version that only supports schema 2.

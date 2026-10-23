@@ -231,7 +231,7 @@ test('Customize preview edits title and description and preserves caret after sa
   await closeCustomize(page);
 });
 
-test('phone Customize preview keeps hidden client content hidden and regular Preview read-only', async ({
+test('phone canvas edits visible text and keeps hidden text private in a read-only owner view', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -242,22 +242,13 @@ test('phone Customize preview keeps hidden client content hidden and regular Pre
     clientUi: { showTitle: false, showDescription: true },
   });
   await page.goto(`/page/manage/${draft.id}`);
-  const dialog = await openCustomize(page);
-  await dialog.getByRole('button', { name: 'Preview', exact: true }).click();
-
-  const frame = page.frameLocator('[data-testid="responsive-preview-frame"]');
+  const frame = page.frameLocator('[title="Live page canvas"]');
   await expect(
     frame.getByRole('button', {
       name: 'Edit title, Hidden client title',
       exact: true,
     }),
   ).toHaveCount(0);
-  await expect(
-    frame.getByRole('button', {
-      name: 'Edit description, Visible description',
-      exact: true,
-    }),
-  ).toBeVisible();
   await frame
     .getByRole('button', {
       name: 'Edit description, Visible description',
@@ -268,32 +259,14 @@ test('phone Customize preview keeps hidden client content hidden and regular Pre
   await description.fill('Edited on the phone preview');
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await expect(description).toBeFocused();
-  expect(
-    await page.getByTestId('responsive-preview-frame').getAttribute('src'),
-  ).toContain('inlineHeader=1');
-
-  await dialog.getByRole('button', { name: /Settings/ }).click();
-  await closeCustomize(page);
-  await page.getByRole('button', { name: 'Preview', exact: true }).click();
-  const regularIframe = page.getByTestId('responsive-preview-frame');
-  expect(await regularIframe.getAttribute('src')).not.toContain(
-    'inlineHeader=1',
-  );
-  const regularPreview = page.frameLocator(
-    '[data-testid="responsive-preview-frame"]',
-  );
+  await page.goto(`/page/manage/${draft.id}/preview`);
   await expect(
-    regularPreview.getByRole('button', { name: /Edit title,/ }),
+    page.getByRole('button', { name: /Edit description,/ }),
   ).toHaveCount(0);
+  await expect(page.getByText('Edited on the phone preview')).toBeVisible();
   await expect(
-    regularPreview.getByRole('button', { name: /Edit description,/ }),
+    page.getByText('Hidden client title', { exact: true }),
   ).toHaveCount(0);
-  await expect(
-    regularPreview.getByLabel('Description', { exact: true }),
-  ).toHaveCount(0);
-  await expect(
-    regularPreview.getByText('Edited on the phone preview'),
-  ).toBeVisible();
 });
 
 test('rejects spoofed preview messages and keeps inline edits through save failure', async ({
@@ -358,7 +331,9 @@ test('rejects spoofed preview messages and keeps inline edits through save failu
     .click();
   const title = frame.getByLabel('Title', { exact: true });
   await title.fill('Unsent title stays in the field');
-  await expect(page.getByTestId('save-state')).toHaveText('Couldn’t save');
+  await expect(page.getByTestId('save-state')).toHaveText(
+    'Couldn’t save draft',
+  );
   await expect(page.getByRole('alert')).toContainText(
     'Inline draft save failed.',
   );
@@ -478,11 +453,8 @@ test('edit indicators preserve centered text geometry on desktop and phone', asy
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`/page/manage/${draft.id}`);
     const dialog = await openCustomize(page);
-    if (width === 390) {
-      await dialog
-        .getByRole('button', { name: 'Preview', exact: true })
-        .click();
-    }
+    if (width === 390)
+      await dialog.getByRole('button', { name: 'Close settings' }).click();
     const frame = page.frameLocator('[data-testid="responsive-preview-frame"]');
     for (const field of ['title', 'description']) {
       const button = frame.locator(`.${field}-edit-field`);

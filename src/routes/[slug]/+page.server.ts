@@ -48,7 +48,12 @@ export const actions: Actions = {
     const tokens: Record<string, string> = {};
     const client = upstream();
     try {
-      for (const share of database().shares(page.id)) {
+      for (const share of [
+        ...database().shares(page.id),
+        ...database()
+          .photoShares(page.id)
+          .map((s) => ({ ...s, albumId: `photos:${s.blockId}` })),
+      ]) {
         try {
           tokens[share.albumId] = await client.loginShare(share.key, value);
         } catch (cause) {

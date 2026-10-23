@@ -1,17 +1,26 @@
 <script lang="ts">
   import { goto, replaceState, beforeNavigate } from '$app/navigation';
   import { untrack, onMount, tick } from 'svelte';
-  import { Button, Modal, ModalBody, ConfirmModal } from '@immich/ui';
-  import Gallery from '$lib/components/Gallery.svelte';
-  import AlbumPicker from '$lib/components/AlbumPicker.svelte';
+  import { Button, ConfirmModal, Icon } from '@immich/ui';
+  import {
+    mdiTextBoxEditOutline,
+    mdiPaletteOutline,
+    mdiShareVariantOutline,
+    mdiClose,
+    mdiMenu,
+    mdiMonitor,
+    mdiTablet,
+    mdiCellphone,
+  } from '@mdi/js';
   import BrandingSlot from '$lib/components/BrandingSlot.svelte';
   import PhotoPicker from '$lib/components/PhotoPicker.svelte';
   import PageOptions from '$lib/components/PageOptions.svelte';
+  import BlockInspector from '$lib/components/BlockInspector.svelte';
+  import { blockSchema, pageBlocks, type PageBlock } from '$lib/blocks';
   import CustomizePanel from '$lib/components/CustomizePanel.svelte';
   import PublicationReview from '$lib/components/PublicationReview.svelte';
-  import { labelDialog } from '$lib/actions/dialog-label';
   import CopyLink from '$lib/components/CopyLink.svelte';
-  import PublishedView from '$lib/components/PublishedView.svelte';
+  import { resetCustomization } from '$lib/customization';
   import { readApiResponse } from '$lib/api-response';
   import {
     DEFAULT_GALLERY_STYLE,
@@ -21,7 +30,8 @@
     type PageInput,
   } from '$lib/contracts';
   import {
-    inlineHeaderChangeSchema,
+    composerChangeSchema,
+    canvasReadySchema,
     inlinePreviewSyncSchema,
   } from '$lib/inline-preview';
   import type { PublicationSummary } from '$lib/publication-summary';
@@ -41,6 +51,8 @@
     bannerPosition: initial?.bannerPosition ?? 50,
     headerLayout: initial?.headerLayout ?? 'below',
     headerSize: initial?.headerSize ?? 'standard',
+    bannerHeight: initial?.bannerHeight ?? null,
+    blocks: pageBlocks(initial ?? { albumIds: [] }),
     logoSize: initial?.logoSize ?? 80,
     titleSize: initial?.titleSize ?? 3,
     descriptionSize: initial?.descriptionSize ?? 1.125,
@@ -54,39 +66,51 @@
     passwordMode: 'keep',
     password: '',
   });
+  let editorReady = $state(false);
   let busy = $state(false),
     saving = $state(false),
     message = $state(''),
     success = $state(''),
-    preview = $state(false),
-    customizing = $state(false),
-    customizeMobilePreview = $state(false),
+    inspectorTab = $state<'Content' | 'Design'>('Content'),
+    inspectorOpen = $state(false),
+    sharingOpen = $state(false),
+    selectedBlockId = $state(initial?.blocks?.[0]?.id ?? 'legacy-albums'),
     previewSize = $state<'desktop' | 'tablet' | 'phone'>('desktop'),
-    optionsOpen = $state(false),
-    albumsOpen = $state(false),
     photoKind = $state<'logo' | 'banner' | null>(null),
     brandingVersion = $state(0),
     publicationReview = $state<PublicationSummary | null>(null),
     slugLocked = $state(!!initial?.slug),
     conflict = $state(false),
     failedSnapshot = $state<string | null>(null);
-  let settingsTrigger = $state<HTMLButtonElement | null>(null);
-  async function closeSettings() {
-    optionsOpen = false;
-    await tick();
-    settingsTrigger?.focus();
-  }
   let currentPassword = $state('');
   let reviewSubmitting = $state(false);
   let retryReview = $state(false);
   let pendingAction = $state<'unpublish' | 'delete' | null>(null);
-  let customizeDraftRevision = $state<number | null>(null);
   let customizeSyncSequence = $state(0);
+  const blockAlbumIds = $derived([
+    ...new Set(
+      (fields.blocks ?? []).flatMap((b) =>
+        b.type === 'albums' ? b.albumIds : [],
+      ),
+    ),
+  ]);
+  let narrow = $state(false);
+  let canvasSequence = $state(0);
+  function insertBlock(index: number, type: PageBlock['type']) {
+    if ((fields.blocks?.length ?? 0) >= 100) return;
+    const block = blockSchema.parse({ id: crypto.randomUUID(), type });
+    const next = [...(fields.blocks ?? [])];
+    next.splice(index, 0, block);
+    fields.blocks = next;
+    selectedBlockId = block.id;
+    inspectorTab = 'Content';
+    inspectorOpen = true;
+  }
   function snapshot() {
     const { password: _password, passwordMode: _mode, ...values } = fields;
     void _password;
     void _mode;
-    return JSON.stringify(values);
+    return JSON.stringify({ ...values, albumIds: blockAlbumIds });
   }
   let acknowledged = $state(untrack(() => snapshot()));
   const dirty = $derived(snapshot() !== acknowledged);
@@ -106,7 +130,7 @@
           : 'All changes saved',
   );
   const selected = $derived(
-    fields.albumIds
+    blockAlbumIds
       .map((id) => data.albums.find((a) => a.id === id))
       .filter((a) => !!a),
   );
@@ -129,6 +153,7 @@
     albums: selected.map((a) => ({
       id: a.id,
       name: a.albumName,
+      description: a.description?.slice(0, 20000) ?? '',
       count: a.assetCount,
       startDate: a.startDate,
       endDate: a.endDate,
@@ -137,27 +162,12 @@
       available: true,
     })),
   });
-  const previewUrl = $derived(
-    saved
-      ? `/page/manage/${saved.id}/preview?draft=${saved.draftRevision}&branding=${brandingVersion}`
-      : null,
+  const canvasUrl = $derived(
+    saved ? `/page/manage/${saved.id}/preview?inlineHeader=1` : null,
   );
-  const customizePreviewUrl = $derived(
-    saved && customizeDraftRevision !== null
-      ? `/page/manage/${saved.id}/preview?draft=${customizeDraftRevision}&branding=${brandingVersion}&inlineHeader=1`
-      : null,
-  );
-  let customizeTrigger = $state<HTMLElement | null>(null);
   let customizePreviewFrame = $state<HTMLIFrameElement | null>(null);
-  function focusCustomizePanel() {
-    document
-      .querySelector<HTMLElement>(
-        '.customize-panel [role="tab"][aria-selected="true"]',
-      )
-      ?.focus();
-  }
   function syncCustomizePreview() {
-    if (!customizing || !saved || !customizePreviewFrame?.contentWindow) return;
+    if (!saved || !customizePreviewFrame?.contentWindow) return;
     const page = previewPage;
     const syncSequence = customizeSyncSequence + 1;
     const syncMessage = inlinePreviewSyncSchema.safeParse({
@@ -166,6 +176,9 @@
       pageId: saved.id,
       syncSequence,
       draftRevision: saved.draftRevision,
+      selectedBlockId,
+      ackSequence: canvasSequence,
+      locked: busy || conflict,
       page: {
         id: page.id,
         title: page.title,
@@ -178,6 +191,17 @@
         bannerPosition: page.bannerPosition,
         headerLayout: page.headerLayout,
         headerSize: page.headerSize,
+        blocks: page.blocks,
+        bannerHeight: page.bannerHeight,
+        allowDownload: page.allowDownload,
+        revision: saved.draftRevision,
+        persistedBlockIds: saved.blocks?.map((b) => b.id) ?? [],
+        persistedPhotos:
+          saved.blocks?.flatMap((b) =>
+            b.type === 'photos'
+              ? [{ blockId: b.id, photoIds: b.photos.map((p) => p.id) }]
+              : [],
+          ) ?? [],
         logoSize: page.logoSize,
         titleSize: page.titleSize,
         descriptionSize: page.descriptionSize,
@@ -193,7 +217,7 @@
     });
     if (!syncMessage.success) {
       message =
-        'Could not refresh the private preview. Reopen Customize to reload it.';
+        'Could not refresh the private canvas. Your edits are still available.';
       return;
     }
     customizeSyncSequence = syncSequence;
@@ -202,6 +226,16 @@
       window.location.origin,
     );
   }
+  $effect(() => {
+    void snapshot();
+    void brandingVersion;
+    void saved?.draftRevision;
+    void selectedBlockId;
+    void canvasSequence;
+    void busy;
+    void conflict;
+    if (customizePreviewFrame) untrack(syncCustomizePreview);
+  });
   let queue: Promise<unknown> = Promise.resolve();
   function enqueue<T>(work: () => Promise<T>): Promise<T> {
     const next = queue.catch(() => {}).then(work);
@@ -288,34 +322,130 @@
       cancel();
   });
   onMount(() => {
-    if (new URL(location.href).searchParams.get('options') === '1')
-      optionsOpen = true;
+    editorReady = true;
+    const media = matchMedia('(max-width:700px)');
+    narrow = media.matches;
+    const resize = () => {
+      if (media.matches && !narrow)
+        inspectorOpen = !!document.querySelector(
+          'dialog[open], [role="dialog"][aria-modal="true"]:not(.inspector)',
+        );
+      narrow = media.matches;
+    };
+    media.addEventListener('change', resize);
+    if (new URL(location.href).searchParams.get('options') === '1') {
+      sharingOpen = true;
+    }
     const warn = (event: BeforeUnloadEvent) => {
       if (dirty || saving) {
         event.preventDefault();
         event.returnValue = '';
       }
     };
+    void flush(true).catch(() => {});
     const receiveInlineHeaderChange = (event: MessageEvent<unknown>) => {
       if (
-        event.origin !== window.location.origin ||
+        event.origin !== location.origin ||
         event.source !== customizePreviewFrame?.contentWindow ||
-        !customizing ||
-        !saved
+        !saved ||
+        busy ||
+        conflict
       )
         return;
-      const parsed = inlineHeaderChangeSchema.safeParse(event.data);
-      if (!parsed.success || parsed.data.pageId !== saved.id) return;
-      if (parsed.data.field === 'title') editTitle(parsed.data.value);
-      else fields.description = parsed.data.value;
+      const ready = canvasReadySchema.safeParse(event.data);
+      if (ready.success && ready.data.pageId === saved.id) {
+        syncCustomizePreview();
+        return;
+      }
+      const parsed = composerChangeSchema.safeParse(event.data);
+      if (
+        !parsed.success ||
+        parsed.data.pageId !== saved.id ||
+        parsed.data.sequence <= canvasSequence
+      )
+        return;
+      const change = parsed.data;
+      canvasSequence = change.sequence;
+      if (change.action === 'header') {
+        if (change.field === 'title') editTitle(change.value);
+        else fields.description = change.value;
+      }
+      if (change.action === 'size') fields[change.field] = change.value;
+      if (
+        change.action === 'block' &&
+        fields.blocks?.some((b) => b.id === change.block.id)
+      )
+        fields.blocks = fields.blocks.map((b) =>
+          b.id === change.block.id ? change.block : b,
+        );
+      if (
+        change.action === 'select' &&
+        fields.blocks?.some((b) => b.id === change.blockId)
+      ) {
+        selectedBlockId = change.blockId;
+        inspectorTab = 'Content';
+        inspectorOpen = true;
+      }
+      if (change.action === 'insert')
+        insertBlock(change.index, change.blockType);
     };
     window.addEventListener('beforeunload', warn);
     window.addEventListener('message', receiveInlineHeaderChange);
     return () => {
+      media.removeEventListener('change', resize);
       window.removeEventListener('beforeunload', warn);
       window.removeEventListener('message', receiveInlineHeaderChange);
     };
   });
+  let sheetWasOpen = false;
+  let sheetReturnFocus: HTMLElement | null = null;
+  $effect(() => {
+    const open = narrow && inspectorOpen;
+    if (open && !sheetWasOpen) {
+      sheetReturnFocus =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+      void tick().then(() =>
+        document
+          .querySelector<HTMLButtonElement>(
+            '.inspector-tabs button[aria-pressed="true"]',
+          )
+          ?.focus(),
+      );
+    }
+    if (!open && sheetWasOpen && narrow)
+      void tick().then(() => sheetReturnFocus?.focus());
+    sheetWasOpen = open;
+  });
+  function inspectorKey(event: KeyboardEvent) {
+    if (!narrow || !inspectorOpen) return;
+    const nested =
+      event.target instanceof HTMLElement
+        ? event.target.closest('dialog, [role="dialog"]')
+        : null;
+    if (nested && nested !== event.currentTarget) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      inspectorOpen = false;
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const controls = Array.from(
+      (event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>(
+        'button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),a[href],[tabindex="0"]',
+      ),
+    ).filter((element) => element.getClientRects().length > 0);
+    const first = controls[0],
+      last = controls.at(-1);
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last?.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first?.focus();
+    }
+  }
   async function back() {
     try {
       await flush();
@@ -323,56 +453,6 @@
     } catch {
       /* Keep unsaved edits visible. */
     }
-  }
-  async function openPreview() {
-    try {
-      await flush(true);
-      previewSize = 'desktop';
-      preview = true;
-    } catch {
-      /* Keep the editor open when the private draft cannot be saved. */
-    }
-  }
-  async function openCustomize() {
-    try {
-      await flush(true);
-      previewSize = 'desktop';
-      customizeDraftRevision = saved?.draftRevision ?? null;
-      customizeSyncSequence = 0;
-      customizeMobilePreview = false;
-      customizing = true;
-      await tick();
-      focusCustomizePanel();
-    } catch {
-      /* Keep the editor open when the private draft cannot be saved. */
-    }
-  }
-  async function closeCustomize() {
-    customizing = false;
-    customizeMobilePreview = false;
-    customizeDraftRevision = null;
-    await tick();
-    customizeTrigger?.focus();
-  }
-  async function openCustomizePreview() {
-    try {
-      await flush(true);
-      customizeMobilePreview = true;
-      await tick();
-      customizePreviewFrame?.focus();
-    } catch {
-      /* Keep settings visible when the private draft cannot be saved. */
-    }
-  }
-  async function returnToCustomizeSettings() {
-    customizeMobilePreview = false;
-    await tick();
-    focusCustomizePanel();
-  }
-  function select(id: string) {
-    fields.albumIds = fields.albumIds.includes(id)
-      ? fields.albumIds.filter((x) => x !== id)
-      : [...fields.albumIds, id];
   }
   function editTitle(title: string) {
     fields.title = title;
@@ -389,10 +469,10 @@
     message = '';
     success = '';
     publicationReview = null;
+    inspectorOpen = false;
+    sharingOpen = false;
     retryReview = false;
     currentPassword = '';
-    optionsOpen = false;
-    albumsOpen = false;
     photoKind = null;
     try {
       await flush(true);
@@ -483,7 +563,6 @@
       return;
     }
     if (!saved) return;
-    optionsOpen = false;
     retryReview = true;
     currentPassword = '';
     message = '';
@@ -598,736 +677,514 @@
 <svelte:head
   ><title>{fields.title || 'New page'} · ImmichPager</title></svelte:head
 >
-{#if customizing && customizePreviewUrl}<Modal
-    size="full"
-    class="customize-dialog"
-    onClose={closeCustomize}
-    focusOnOpen
-  >
-    <ModalBody class="customize-modal-body">
-      <div class="customize-editor" use:labelDialog={'Customize'}>
-        <header class="customize-toolbar">
-          {#if customizeMobilePreview}
-            <Button variant="ghost" onclick={returnToCustomizeSettings}
-              >← Settings</Button
-            >
-          {:else}
-            <Button variant="ghost" onclick={closeCustomize}
-              >← Back to editor</Button
-            >
-          {/if}
-          <div class="draft-status">
-            <span
-              >{saved?.publishedSlug
-                ? 'Live'
-                : 'Draft'}{#if saved?.publishedSlug && (dirty || saved.hasUnpublishedChanges)}
-                · Draft changes{/if}</span
-            >
-            <small aria-live="polite" data-testid="save-state"
-              >{saving
-                ? 'Saving…'
-                : failedSnapshot
-                  ? 'Couldn’t save'
-                  : dirty
-                    ? 'Unsaved changes'
-                    : 'All changes saved'}</small
-            >
-          </div>
-          <div class="customize-actions">
-            {#if failedSnapshot && !conflict}<Button
-                variant="ghost"
-                onclick={() => {
-                  failedSnapshot = null;
-                  void flush().catch(() => {});
-                }}>Retry save</Button
-              >{/if}
-            <CopyLink slug={saved?.publishedSlug ?? null} />
-          </div>
-        </header>
-        {#if message}<div class="notice error customize-notice" role="alert">
-            {message}
-          </div>{/if}
-        <div
-          class="customize-workspace"
-          class:mobile-preview={customizeMobilePreview}
-        >
-          <CustomizePanel
-            onTitleInput={editTitle}
-            bind:fields
-            {saved}
-            {busy}
-            onPreview={openCustomizePreview}
-          />
-          <section class="customize-preview" aria-label="Client page preview">
-            <div class="preview-toolbar">
-              <p class="preview-note">
-                Private preview · saves remain unpublished
-              </p>
-              <div class="preview-sizes" role="group" aria-label="Preview size">
-                <Button
-                  variant="ghost"
-                  color="secondary"
-                  aria-label="Desktop preview"
-                  aria-pressed={previewSize === 'desktop'}
-                  onclick={() => (previewSize = 'desktop')}>Desktop</Button
-                >
-                <Button
-                  variant="ghost"
-                  color="secondary"
-                  aria-label="Tablet preview"
-                  aria-pressed={previewSize === 'tablet'}
-                  onclick={() => (previewSize = 'tablet')}>Tablet</Button
-                >
-                <Button
-                  variant="ghost"
-                  color="secondary"
-                  aria-label="Phone preview"
-                  aria-pressed={previewSize === 'phone'}
-                  onclick={() => (previewSize = 'phone')}>Phone</Button
-                >
-              </div>
-            </div>
-            <div
-              class="preview-stage"
-              class:tablet={previewSize === 'tablet'}
-              class:phone={previewSize === 'phone'}
-            >
-              <iframe
-                bind:this={customizePreviewFrame}
-                data-testid="responsive-preview-frame"
-                class:tablet={previewSize === 'tablet'}
-                class:phone={previewSize === 'phone'}
-                title={`${previewSize[0].toUpperCase()}${previewSize.slice(1)} preview of ${fields.title || 'your client page'}`}
-                data-sync-sequence={customizeSyncSequence}
-                src={customizePreviewUrl}
-                onload={syncCustomizePreview}
-              ></iframe>
-            </div>
-          </section>
-        </div>
-      </div>
-    </ModalBody>
-  </Modal>
-{:else if preview && previewUrl}<main class="responsive-preview">
-    <header class="preview-toolbar">
-      <Button variant="ghost" onclick={() => (preview = false)}
-        >← Back to editor</Button
+<main
+  class="composer"
+  data-composer-ready={editorReady}
+  aria-busy={!editorReady}
+>
+  <header class="composer-toolbar" inert={narrow && inspectorOpen}>
+    <Button variant="ghost" color="secondary" onclick={back}>← Pages</Button>
+    <div class="draft-status">
+      <strong
+        >{saved?.publishedSlug
+          ? 'Live · draft changes stay private'
+          : 'Private draft'}</strong
+      ><small aria-live="polite" data-testid="save-state"
+        >{!editorReady
+          ? 'Loading editor…'
+          : saving
+            ? 'Saving…'
+            : saveStatus}</small
       >
-      <p class="preview-note">Private preview · includes your draft changes</p>
-      <div class="preview-sizes" role="group" aria-label="Preview size">
-        <Button
-          variant="ghost"
-          color="secondary"
-          aria-label="Desktop preview"
-          aria-pressed={previewSize === 'desktop'}
-          onclick={() => (previewSize = 'desktop')}>Desktop</Button
-        >
-        <Button
-          variant="ghost"
-          color="secondary"
-          aria-label="Tablet preview"
-          aria-pressed={previewSize === 'tablet'}
-          onclick={() => (previewSize = 'tablet')}>Tablet</Button
-        >
-        <Button
-          variant="ghost"
-          color="secondary"
-          aria-label="Phone preview"
-          aria-pressed={previewSize === 'phone'}
-          onclick={() => (previewSize = 'phone')}>Phone</Button
-        >
-      </div>
-    </header>
-    <div
-      class="preview-stage"
-      class:tablet={previewSize === 'tablet'}
-      class:phone={previewSize === 'phone'}
-    >
-      <iframe
-        data-testid="responsive-preview-frame"
-        class:tablet={previewSize === 'tablet'}
-        class:phone={previewSize === 'phone'}
-        title={`${previewSize[0].toUpperCase()}${previewSize.slice(1)} preview of ${fields.title || 'your client page'}`}
-        src={previewUrl}
-      ></iframe>
     </div>
-  </main>
-{:else}
-  <main class="editor">
-    <header class="editor-toolbar">
+    <div class="toolbar-actions">
+      {#if failedSnapshot && !conflict}<Button
+          variant="ghost"
+          onclick={() => {
+            failedSnapshot = null;
+            void flush().catch(() => {});
+          }}>Retry save</Button
+        >{/if}
+      <CopyLink slug={saved?.publishedSlug ?? null} />
       <Button
         variant="ghost"
         color="secondary"
-        aria-label="Back to client pages"
-        onclick={back}>←</Button
+        leadingIcon={mdiShareVariantOutline}
+        disabled={!editorReady}
+        onclick={() => {
+          sharingOpen = true;
+        }}>Page settings</Button
       >
-      <div class="draft-status">
-        <span
-          >{saved?.status === 'error'
-            ? 'Needs attention'
-            : saved?.publishedSlug
-              ? 'Live'
-              : 'Draft'}{#if saved?.publishedSlug && (dirty || saved.hasUnpublishedChanges)}
-            · Draft changes{/if}</span
-        ><small aria-live="polite" data-testid="save-state"
-          >{saving
-            ? 'Saving…'
-            : failedSnapshot
-              ? 'Couldn’t save'
-              : dirty
-                ? 'Unsaved changes'
-                : 'All changes saved'}</small
-        >
-      </div>
-      <div class="actions">
-        {#if failedSnapshot && !conflict}<Button
-            variant="ghost"
-            onclick={() => {
-              failedSnapshot = null;
-              void flush().catch(() => {});
-            }}>Retry save</Button
-          >{/if}<CopyLink slug={saved?.publishedSlug ?? null} /><Button
-          variant="ghost"
-          color="secondary"
-          bind:ref={settingsTrigger}
-          onclick={() => (optionsOpen = true)}>Page settings</Button
-        ><Button variant="ghost" color="secondary" onclick={openPreview}
-          >Preview</Button
-        ><Button
-          bind:ref={customizeTrigger}
-          variant="ghost"
-          color="secondary"
-          onclick={openCustomize}>Customize</Button
-        ><Button
-          shape="round"
-          disabled={busy ||
-            conflict ||
-            !canPublish ||
-            saved?.status === 'error'}
-          onclick={() => perform('publish')}
-          >{busy
-            ? 'Working…'
-            : saved?.publishedSlug
-              ? 'Update live page'
-              : 'Publish page'}</Button
-        >
-      </div>
-    </header>
-    {#if saved?.status === 'published' && saved.publishedSlug}
-      <PublishedView
-        slug={saved.publishedSlug}
-        hasPassword={saved.hasPassword}
-      />
-    {/if}
-    {#if message && !optionsOpen && !photoKind && !publicationReview}<div
-        class="notice error"
-        role="alert"
+      <Button
+        shape="round"
+        disabled={!editorReady ||
+          busy ||
+          conflict ||
+          !canPublish ||
+          saved?.status === 'error'}
+        onclick={reviewPublication}
+        >{busy
+          ? 'Working…'
+          : saved?.publishedSlug
+            ? 'Update live page'
+            : 'Publish page'}</Button
       >
-        {message}
-      </div>{/if}
-    {#if success}<div class="notice" role="status">{success}</div>{/if}
-    {#if saved?.status === 'error'}<div class="notice">
-        <p>
-          This page is hidden while its album links need synchronization. Open
-          Page settings to retry the pending operation.
-        </p>
-        <Button disabled={busy} onclick={() => requestAction('retry')}
-          >Retry synchronization</Button
-        >
-      </div>{/if}
-    <div class="branding-grid">
-      <BrandingSlot
-        kind="logo"
-        image={logo}
-        {busy}
-        onchoose={() => (photoKind = 'logo')}
-        onfile={(file) => void branding('logo', file).catch(() => {})}
-        onremove={() => void branding('logo', null).catch(() => {})}
-      /><BrandingSlot
-        kind="banner"
-        image={banner}
-        {busy}
-        onchoose={() => (photoKind = 'banner')}
-        onfile={(file) => void branding('banner', file).catch(() => {})}
-        onremove={() => void branding('banner', null).catch(() => {})}
-      />
     </div>
-    <Gallery
-      page={previewPage}
-      editorHeader
-      editDisabled={busy}
-      onTitleInput={editTitle}
-      onDescriptionInput={(description) => (fields.description = description)}
-    />
-    {#if selected.length}<section class="selected-albums">
-        <div class="bar">
-          <h2>
-            {selected.length}
-            {selected.length === 1 ? 'album' : 'albums'}
-          </h2>
-          <Button
-            variant="ghost"
-            disabled={busy}
-            onclick={() => (albumsOpen = true)}>＋ Add albums</Button
-          >
+  </header>
+  {#if message && !photoKind && !publicationReview}<div
+      class="notice error"
+      role="alert"
+    >
+      {message}
+    </div>{/if}
+  {#if success}<div class="notice" role="status">{success}</div>{/if}
+  {#if saved?.status === 'error'}<div class="notice">
+      This page is hidden until sharing synchronization finishes. <Button
+        onclick={() => requestAction('retry')}>Retry synchronization</Button
+      >
+    </div>{/if}
+  <div class="workspace" class:inspector-open={inspectorOpen}>
+    <aside
+      aria-label="Page inspector"
+      class="inspector"
+      role={narrow && inspectorOpen ? 'dialog' : undefined}
+      aria-modal={narrow && inspectorOpen ? true : undefined}
+      onkeydown={inspectorKey}
+    >
+      <nav class="inspector-tabs" aria-label="Page inspector tabs">
+        {#each ['Content', 'Design'] as tab}<button
+            aria-label={`${tab} inspector`}
+            aria-pressed={inspectorTab === tab}
+            onclick={() => (inspectorTab = tab as typeof inspectorTab)}
+            ><Icon
+              icon={tab === 'Content'
+                ? mdiTextBoxEditOutline
+                : mdiPaletteOutline}
+              size="18px"
+              aria-hidden
+            />
+            {tab}</button
+          >{/each}
+        <button
+          class="mobile-close"
+          aria-label="Close settings"
+          onclick={() => (inspectorOpen = false)}
+          ><Icon icon={mdiClose} size="20px" aria-hidden /></button
+        >
+      </nav>
+      <div class="inspector-content">
+        {#if inspectorTab === 'Content'}
+          <details class="header-settings">
+            <summary>Header and branding</summary>
+            <label
+              >Title <input
+                aria-label="Page title"
+                value={fields.title}
+                maxlength="160"
+                oninput={(event) => editTitle(event.currentTarget.value)}
+              /></label
+            >
+            <label
+              >Description <textarea
+                aria-label="Page description"
+                bind:value={fields.description}
+                maxlength="2000"
+              ></textarea></label
+            >
+            <BrandingSlot
+              kind="logo"
+              image={logo}
+              {busy}
+              onchoose={() => (photoKind = 'logo')}
+              onfile={(file) => void branding('logo', file).catch(() => {})}
+              onremove={() => void branding('logo', null).catch(() => {})}
+            />
+            <BrandingSlot
+              kind="banner"
+              image={banner}
+              {busy}
+              onchoose={() => (photoKind = 'banner')}
+              onfile={(file) => void branding('banner', file).catch(() => {})}
+              onremove={() => void branding('banner', null).catch(() => {})}
+            />
+          </details>
+          <BlockInspector
+            bind:fields
+            albums={data.albums}
+            bind:selectedId={selectedBlockId}
+            disabled={!editorReady || busy || conflict}
+          />
+        {:else if inspectorTab === 'Design'}<CustomizePanel
+            bind:fields
+            {saved}
+            {busy}
+            onTitleInput={editTitle}
+            onResetAll={() => {
+              fields = resetCustomization($state.snapshot(fields));
+              success =
+                'Customization reset to defaults. Content and sharing settings kept.';
+            }}
+          />
+        {/if}
+      </div>
+    </aside>
+    <section
+      class="canvas"
+      aria-label="Live page canvas"
+      inert={narrow && inspectorOpen}
+    >
+      <div class="canvas-toolbar">
+        <button
+          class="mobile-settings"
+          onclick={() => (inspectorOpen = !inspectorOpen)}
+          ><Icon icon={mdiMenu} size="18px" aria-hidden />{inspectorTab}</button
+        >
+        <p>Live canvas · unpublished changes</p>
+        <div role="group" aria-label="Canvas size">
+          {#each ['desktop', 'tablet', 'phone'] as size}<button
+              aria-label={`${size[0].toUpperCase() + size.slice(1)} canvas`}
+              aria-pressed={previewSize === size}
+              onclick={() => (previewSize = size as typeof previewSize)}
+              ><Icon
+                icon={size === 'desktop'
+                  ? mdiMonitor
+                  : size === 'tablet'
+                    ? mdiTablet
+                    : mdiCellphone}
+                size="18px"
+                aria-hidden
+              /><span>{size[0].toUpperCase() + size.slice(1)}</span></button
+            >{/each}
         </div>
-        <div class="selected-grid">
-          {#each selected as album (album.id)}<article class="selected-album">
-              <div class="selected-cover">
-                {#if album.albumThumbnailAssetId}<img
-                    src={`/page/api/albums/${album.id}/cover`}
-                    alt=""
-                    width="320"
-                    height="320"
-                    loading="lazy"
-                  />{:else}<span aria-hidden="true">▧</span>{/if}<button
-                  class="remove-album"
-                  disabled={busy}
-                  aria-label={`Remove ${album.albumName}`}
-                  onclick={() => select(album.id)}>×</button
-                >
-              </div>
-              <h3>{album.albumName}</h3>
-              <p class="muted">{album.assetCount} items</p>
-            </article>{/each}
-        </div>
-      </section>
-    {:else}<section class="empty-albums">
-        <div>
-          <p>ADD ALBUMS</p>
-          <button
-            class="add-albums"
-            disabled={busy}
-            onclick={() => (albumsOpen = true)}
-            ><span aria-hidden="true">＋</span><span>Select albums</span
-            ></button
-          >
-        </div>
-      </section>{/if}
-    <AlbumPicker
+      </div>
+      <div
+        class="canvas-stage"
+        class:tablet={previewSize === 'tablet'}
+        class:phone={previewSize === 'phone'}
+      >
+        {#if canvasUrl}<iframe
+            data-testid="responsive-preview-frame"
+            data-sync-sequence={customizeSyncSequence}
+            bind:this={customizePreviewFrame}
+            src={canvasUrl}
+            title="Live page canvas"
+            onload={() => {
+              canvasSequence = 0;
+              syncCustomizePreview();
+            }}
+            allow="fullscreen"
+          ></iframe>{:else}<p role="status">
+            Preparing your private canvas…
+          </p>{/if}
+      </div>
+    </section>
+  </div>
+  {#if photoKind}<PhotoPicker
+      kind={photoKind}
       albums={data.albums}
-      bind:albumIds={fields.albumIds}
-      bind:open={albumsOpen}
+      onClose={() => (photoKind = null)}
+      onchoose={(id) => branding(photoKind!, id)}
+    />{/if}
+  {#if pendingAction}<ConfirmModal
+      title={pendingAction === 'delete' ? 'Delete page' : 'Unpublish page'}
+      prompt={pendingAction === 'delete'
+        ? 'Delete this page and revoke its dedicated shares?'
+        : 'Unpublish this page and revoke its dedicated shares?'}
+      confirmText={pendingAction === 'delete'
+        ? 'Delete page'
+        : 'Unpublish page'}
+      onClose={(confirmed) => {
+        const action = pendingAction;
+        pendingAction = null;
+        if (confirmed && action) void perform(action);
+      }}
+    />{/if}
+  {#if sharingOpen}<PageOptions
+      bind:fields
+      {saved}
+      {message}
+      {busy}
+      {saving}
+      {saveStatus}
+      canPublish={canPublish && !conflict}
+      onClose={() => {
+        sharingOpen = false;
+      }}
+      onSlugEdit={() => (slugLocked = true)}
+      onpublish={reviewPublication}
+      onaction={requestAction}
     />
-    {#if optionsOpen}<PageOptions
-        bind:fields
-        {saved}
-        albums={data.albums}
-        {message}
-        {busy}
-        {saving}
-        {saveStatus}
-        canPublish={canPublish && !conflict}
-        onClose={closeSettings}
-        onSlugEdit={() => (slugLocked = true)}
-        onpublish={() => {
-          optionsOpen = false;
-          void perform('publish');
-        }}
-        onaction={(action) => {
-          optionsOpen = false;
-          requestAction(action);
-        }}
-      />{/if}
-    {#if photoKind}<PhotoPicker
-        kind={photoKind}
-        albums={data.albums}
-        onClose={() => (photoKind = null)}
-        onchoose={(id) => branding(photoKind!, id)}
-      />{/if}
-    {#if pendingAction}<ConfirmModal
-        title={pendingAction === 'delete' ? 'Delete page' : 'Unpublish page'}
-        prompt={pendingAction === 'delete'
-          ? 'Delete this page and revoke its dedicated album links?'
-          : 'Unpublish this page and revoke its album links?'}
-        confirmText={pendingAction === 'delete'
-          ? 'Delete page'
-          : 'Unpublish page'}
-        onClose={(confirmed) => {
-          const action = pendingAction;
-          pendingAction = null;
-          if (confirmed && action) void perform(action);
-        }}
-      />{/if}
-    {#if publicationReview}<PublicationReview
-        review={publicationReview}
-        bind:password={currentPassword}
-        {message}
-        submitting={reviewSubmitting}
-        retry={retryReview}
-        albums={data.albums}
-        onClose={cancelPublicationReview}
-        onConfirm={publishReviewed}
-      />{/if}
-  </main>
-{/if}
+  {/if}
+  {#if publicationReview}<PublicationReview
+      review={publicationReview}
+      bind:password={currentPassword}
+      {message}
+      submitting={reviewSubmitting}
+      retry={retryReview}
+      albums={data.albums}
+      onClose={cancelPublicationReview}
+      onConfirm={publishReviewed}
+    />{/if}
+</main>
 
 <style>
-  :global(.customize-dialog) {
-    inline-size: 100%;
-    block-size: 100%;
-    min-block-size: 0;
-    border: 0;
-    border-radius: 0;
-    color: var(--pager-management-text, inherit);
-    background: var(--pager-management-background, #000);
-    box-shadow: none;
-  }
-  :global(.customize-dialog > div > div:first-child) {
-    display: none;
-  }
-  :global(.customize-modal-body) {
-    display: flex;
-    flex: 1 1 auto;
-    min-block-size: 0;
-    padding: 0;
-    overflow: hidden;
-  }
-  .customize-editor {
+  .composer {
+    height: 100dvh;
     display: flex;
     flex-direction: column;
-    inline-size: 100%;
-    block-size: 100%;
-    min-block-size: 0;
-  }
-  .customize-toolbar {
-    display: flex;
-    flex: 0 0 auto;
-    align-items: center;
-    gap: 14px;
-    min-block-size: 64px;
-    padding-inline: 20px;
-    border-bottom: 1px solid var(--pager-management-border, #292a2d);
+    min-width: 0;
+    color: var(--pager-management-text, #eee);
     background: var(--pager-management-background, #000);
   }
-  .customize-toolbar .draft-status {
-    color: var(--pager-management-text-secondary, #9aa0a6);
-  }
-  .customize-toolbar .draft-status small {
-    color: var(--pager-management-text-secondary, #78818d);
-  }
-  .customize-actions {
+  .composer-toolbar {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-inline-start: auto;
-  }
-  .customize-workspace {
-    display: grid;
-    flex: 1 1 auto;
-    grid-template-columns: minmax(320px, 390px) minmax(0, 1fr);
-    min-block-size: 0;
-  }
-  .customize-preview {
-    display: flex;
-    flex-direction: column;
-    min-inline-size: 0;
-    min-block-size: 0;
-    background: var(--pager-management-surface, #191b20);
-  }
-  .customize-preview .preview-toolbar {
+    gap: 16px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--pager-management-border, #ffffff26);
     flex: 0 0 auto;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--pager-management-border, #292a2d);
-    background: var(--pager-management-background, #101114);
-  }
-  .customize-preview .preview-note {
-    margin-inline: 0 auto;
-  }
-  .customize-preview .preview-stage {
-    flex: 1 1 auto;
-    min-block-size: 0;
-  }
-  .customize-notice {
-    flex: 0 0 auto;
-    margin: 8px 16px;
-  }
-  .editor {
-    padding: 0 40px 56px;
-    max-width: 1800px;
-    margin: auto;
-    min-height: 100dvh;
-  }
-  .editor-toolbar {
-    min-height: 80px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    border-bottom: 1px solid #292a2d;
-  }
-  .editor-toolbar .actions {
-    margin-left: auto;
-    gap: 6px;
   }
   .draft-status {
-    color: #9aa0a6;
-    font-size: 13px;
     display: grid;
     gap: 4px;
-    white-space: nowrap;
+    min-width: 0;
+  }
+  .draft-status strong {
+    font-size: 14px;
+    font-weight: 500;
   }
   .draft-status small {
-    font-size: 11px;
-    color: #78818d;
-  }
-  .branding-grid {
-    display: grid;
-    grid-template-columns: 300px minmax(0, 1fr);
-    gap: 28px;
-    margin-top: 40px;
-  }
-  .empty-albums {
-    margin-top: 80px;
-    display: flex;
-    justify-content: center;
-  }
-  .empty-albums > div {
-    width: 300px;
-  }
-  .empty-albums p {
     font-size: 12px;
-    margin: 0 0 20px;
+    opacity: 0.6;
   }
-  .add-albums {
+  .toolbar-actions {
+    margin-left: auto;
     display: flex;
     align-items: center;
-    gap: 24px;
-    width: 100%;
-    border: 0;
-    border-radius: 16px;
-    padding: 32px;
-    background: #101114;
-    font-size: 18px;
-    text-align: left;
+    gap: 8px;
   }
-  .add-albums > span:first-child {
-    color: #accbfa;
-    font-size: 24px;
-  }
-  .add-albums:hover {
-    background: #25272c;
-    color: #accbfa;
-  }
-  .selected-albums {
-    margin-top: 48px;
-  }
-  .selected-albums h2 {
-    font-size: 18px;
-  }
-  .selected-grid {
+  .workspace {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 36px;
+    grid-template-columns: 400px minmax(0, 1fr);
+    min-height: 0;
+    flex: 1;
   }
-  .selected-cover {
-    aspect-ratio: 1;
-    position: relative;
-    background: #101114;
-    border-radius: 16px;
-    overflow: hidden;
-    display: grid;
-    place-items: center;
-  }
-  .selected-cover img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .remove-album {
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    border: 0;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    background: #000a;
-    font-size: 24px;
-  }
-  .selected-album h3 {
-    font-size: 18px;
-    margin-top: 16px;
-    overflow-wrap: anywhere;
-  }
-  .selected-album p {
-    font-size: 14px;
-    margin-top: 4px;
-  }
-  .responsive-preview {
-    block-size: 100dvh;
-    min-block-size: 360px;
+  .inspector {
+    min-width: 0;
+    border-right: 1px solid var(--pager-management-border, #ffffff26);
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    background: #191b20;
   }
-  .preview-toolbar {
-    padding: 12px 24px;
+  .inspector-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--pager-management-border, #ffffff26);
+    flex-shrink: 0;
+  }
+  .inspector-tabs button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex: 1;
+    padding: 16px 8px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .inspector-tabs button[aria-pressed='true'] {
+    color: var(--pager-management-accent, #accbfa);
+    border-color: currentColor;
+  }
+  .inspector-content {
+    min-width: 0;
+    overflow: auto;
+    min-height: 0;
+    flex: 1;
+  }
+  .inspector-content :global(.customize-panel) {
+    height: 100%;
+    border: 0;
+  }
+  .inspector-content :global(.panel-header) {
+    display: none;
+  }
+  .header-settings {
+    margin: 20px 20px 0;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--pager-management-border, #ffffff26);
+  }
+  .header-settings summary {
+    cursor: pointer;
+    font-size: 14px;
+    padding-block: 8px;
+  }
+  .header-settings label {
+    display: grid;
+    gap: 8px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .header-settings input,
+  .header-settings textarea {
+    border: 1px solid var(--pager-management-border, #ffffff26);
+    border-radius: 8px;
+    padding: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+  }
+  .header-settings :global(.branding-slot) {
+    margin-top: 16px;
+  }
+  .canvas {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: #111216;
+  }
+  .canvas-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
-    background: #101114;
-    font-size: 13px;
+    padding: 8px 16px;
+    gap: 12px;
+    min-height: 48px;
+    flex-shrink: 0;
   }
-  .preview-note {
-    margin: 0 auto;
-    color: #d4d7de;
-    text-align: center;
+  .canvas-toolbar p {
+    margin: 0;
+    color: #a6a8af;
+    font-size: 12px;
   }
-  .preview-sizes {
+  .canvas-toolbar div {
     display: flex;
-    flex: 0 0 auto;
+    gap: 4px;
+  }
+  .canvas-toolbar button {
+    display: flex;
     align-items: center;
-    padding: 3px;
-    border: 1px solid #41434b;
+    gap: 6px;
+    color: #aaa;
+    border: 0;
+    padding: 8px 12px;
     border-radius: 8px;
+    background: transparent;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
   }
-  .preview-sizes :global(button[aria-pressed='true']) {
-    background: #343741;
-    color: #fff;
+  .canvas-toolbar button[aria-pressed='true'] {
+    background: #ffffff16;
+    color: #dbe2ff;
   }
-  .preview-stage {
+  .canvas-stage {
     display: flex;
-    flex: 1 1 auto;
-    min-block-size: 0;
+    flex: 1;
+    min-height: 0;
+    padding: 0 16px 16px;
     justify-content: center;
-    padding: 16px;
     overflow: auto;
   }
-  .preview-stage iframe {
-    display: block;
-    flex: 0 1 auto;
-    box-sizing: content-box;
-    inline-size: calc(100% - 2px);
-    min-inline-size: 0;
-    block-size: 100%;
-    min-block-size: 320px;
-    border: 1px solid #4b4d55;
-    border-radius: 8px;
-    background: #000;
-    transition: inline-size 150ms ease;
-  }
-  .preview-stage iframe.tablet {
-    inline-size: min(768px, 100%);
-  }
-  .preview-stage iframe.phone {
-    inline-size: min(390px, 100%);
-  }
-  .preview-stage.tablet,
-  .preview-stage.phone {
-    padding: 0;
-  }
-  .preview-stage.tablet iframe,
-  .preview-stage.phone iframe {
+  .canvas-stage iframe {
+    width: 100%;
+    height: 100%;
     border: 0;
-    outline: 1px solid #4b4d55;
-    outline-offset: -1px;
-    border-radius: 0;
+    box-shadow: 0 0 0 1px #ffffff20;
+    border-radius: 12px;
+    background: #000;
+    flex-shrink: 0;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .preview-stage iframe {
-      transition: none;
-    }
+  .canvas-stage.tablet iframe {
+    width: min(100%, 820px);
   }
-  @media (max-width: 900px) {
-    .editor-toolbar {
-      flex-wrap: wrap;
-      padding-block: 12px;
-    }
-    .editor-toolbar .actions {
-      width: 100%;
-      flex-wrap: wrap;
-    }
-    .branding-grid {
-      grid-template-columns: 240px minmax(0, 1fr);
-      gap: 16px;
-    }
+  .canvas-stage.phone iframe {
+    width: min(100%, 390px);
   }
-  @media (max-width: 760px) {
-    .customize-toolbar {
-      min-block-size: 56px;
-      gap: 8px;
-      padding-inline: 8px;
+  .notice {
+    padding: 12px 20px;
+    background: var(--pager-management-surface, #17181b);
+  }
+  .error {
+    color: #ffb4ab;
+  }
+  .inspector-tabs .mobile-close,
+  .canvas-toolbar .mobile-settings {
+    display: none;
+  }
+  @media (max-width: 1000px) {
+    .workspace {
+      grid-template-columns: 360px minmax(0, 1fr);
     }
-    .customize-toolbar :global(button) {
-      font-size: 12px;
-      padding-inline: 8px;
+    .toolbar-actions {
+      gap: 0;
     }
-    .customize-toolbar .draft-status {
-      font-size: 11px;
-    }
-    .customize-toolbar .draft-status small {
-      font-size: 10px;
-    }
-    .customize-workspace {
-      display: block;
-      flex: 1 1 0;
-      block-size: 0;
-    }
-    :global(.customize-panel) {
-      block-size: 100%;
-    }
-    .customize-preview {
+    .draft-status strong {
       display: none;
-      block-size: 100%;
     }
-    .customize-workspace.mobile-preview .customize-preview {
+    .canvas-toolbar button span {
+      display: none;
+    }
+  }
+  @media (max-width: 700px) {
+    .workspace {
+      display: flex;
+      position: relative;
+    }
+    .canvas {
+      flex: 1;
+    }
+    .inspector {
+      display: none;
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: min(400px, 100%);
+      z-index: 5;
+      background: var(--pager-management-background, #000);
+      box-shadow: 12px 0 32px #0006;
+    }
+    .inspector-open .inspector {
       display: flex;
     }
-    .customize-workspace.mobile-preview :global(.customize-panel) {
+    .inspector-tabs .mobile-close {
+      display: inline-flex;
+      flex: 0 0 40px;
+    }
+    .canvas-toolbar .mobile-settings {
+      display: inline-flex;
+      color: #dbe2ff;
+      border: 1px solid #ffffff26;
+    }
+    .canvas-toolbar p {
       display: none;
     }
-    .customize-preview .preview-toolbar {
-      flex-wrap: wrap;
-      justify-content: center;
+    .composer-toolbar {
       padding: 8px;
+      gap: 4px;
+      flex-wrap: wrap;
     }
-    .customize-preview .preview-note {
-      order: 1;
-      flex-basis: 100%;
-      text-align: center;
+    .toolbar-actions {
+      flex: 1;
+      justify-content: flex-end;
     }
-    .customize-preview .preview-sizes {
-      margin-inline-start: auto;
-    }
-    .customize-preview .preview-stage {
-      padding: 0;
-    }
-  }
-  @media (max-width: 600px) {
-    .editor {
-      padding: 0 20px 32px;
-    }
-    .branding-grid {
-      grid-template-columns: 1fr;
-      margin-top: 24px;
-    }
-    .editor-toolbar :global(button) {
-      font-size: 12px;
+    .toolbar-actions :global(button) {
       padding-inline: 10px;
+      font-size: 12px;
     }
-    .selected-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 24px 16px;
+    .canvas-stage {
+      padding: 0 6px 6px;
     }
-    .selected-album h3 {
-      font-size: 16px;
-    }
-    .preview-toolbar {
-      flex-wrap: wrap;
-      justify-content: center;
-      padding: 12px 16px;
-    }
-    .preview-note {
-      order: 1;
-      flex-basis: 100%;
-    }
-    .preview-sizes {
-      margin-inline-start: auto;
-    }
-    .preview-stage {
-      padding: 8px;
+    .draft-status {
+      order: 3;
+      width: 100%;
+      padding: 2px 12px;
     }
   }
 </style>

@@ -119,9 +119,12 @@ export function compileCustomCss(source: string, pageId: string): CssResult {
           // Guard the target, not merely an ancestor: even :scope + .editor cannot escape.
           if (selector.type !== 'Selector') return;
           const guard = (
-            css.parse(`:where(${root}, ${root} *)`, {
-              context: 'selector',
-            }) as css.Selector
+            css.parse(
+              `:where(${root}:not([data-pager-editor-ui], [data-pager-editor-ui] *), ${root} *:not([data-pager-editor-ui], [data-pager-editor-ui] *))`,
+              {
+                context: 'selector',
+              },
+            ) as css.Selector
           ).children.first!;
           let before: css.ListItem<css.CssNode> | undefined;
           selector.children.forEach((n, item) => {

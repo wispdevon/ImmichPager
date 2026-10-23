@@ -1,9 +1,10 @@
+import { openHeader } from './composer-helper';
 import { test, expect } from '@playwright/test';
 import { setHeaderText } from './header-editor';
 import { confirmPublication } from './publication-helper';
 import { closeCustomize, openCustomize } from './customize-helper';
 
-test('client album grid, year collapse, native viewer and mobile layout', async ({
+test('client album grid, year collapse, on-page viewer and mobile layout', async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -35,8 +36,16 @@ test('client album grid, year collapse, native viewer and mobile layout', async 
     fullPage: false,
   });
   await page.locator('.album').first().click();
-  await expect(page).toHaveURL(/\/s\/pager-/);
-  await expect(page.getByText('Native Immich viewer fixture')).toBeVisible();
+  await expect(page).toHaveURL(/\/page\/acme$/);
+  await page
+    .getByRole('region', { name: 'Expanded album' })
+    .getByRole('button', { name: /Open photo/ })
+    .first()
+    .click();
+  await expect(
+    page.getByRole('dialog', { name: 'Photo viewer' }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Close photo viewer' }).click();
   await page.goto('/page/acme');
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
@@ -80,9 +89,7 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
     .getByRole('textbox', { name: 'Page URL', exact: true })
     .fill('protected-client');
   await page.getByRole('button', { name: 'Close', exact: true }).last().click();
-  await page
-    .getByRole('button', { name: 'Select albums', exact: true })
-    .click();
+  await page.getByRole('button', { name: 'Add albums', exact: true }).click();
   await expect(page.getByRole('checkbox')).toHaveCount(9);
   await expect
     .poll(() =>
@@ -103,6 +110,7 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await setHeaderText(page, 'Description', 'Our work over the months.');
+  await openHeader(page);
   await page
     .getByRole('button', { name: 'Choose logo from Immich', exact: true })
     .click();
@@ -110,11 +118,15 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
     page.getByRole('button', { name: 'Select Studio logo.webp' }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Load more photos' }).click();
-  await expect(page.getByRole('button', { name: /^Select / })).toHaveCount(71);
+  await expect(
+    page.getByRole('dialog').getByRole('button', { name: /^Select / }),
+  ).toHaveCount(71);
   await page
     .getByRole('searchbox', { name: 'Search filenames' })
     .fill('Studio logo');
-  await expect(page.getByRole('button', { name: /^Select / })).toHaveCount(1);
+  await expect(
+    page.getByRole('dialog').getByRole('button', { name: /^Select / }),
+  ).toHaveCount(1);
   await page.screenshot({
     path: 'test-results/photo-picker.png',
     fullPage: true,
@@ -122,6 +134,7 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
   await page.getByRole('button', { name: 'Select Studio logo.webp' }).click();
   await page.getByRole('button', { name: 'Use as logo', exact: true }).click();
   await expect(page.getByAltText('Logo preview')).toBeVisible();
+  await openHeader(page);
   await page
     .getByLabel('Banner', { exact: true })
     .setInputFiles('fixtures/photos/earthrise.webp');
@@ -145,12 +158,12 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
   await page.getByPlaceholder('At least 4 characters').fill('2468');
   await page.screenshot({ path: 'test-results/options.png', fullPage: true });
   await page.getByRole('button', { name: 'Close', exact: true }).last().click();
-  await page.getByRole('button', { name: 'Preview', exact: true }).click();
+
   const gallery = page.frameLocator('[data-testid="responsive-preview-frame"]');
   await expect(
     gallery.getByRole('heading', { name: 'Acme monthly photography' }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Back to editor' }).click();
+  await closeCustomize(page);
   await page.getByRole('button', { name: 'Publish page', exact: true }).click();
   const firstReview = page.getByRole('dialog', {
     name: 'Review publication',
@@ -164,7 +177,9 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
   await firstReview
     .getByRole('button', { name: 'Publish page', exact: true })
     .click();
-  await expect(page.getByRole('status')).toContainText('Page published');
+  await expect(page.locator('.notice[role="status"]')).toContainText(
+    'Page published',
+  );
   await page.screenshot({ path: 'test-results/editor.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   expect(
@@ -213,7 +228,9 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
     visitor.getByRole('heading', { name: 'Acme monthly photography' }),
   ).toBeVisible();
   await confirmPublication(page, 'Update live page');
-  await expect(page.getByRole('status')).toContainText('Page published');
+  await expect(page.locator('.notice[role="status"]')).toContainText(
+    'Page published',
+  );
   await visitor.reload();
   await visitor.getByPlaceholder('Password', { exact: true }).fill('2468');
   await visitor.getByRole('button', { name: 'View albums' }).click();
@@ -221,9 +238,17 @@ test('autosaves a protected branded page, chooses Immich photos, and publishes e
     visitor.getByRole('heading', { name: 'Changed privately' }),
   ).toBeVisible();
   await visitor.locator('.album').first().click();
-  await visitor.getByLabel('Password', { exact: true }).fill('2468');
-  await visitor.getByRole('button', { name: 'Submit' }).click();
-  await expect(visitor.getByText('Native Immich viewer fixture')).toBeVisible();
+  await visitor
+    .getByRole('region', { name: 'Expanded album' })
+    .getByRole('button', { name: /Open photo/ })
+    .first()
+    .click();
+  await expect(
+    visitor.getByRole('dialog', { name: 'Photo viewer' }),
+  ).toBeVisible();
+  await expect(
+    visitor.getByRole('dialog', { name: 'Photo viewer' }).locator('img'),
+  ).toHaveJSProperty('complete', true);
   await page.goto('/page/manage');
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await page
@@ -401,14 +426,17 @@ test('duplicates only appearance and branding into a private draft', async ({
   await expect(page).toHaveURL(/\/page\/manage\/[0-9a-f-]+$/);
   const duplicateId = page.url().split('/').pop()!;
   await expect(
-    page.getByRole('button', { name: 'Edit title, Add a title', exact: true }),
+    page
+      .frameLocator('[title="Live page canvas"]')
+      .getByRole('button', { name: 'Edit title, Add a title', exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole('button', {
+    page.frameLocator('[title="Live page canvas"]').getByRole('button', {
       name: 'Edit description, Add a description',
       exact: true,
     }),
   ).toBeVisible();
+  await openHeader(page);
   await expect(page.getByAltText('Logo preview')).toBeVisible();
   await expect(page.getByAltText('Banner preview')).toBeVisible();
   const duplicateResponse = await page.request.get(
@@ -467,17 +495,20 @@ test('autosave recovers from an empty proxy error and rejects oversized branding
   page,
 }) => {
   await page.goto('/dev-login/alice');
-  await page.goto('/page/manage/new');
   await page.route('**/page/api/pages', (route) =>
     route.request().method() === 'POST'
       ? route.fulfill({ status: 502, body: '' })
       : route.continue(),
   );
-  await setHeaderText(page, 'Title', 'Test response recovery');
+  await page.goto('/page/manage/new');
+  await openHeader(page);
+  await page
+    .getByRole('textbox', { name: 'Page title', exact: true })
+    .fill('Test response recovery');
   await expect(page.getByRole('alert')).toContainText('HTTP 502');
   await expect(
-    page.getByRole('button', { name: 'Edit title, Test response recovery' }),
-  ).toBeVisible();
+    page.getByRole('textbox', { name: 'Page title', exact: true }),
+  ).toHaveValue('Test response recovery');
   await page.unroute('**/page/api/pages');
   await page.getByRole('button', { name: 'Retry save' }).click();
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
@@ -486,6 +517,7 @@ test('autosave recovers from an empty proxy error and rejects oversized branding
   page.on('request', (r) => {
     if (r.method() === 'POST' && r.url().includes('/branding/')) uploads++;
   });
+  await openHeader(page);
   await page.getByLabel('Banner', { exact: true }).setInputFiles({
     name: 'too-large.jpg',
     mimeType: 'image/jpeg',
@@ -503,9 +535,11 @@ test('dropped branding creates an untitled draft, Customize works on mobile, and
   const count = (await (await page.request.get('/page/api/pages')).json())
     .length;
   await page.goto('/page/manage/new');
+  await expect(page).not.toHaveURL(/\/manage\/new$/);
   expect(
     (await (await page.request.get('/page/api/pages')).json()).length,
-  ).toBe(count);
+  ).toBe(count + 1);
+  await openHeader(page);
   const { readFile } = await import('node:fs/promises');
   const bytes = [...(await readFile('fixtures/photos/earthrise.webp'))];
   const transfer = await page.evaluateHandle((data) => {
@@ -517,6 +551,7 @@ test('dropped branding creates an untitled draft, Customize works on mobile, and
     );
     return transfer;
   }, bytes);
+  await openHeader(page);
   await page
     .getByRole('button', { name: 'Choose logo from Immich', exact: true })
     .dispatchEvent('drop', { dataTransfer: transfer });
@@ -540,6 +575,7 @@ test('dropped branding creates an untitled draft, Customize works on mobile, and
   await closeCustomize(page);
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await page.reload();
+  await openHeader(page);
   await expect(page.getByAltText('Logo preview')).toBeVisible();
   const other = await context.newPage();
   await other.goto(page.url());
@@ -548,9 +584,9 @@ test('dropped branding creates an untitled draft, Customize works on mobile, and
   await setHeaderText(other, 'Title', 'Second tab conflicting');
   await expect(other.getByRole('alert')).toContainText('another tab');
   await expect(
-    other.getByRole('button', {
-      name: 'Edit title, Second tab conflicting',
-    }),
+    other
+      .frameLocator('[title="Live page canvas"]')
+      .getByRole('heading', { name: 'Second tab conflicting' }),
   ).toBeVisible();
   const id = page.url().split('/').pop();
   expect(
@@ -564,6 +600,7 @@ test('photo picker browses owned albums and favorites and clears selection when 
 }) => {
   await page.goto('/dev-login/alice');
   await page.goto('/page/manage/new');
+  await openHeader(page);
   await page
     .getByRole('button', { name: 'Choose logo from Immich', exact: true })
     .click();
@@ -571,7 +608,10 @@ test('photo picker browses owned albums and favorites and clears selection when 
   await expect(
     page.getByRole('button', { name: 'Use as logo', exact: true }),
   ).toBeEnabled();
-  await page.getByRole('button', { name: 'Albums', exact: true }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Albums', exact: true })
+    .click();
   await expect(
     page.getByRole('button', { name: 'Use as logo', exact: true }),
   ).toBeDisabled();
@@ -587,7 +627,7 @@ test('photo picker browses owned albums and favorites and clears selection when 
   ).toHaveCount(4);
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page).toHaveURL(/\/manage\/new$/);
+  await expect(page).not.toHaveURL(/\/manage\/new$/);
 });
 
 test('Pages owns the sidebar active state and restores native navigation and focus', async ({

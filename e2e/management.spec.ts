@@ -1,3 +1,4 @@
+import { openHeader } from './composer-helper';
 import { expect, test } from '@playwright/test';
 
 test('management status filters, draft branding previews, and mobile rows', async ({
@@ -61,10 +62,12 @@ test('management status filters, draft branding previews, and mobile rows', asyn
   expect(changeResponse.ok()).toBe(true);
 
   await page.goto(`/page/manage/${brandedDraft.id}`);
+  await openHeader(page);
   await page
     .getByLabel('Banner', { exact: true })
     .setInputFiles('fixtures/photos/earthrise.webp');
   await expect(page.getByAltText('Banner preview')).toBeVisible();
+  await openHeader(page);
   await page
     .getByLabel('Logo', { exact: true })
     .setInputFiles('fixtures/photos/earthrise.webp');

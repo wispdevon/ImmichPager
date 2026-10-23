@@ -15,6 +15,7 @@ export type GalleryStyleSource = Pick<
   | 'bannerPosition'
   | 'headerLayout'
   | 'headerSize'
+  | 'bannerHeight'
   | 'logoSize'
   | 'titleSize'
   | 'descriptionSize'
@@ -122,12 +123,16 @@ export function galleryStyleVariables(
     '--pager-hover-title-color': treatment.titleColor,
     '--pager-header-alignment': page.alignment,
     '--pager-banner-position': `${page.bannerPosition}%`,
-    '--pager-banner-height': bannerHeights.banner,
-    '--pager-overlay-height': bannerHeights.overlay,
+    '--pager-banner-height': page.bannerHeight
+      ? `min(${page.bannerHeight}px, 90svh)`
+      : bannerHeights.banner,
+    '--pager-overlay-height': page.bannerHeight
+      ? `min(${page.bannerHeight}px, 90svh)`
+      : bannerHeights.overlay,
     '--pager-hero-display': overlay ? 'grid' : 'block',
     '--pager-hero-min-height': overlay ? 'var(--pager-overlay-height)' : 'auto',
     '--pager-hero-margin-block-end': overlay ? '32px' : '0px',
-    '--pager-banner-placement': overlay ? 'absolute' : 'static',
+    '--pager-banner-placement': overlay ? 'absolute' : 'relative',
     '--pager-overlay-decoration-display': overlay ? 'block' : 'none',
     '--pager-header-align-self': overlay ? 'end' : 'auto',
     '--pager-overlay-header-color': overlay

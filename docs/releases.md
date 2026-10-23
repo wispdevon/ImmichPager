@@ -1,5 +1,13 @@
 # Releases
 
+## v0.4.0
+
+The live composer replaces separate preview/customization modes with one persistent canvas. Add and arrange Albums, Photos, and Text rows, choose illustrated layouts, reset presentation defaults, and browse photos directly on the page. Album rows include prominent cover previews and group ordering. Draft edits remain private until explicit publication. See [the changelog](../CHANGELOG.md).
+
+This release is tagged from the reviewed `dev` commit, with `main` unchanged. Storage migrates from schema 2 to schema 3 while retaining existing pages, branding, native shares, passwords, and sessions. Preserve a complete stopped-volume/configuration backup and the previous image before upgrading. A schema-2 rollback requires restoring that backup. Follow [deployment and recovery](deployment.md#schema-upgrades).
+
+The GitLab release provides tagged source and compiled runtime archives with SHA-256 checksums. Runtime builds install production dependencies for the target architecture. The protected-tag container publication job follows the existing manual release gate. This release does not upgrade Immich itself.
+
 ## v0.3.2
 
 Page settings brings live-link sharing, local PNG/SVG QR exports, explicit password actions, and per-page download permissions. Publication review explains access changes and asks for the current password only when native shares need synchronization. Storage remains schema version 2, and legacy pages keep downloads enabled. Release from the reviewed `dev` commit; keep `main` unchanged. Back up configuration and the complete stopped data volume before deployment.

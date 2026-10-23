@@ -1,3 +1,9 @@
+import {
+  normalizeContent,
+  hasContent,
+  pageBlocks,
+  photoSources,
+} from '../blocks';
 import { compileCustomCss } from '../custom-css';
 import { randomUUID } from 'node:crypto';
 import {
@@ -76,8 +82,9 @@ export class DraftService {
     );
   }
   async save(owner: string, id: string | null, value: unknown) {
-    const { expectedDraftRevision, ...settings } =
-      draftInputSchema.parse(value);
+    const { expectedDraftRevision, ...settings } = draftInputSchema.parse(
+      normalizeContent(value as Parameters<typeof normalizeContent>[0]),
+    );
     return exclusive(`draft:${id ?? owner}`, async () => {
       const previous = id ? this.check(id, owner, expectedDraftRevision) : null;
       // Only validate new membership; publication checks ownership again.
@@ -86,6 +93,14 @@ export class DraftService {
       )) {
         if ((await this.immich.album(albumId)).ownerId !== owner)
           throw new AppError(403, 'Only albums you own can be added');
+      }
+      const oldPhotos = new Set(
+        photoSources(previous ?? {}).flatMap((b) => b.photos.map((p) => p.id)),
+      );
+      for (const id of new Set(
+        photoSources(settings).flatMap((b) => b.photos.map((p) => p.id)),
+      )) {
+        if (!oldPhotos.has(id)) await this.immich.photo(id, owner);
       }
       const now = new Date().toISOString();
       const draft: DraftRecord = {
@@ -131,6 +146,19 @@ export class DraftService {
           clientUi: source.clientUi,
           galleryStyle: source.galleryStyle,
           bannerPosition: source.bannerPosition,
+          bannerHeight: source.bannerHeight,
+          blocks: pageBlocks(source).map((block) =>
+            block.type === 'albums'
+              ? { ...block, id: randomUUID(), albumIds: [], heading: '' }
+              : block.type === 'photos'
+                ? { ...block, id: randomUUID(), photos: [], heading: '' }
+                : {
+                    ...block,
+                    id: randomUUID(),
+                    heading: '',
+                    content: { type: 'doc' as const, content: [] },
+                  },
+          ),
           revision: 1,
           publishedDraftRevision: null,
           logo: false,
@@ -157,8 +185,11 @@ export class DraftService {
       const settings = parsePageInput({ ...draft, ...input });
       const css = compileCustomCss(settings.customCss, id);
       if (css.error) throw new AppError(400, `Custom CSS: ${css.error}`);
-      if (!settings.albumIds.length)
-        throw new AppError(400, 'Select at least one album before publishing');
+      if (!hasContent(pageBlocks(settings)))
+        throw new AppError(
+          400,
+          'Add at least one nonempty content block before publishing',
+        );
       const live = this.store.get(id),
         svc = new PageService(this.store, this.immich, (page) =>
           this.store.commitPublication(page, draft),
@@ -180,6 +211,9 @@ export class DraftService {
           if ((await this.immich.album(albumId)).ownerId !== owner)
             throw new AppError(403, 'Album ownership has changed');
         }
+        for (const block of photoSources(draft))
+          for (const photo of block.photos)
+            await this.immich.photo(photo.id, owner);
         const {
           password: _password,
           passwordMode: _mode,

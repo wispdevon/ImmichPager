@@ -50,3 +50,40 @@ describe('manual album order', () => {
     expect(moveAlbumRelative(ids, albums, 'a', 'a', 'after')).toBe(ids);
   });
 });
+
+it('moves several selected albums directly to a distant destination as one operation', async () => {
+  const { moveAlbumsRelative } = await import('../src/lib/album-order');
+  const ids = ['a', 'b', 'c', 'd', 'e', 'f'];
+  expect(moveAlbumsRelative(ids, ['b', 'a'], 'f', 'after')).toEqual([
+    'c',
+    'd',
+    'e',
+    'f',
+    'a',
+    'b',
+  ]);
+  expect(moveAlbumsRelative(ids, ['e', 'f'], 'b', 'before')).toEqual([
+    'a',
+    'e',
+    'f',
+    'b',
+    'c',
+    'd',
+  ]);
+  expect(moveAlbumsRelative(ids, ['a', 'b'], 'a', 'after')).toBe(ids);
+  expect(moveAlbumsRelative(ids, ['missing'], 'f', 'after')).toBe(ids);
+});
+
+it('keeps a dragged selection in its year group while preserving other groups and selection order', async () => {
+  const { moveAlbumsRelative } = await import('../src/lib/album-order');
+  const ids = ['a', 'old', 'b', 'c', 'd'];
+  const year = ['a', 'b', 'c', 'd'];
+  expect(moveAlbumsRelative(ids, ['a', 'b'], 'd', 'after', year)).toEqual([
+    'c',
+    'old',
+    'd',
+    'a',
+    'b',
+  ]);
+  expect(moveAlbumsRelative(ids, ['a'], 'old', 'before', year)).toBe(ids);
+});

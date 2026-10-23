@@ -36,21 +36,36 @@ test('opens the published revision with password guidance while drafts remain pr
     ).ok(),
   ).toBe(true);
   await page.reload();
+  await page
+    .getByRole('button', { name: 'Page settings', exact: true })
+    .click();
   const link = page.getByRole('link', { name: 'Open published page' });
   await expect(link).toHaveAttribute('href', '/page/published-client-check');
-  await expect(
-    page.getByText('Password protected', { exact: false }),
-  ).toBeVisible();
+  await expect(page.locator('#published-view-guidance')).toBeVisible();
+  const settings = page.getByRole('dialog', {
+    name: 'Page settings',
+    exact: true,
+  });
+  await settings
+    .getByRole('button', { name: 'Close', exact: true })
+    .last()
+    .click();
   await page
+    .frameLocator('[title="Live page canvas"]')
     .getByRole('button', {
       name: 'Edit title, Published client version',
       exact: true,
     })
     .click();
-  const title = page.getByLabel('Title', { exact: true });
+  const title = page
+    .frameLocator('[title="Live page canvas"]')
+    .getByLabel('Title', { exact: true });
   await title.fill('Private changed title');
   await title.press('Tab');
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
+  await page
+    .getByRole('button', { name: 'Page settings', exact: true })
+    .click();
   await link.focus();
   const popupPromise = page.waitForEvent('popup');
   await page.keyboard.press('Enter');
@@ -70,7 +85,14 @@ test('opens the published revision with password guidance while drafts remain pr
   await expect(
     client.getByText('Private changed title', { exact: true }),
   ).toHaveCount(0);
+  await settings
+    .getByRole('button', { name: 'Close', exact: true })
+    .last()
+    .click();
   await page.setViewportSize({ width: 390, height: 844 });
+  await page
+    .getByRole('button', { name: 'Page settings', exact: true })
+    .click();
   await expect(link).toBeVisible();
   expect(
     await page.evaluate(
@@ -102,6 +124,9 @@ test('unprotected published pages explain their actual password state', async ({
   );
   expect(record).toBeTruthy();
   await page.goto(`/page/manage/${record.id}`);
+  await page
+    .getByRole('button', { name: 'Page settings', exact: true })
+    .click();
   await expect(
     page.getByText('No page password is set on the published version.', {
       exact: false,

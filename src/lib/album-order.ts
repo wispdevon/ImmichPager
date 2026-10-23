@@ -2,6 +2,39 @@ import type { Album } from './contracts';
 
 type AlbumDate = Pick<Album, 'id' | 'endDate'>;
 
+/** Move a selection once on drop, preserving its order and optional year scope. */
+export function moveAlbumsRelative(
+  albumIds: string[],
+  selectedIds: readonly string[],
+  targetId: string,
+  position: 'before' | 'after',
+  scope: readonly string[] = albumIds,
+) {
+  const allowed = new Set(scope);
+  const selected = new Set(selectedIds);
+  const moving = albumIds.filter((id) => allowed.has(id) && selected.has(id));
+  if (
+    !moving.length ||
+    !allowed.has(targetId) ||
+    !albumIds.includes(targetId) ||
+    selected.has(targetId)
+  )
+    return albumIds;
+  const reordered = albumIds.filter(
+    (id) => allowed.has(id) && !selected.has(id),
+  );
+  reordered.splice(
+    reordered.indexOf(targetId) + (position === 'after' ? 1 : 0),
+    0,
+    ...moving,
+  );
+  let index = 0;
+  const next = albumIds.map((id) =>
+    allowed.has(id) ? reordered[index++] : id,
+  );
+  return next.every((id, i) => id === albumIds[i]) ? albumIds : next;
+}
+
 export function albumYear(endDate?: string) {
   return endDate ? new Date(endDate).getUTCFullYear().toString() : 'Undated';
 }

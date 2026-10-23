@@ -230,7 +230,7 @@ test('Immich button links retain theme contrast and ordinary links inherit', asy
       const gallery = page.locator('.ip-gallery');
       await expect(gallery).toHaveCSS('color-scheme', 'dark');
       await expect(gallery).toHaveCSS('background-color', 'rgb(0, 0, 0)');
-      const galleryLink = page.locator('a.ip-album[aria-disabled]').first();
+      const galleryLink = page.locator('.ip-footer a').first();
       await expect(galleryLink).toBeVisible();
       const galleryLinkColors = await galleryLink.evaluate((element) => {
         const gallery = element.closest('.gallery');

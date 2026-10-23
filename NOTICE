@@ -34,3 +34,13 @@ docs/fonts.md. Their generated CSS references only local /page/assets/fonts/bund
 
 CSS Tree (css-tree), copyright 2016–2026 Roman Dvornov, is distributed under
 the MIT license. Its license is retained in the installed package.
+
+Live composer references
+------------------------
+The block-based composition and photo-viewer interaction direction was informed
+by Folio for Immich: https://github.com/Rtx-9/folio-for-immich. The Svelte composer
+and viewer are implemented within ImmichPager's existing authorization model.
+
+The rich-text editor uses Tiptap and ProseMirror packages distributed under their
+MIT licenses. See the installed packages for their copyright and license notices:
+https://github.com/ueberdosis/tiptap and https://github.com/ProseMirror.

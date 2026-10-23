@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.4.0] - 2026-10-24
+
+### Added
+
+- One live page composer with repeatable Albums, Photos, and rich Text rows; desktop, tablet, and phone controls resize the same canvas.
+- Albums open into photos on the page. The shared viewer supports keyboard and swipe navigation, captions, fullscreen, an optional slideshow, and permitted original/ZIP downloads.
+- Illustrated album and photo layout choices, direct header sizing and crop controls, and individual or full presentation resets that keep authored content and sharing settings.
+- Album ordering uses prominent cover previews, multi-select group dragging, auto-scroll, cancellation, and keyboard alternatives.
+
+### Improved
+
+- Draft changes appear immediately and autosave privately without replacing active text or its caret. Publishing remains explicit.
+- Editorial albums use compact covers and Immich descriptions. Page settings remains beside Publish for sharing, passwords, downloads, and QR exports.
+- Photo rows publish dedicated exact-selection native shares with durable interrupted-operation recovery and independent media authorization.
+
+### Security
+
+- Updated Zod to patched 4.6.6 while preserving separate draft and publication validation boundaries.
+
+### Upgrade notes
+
+- Pager migrates to schema version 3. Existing album pages, branding, dedicated shares, passwords, and sessions are retained.
+- Before upgrading, stop Pager and back up its complete data volume, including SQLite WAL/SHM files, plus its configuration and previous image. Rolling back to a schema-2 version requires restoring that complete backup before starting the older image.
+- This release does not upgrade Immich. Keep the existing upstream and reverse-proxy chain.
+
 ## [0.3.3] - 2026-10-23
 
 ### Added

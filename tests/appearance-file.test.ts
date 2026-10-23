@@ -58,12 +58,12 @@ function version1File(legacy = version1Appearance()) {
   });
 }
 
-it('round-trips complete version 2 design settings', () => {
+it('round-trips complete version 3 design settings', () => {
   const exported = serializeAppearanceFile(appearance);
 
   expect(JSON.parse(exported)).toEqual({
     format: 'immichpager-appearance',
-    version: 2,
+    version: 3,
     appearance,
   });
   expect(parseAppearanceFile(exported)).toEqual(appearance);
@@ -126,7 +126,7 @@ it('rejects unsupported versions and malformed JSON', () => {
     parseAppearanceFile(
       JSON.stringify({
         format: 'immichpager-appearance',
-        version: 3,
+        version: 999,
         appearance,
       }),
     ),
@@ -242,4 +242,21 @@ it('rejects custom CSS that fails the gallery compiler in both file versions', (
       }),
     ),
   ).toThrow(/custom css/i);
+});
+
+it('transfers numeric banner height while old files preserve newer settings', () => {
+  const current = { ...appearance, bannerHeight: 620 };
+  expect(parseAppearanceFile(serializeAppearanceFile(current))).toEqual(
+    current,
+  );
+  expect(
+    parseAppearanceFile(
+      JSON.stringify({
+        format: 'immichpager-appearance',
+        version: 2,
+        appearance,
+      }),
+      current,
+    ).bannerHeight,
+  ).toBe(620);
 });

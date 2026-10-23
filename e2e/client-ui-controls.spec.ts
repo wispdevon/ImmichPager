@@ -266,7 +266,7 @@ test('visual settings render in the gallery and authored variables override thei
       'none',
     );
     await page.goto(`/page/manage/${draft.id}`);
-    await expect(page.locator('.editor-toolbar')).not.toHaveCSS(
+    await expect(page.locator('.composer-toolbar')).not.toHaveCSS(
       'background-color',
       'rgb(17, 34, 51)',
     );

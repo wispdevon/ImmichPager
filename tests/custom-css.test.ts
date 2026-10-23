@@ -58,3 +58,14 @@ it('limits source size and reports source locations', () => {
     compileCustomCss('h1 {\n background: url(x);\n}', 'test').error,
   ).toContain('line 2');
 });
+
+it('excludes editing controls and their descendants from every authored selector', () => {
+  const result = compileCustomCss(
+    'button, *::before { display:none; }',
+    'page',
+  );
+  expect(result.error).toBeNull();
+  expect(result.css).toContain(
+    ':not([data-pager-editor-ui],[data-pager-editor-ui] *)',
+  );
+});

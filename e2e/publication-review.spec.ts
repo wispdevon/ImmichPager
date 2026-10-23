@@ -31,17 +31,20 @@ test('reviews album and appearance changes before they replace the live page', a
   });
   await expect(firstReview).toContainText(removedAlbum.albumName);
   await firstReview.getByRole('button', { name: 'Publish page' }).click();
-  await expect(page.getByRole('status')).toContainText('Page published');
+  await expect(page.locator('.notice[role="status"]')).toContainText(
+    'Page published',
+  );
 
   await page
     .getByRole('button', {
-      name: `Remove ${removedAlbum.albumName}`,
+      name: `Actions for ${removedAlbum.albumName}`,
       exact: true,
     })
     .click();
   await page
-    .getByRole('button', { name: 'Select albums', exact: true })
+    .getByRole('menuitem', { name: 'Remove album', exact: true })
     .click();
+  await page.getByRole('button', { name: 'Add albums', exact: true }).click();
   await page
     .getByRole('checkbox', {
       name: `Include ${addedAlbum.albumName}`,
@@ -50,12 +53,15 @@ test('reviews album and appearance changes before they replace the live page', a
     .check();
   await page.getByRole('button', { name: 'Done', exact: true }).click();
   await page
+    .frameLocator('[title="Live page canvas"]')
     .getByRole('button', {
       name: 'Edit title, Acme current season',
       exact: true,
     })
     .click();
-  const title = page.getByLabel('Title', { exact: true });
+  const title = page
+    .frameLocator('[title="Live page canvas"]')
+    .getByLabel('Title', { exact: true });
   await title.fill('Acme autumn season');
   await title.press('Tab');
   await openCustomize(page);
@@ -123,7 +129,9 @@ test('reviews album and appearance changes before they replace the live page', a
   await confirmedReview
     .getByRole('button', { name: 'Update live page', exact: true })
     .click();
-  await expect(page.getByRole('status')).toContainText('Page published');
+  await expect(page.locator('.notice[role="status"]')).toContainText(
+    'Page published',
+  );
 
   await page.goto('/page/review-snapshot');
   await expect(
