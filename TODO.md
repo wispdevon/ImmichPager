@@ -2,13 +2,13 @@
 
 This roadmap focuses on helping photographers make polished client pages, then making monthly updates easier and improving distribution. Every appearance setting stays with its page; the roadmap does not introduce photographer-wide defaults. There are no delivery-date promises.
 
-Use the IDs below when discussing work or opening a feature branch and pull request against `dev`. Each planned item should be implemented and reviewed independently, with the user-facing behavior and validation explained for maintainer approval. `main` and the live deployment stay unchanged until a feature is released.
+Use the IDs below when discussing work or opening a merge request against `dev`. The original roadmap and live composer are released in v0.4.0. Promote reviewed stable changes from `dev` to `main`; deployment remains a separate operator action.
 
 ## Status and priority
 
-- **Released** means available in the stable `v0.1.0` release.
+- **Released** means available in the stable [v0.4.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.4.0).
 - **Implemented on dev** means present on `dev`, but not part of the stable release.
-- **Planned** means not yet merged into `dev`. Proposed implementations awaiting approval are listed in the [pull request review index](tasks/review.md).
+- **Planned** means not yet merged into `dev`. Completed reviews are recorded in the [merge request history](tasks/review.md).
 - **Deferred** means a separate product decision is needed before scheduling the work.
 - **P1** is the current focus, **P2** follows it, and **P3** is later. Priorities do not imply dates.
 
@@ -86,11 +86,11 @@ Use the IDs below when discussing work or opening a feature branch and pull requ
   - [x] Copy the persistent client page URL.
 - **Dependencies:** REL-01, REL-06.
 
-## Already available — implemented on dev
+## Released header composition and CSS
 
 ### DEV-01 — Compose the full header over the banner
 
-- **Priority:** Complete · **Status:** Implemented on dev
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Place the logo, title, and description together on a banner for a stronger client-page introduction.
 - **Acceptance:**
   - [x] Offer below-banner and over-banner layouts.
@@ -100,7 +100,7 @@ Use the IDs below when discussing work or opening a feature branch and pull requ
 
 ### DEV-02 — Add isolated per-page custom CSS
 
-- **Priority:** Complete · **Status:** Implemented on dev
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Adjust typography, album corners, spacing, and theme styling beyond the built-in options.
 - **Acceptance:**
   - [x] Save custom CSS with the page's private draft and publish it explicitly.
@@ -108,190 +108,190 @@ Use the IDs below when discussing work or opening a feature branch and pull requ
   - [x] Document supported selectors, theme variables, and examples.
 - **Dependencies:** REL-05, REL-06.
 
-## Now — make customization visual
+## Released visual customization
 
 ### VIS-01 — Edit the finished header directly
 
-- **Priority:** P1 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Adjust the title and description where they appear instead of switching between the composition and separate fields.
 - **Acceptance:**
-  - [ ] Click or keyboard-focus the title and description in the actual page composition to edit them.
-  - [ ] Keep familiar Immich controls and preserve the existing private-draft and explicit-publish workflow.
+  - [x] Click or keyboard-focus the title and description in the actual page composition to edit them.
+  - [x] Keep familiar Immich controls and preserve the existing private-draft and explicit-publish workflow.
 - **Dependencies:** DEV-01.
 
 ### VIS-02 — Drag the banner focal point
 
-- **Priority:** P1 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Put the important part of a photograph in view without guessing at a numeric crop position.
 - **Acceptance:**
-  - [ ] Show a visible crop area and let the photographer drag the banner image to position its focal point.
-  - [ ] Support touch input.
-  - [ ] Retain the existing slider as an accessible alternative, with keyboard support.
+  - [x] Show a visible crop area and let the photographer drag the banner image to position its focal point.
+  - [x] Support touch input.
+  - [x] Retain the existing slider as an accessible alternative, with keyboard support.
 - **Dependencies:** REL-03.
 
 ### VIS-03 — Control header and logo size
 
-- **Priority:** P1 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Give a page a compact, standard, or tall banner and a logo size that fits its branding.
 - **Acceptance:**
-  - [ ] Offer compact, standard, and tall banner sizes.
-  - [ ] Let the photographer choose a logo size.
-  - [ ] Save both settings per page and show them consistently in preview and publication.
+  - [x] Offer compact, standard, and tall banner sizes.
+  - [x] Let the photographer choose a logo size.
+  - [x] Save both settings per page and show them consistently in preview and publication.
 - **Dependencies:** DEV-01.
 
 ### VIS-04 — Control header typography and spacing
 
-- **Priority:** P1 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Make a client's title and description fit the chosen design without writing CSS.
 - **Acceptance:**
-  - [ ] Offer title size, description size, and header spacing controls.
-  - [ ] Keep Google Sans as the default typeface.
-  - [ ] Save settings per page and apply the same result in preview and publication.
+  - [x] Offer title size, description size, and header spacing controls.
+  - [x] Keep Google Sans as the default typeface.
+  - [x] Save settings per page and apply the same result in preview and publication.
 - **Dependencies:** DEV-01.
 
 ### VIS-05 — Preview desktop, tablet, and phone layouts
 
-- **Priority:** P1 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Check that a page reads well on the screens clients use before publishing it.
 - **Acceptance:**
-  - [ ] Offer desktop, tablet, and phone preview sizes.
-  - [ ] Render each preview with the same gallery renderer used by the published page.
-  - [ ] Keep preview controls out of the published page.
+  - [x] Offer desktop, tablet, and phone preview sizes.
+  - [x] Render each preview with the same gallery renderer used by the published page.
+  - [x] Keep preview controls out of the published page.
 - **Dependencies:** DEV-01.
 
 ### VIS-06 — Verify dev customization for release
 
-- **Priority:** P1 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Catch layout, accessibility, and isolation problems before the current dev customization reaches a stable release.
 - **Acceptance:**
-  - [ ] Verify long titles and descriptions and behavior when branding images are missing.
-  - [ ] Verify light and dark themes.
-  - [ ] Verify keyboard navigation for customization controls.
-  - [ ] Verify custom CSS remains isolated from editor controls and other pages.
+  - [x] Verify long titles and descriptions and behavior when branding images are missing.
+  - [x] Verify light and dark themes.
+  - [x] Verify keyboard navigation for customization controls.
+  - [x] Verify custom CSS remains isolated from editor controls and other pages.
 - **Dependencies:** DEV-01, DEV-02.
 
-## Next — reuse designs and simplify monthly work
+## Released design reuse and monthly workflow
 
 ### WRK-01 — Duplicate a page's design
 
-- **Priority:** P2 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Start a new client page with an existing visual style instead of rebuilding it each time.
 - **Acceptance:**
-  - [ ] Copy appearance and branding into a new private draft.
-  - [ ] Exclude albums, passwords, and share links from the duplicate.
-  - [ ] Require the new page's owner to choose its albums and publish it separately.
+  - [x] Copy appearance and branding into a new private draft.
+  - [x] Exclude albums, passwords, and share links from the duplicate.
+  - [x] Require the new page's owner to choose its albums and publish it separately.
 - **Dependencies:** REL-03, REL-05.
 
 ### WRK-02 — Add per-page design presets
 
-- **Priority:** P2 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Apply a coherent header composition quickly while keeping each page's choices independent.
 - **Acceptance:**
-  - [ ] Provide a small set of Immich-compatible header compositions.
-  - [ ] Apply a preset only to the selected page.
-  - [ ] Do not create photographer-wide defaults.
+  - [x] Provide a small set of Immich-compatible header compositions.
+  - [x] Apply a preset only to the selected page.
+  - [x] Do not create photographer-wide defaults.
 - **Dependencies:** DEV-01, VIS-03, VIS-04.
 
 ### WRK-03 — Drag albums to reorder them
 
-- **Priority:** P2 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Put a client's most important shoots first with less manual effort.
 - **Acceptance:**
-  - [ ] Allow albums to be dragged into a new order.
-  - [ ] Preserve year grouping.
-  - [ ] Keep keyboard-accessible ordering controls.
+  - [x] Allow albums to be dragged into a new order.
+  - [x] Preserve year grouping.
+  - [x] Keep keyboard-accessible ordering controls.
 - **Dependencies:** REL-02.
 
 ### WRK-04 — Find albums by name, month, or year
 
-- **Priority:** P2 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Find a particular shoot quickly when a client page contains many albums.
 - **Acceptance:**
-  - [ ] Search albums by name.
-  - [ ] Filter albums by month.
-  - [ ] Navigate directly between years.
+  - [x] Search albums by name.
+  - [x] Filter albums by month.
+  - [x] Navigate directly between years.
 - **Dependencies:** REL-02.
 
 ### WRK-05 — Speed up monthly album updates
 
-- **Priority:** P2 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Add the latest shoots to returning clients' pages with fewer clicks.
 - **Acceptance:**
-  - [ ] Sort albums by recently added.
-  - [ ] Make inclusion on the page easy to see.
-  - [ ] Support bulk album selection.
+  - [x] Sort albums by recently added.
+  - [x] Make inclusion on the page easy to see.
+  - [x] Support bulk album selection.
 - **Dependencies:** REL-02.
 
 ### WRK-06 — Review publication changes before updating
 
-- **Priority:** P2 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Know what clients will see before changing a live page.
 - **Acceptance:**
-  - [ ] Summarize albums being added and removed.
-  - [ ] Summarize appearance changes.
-  - [ ] Show the summary before the photographer confirms a live update.
+  - [x] Summarize albums being added and removed.
+  - [x] Summarize appearance changes.
+  - [x] Show the summary before the photographer confirms a live update.
 - **Dependencies:** REL-05, REL-06.
 
-## Later — polish and adoption
+## Released polish and distribution
 
 ### LTR-01 — Import and export appearance settings
 
-- **Priority:** P3 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Reuse or back up a visual design outside the page where it was created.
 - **Acceptance:**
-  - [ ] Export and import a portable appearance file.
-  - [ ] Exclude credentials, album identifiers, and share capabilities.
-  - [ ] Validate imported settings before applying them to a page.
+  - [x] Export and import a portable appearance file.
+  - [x] Exclude credentials, album identifiers, and share capabilities.
+  - [x] Validate imported settings before applying them to a page.
 - **Dependencies:** WRK-02.
 
 ### LTR-02 — Add thumbnails and filters to page management
 
-- **Priority:** P3 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Recognize pages and find drafts or unpublished changes in a growing client list.
 - **Acceptance:**
-  - [ ] Show a page thumbnail in management.
-  - [ ] Filter the list by draft, published, and unpublished changes.
-  - [ ] Keep each management action scoped to the page's owner.
+  - [x] Show a page thumbnail in management.
+  - [x] Filter the list by draft, published, and unpublished changes.
+  - [x] Keep each management action scoped to the page's owner.
 - **Dependencies:** REL-01, REL-05, REL-06.
 
 ### LTR-03 — Improve client-view verification
 
-- **Priority:** P3 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Check the page clients will open and understand what a password prompt means.
 - **Acceptance:**
-  - [ ] Open the actual published page from the editor.
-  - [ ] Explain the password state clearly when a page is protected.
-  - [ ] Keep owner preview and client access checks intact.
+  - [x] Open the actual published page from the editor.
+  - [x] Explain the password state clearly when a page is protected.
+  - [x] Keep owner preview and client access checks intact.
 - **Dependencies:** REL-06, REL-07.
 
 ### LTR-04 — Finish GitLab distribution
 
-- **Priority:** P3 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Give maintainers and self-hosters a complete GitLab-based source and container distribution path.
 - **Acceptance:**
-  - [ ] Complete the primary repository migration.
-  - [ ] Run CI checks on the GitLab repository.
-  - [ ] Publish container images to its registry.
+  - [x] Complete the primary repository migration.
+  - [x] Run CI checks on the GitLab repository.
+  - [x] Publish container images to its registry.
 - **Dependencies:** None.
 
 ### LTR-05 — Maintain Immich compatibility checks
 
-- **Priority:** P3 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Help photographers know which Immich versions work and catch upstream integration changes early.
 - **Acceptance:**
-  - [ ] Document the supported Immich versions and verified behaviors.
-  - [ ] Test API and sidebar integration when updating supported versions.
-  - [ ] Record compatibility results and migration requirements.
+  - [x] Document the supported Immich versions and verified behaviors.
+  - [x] Test API and sidebar integration when updating supported versions.
+  - [x] Record compatibility results and migration requirements.
 - **Dependencies:** None.
 
 ### LTR-06 — Improve contributor onboarding
 
-- **Priority:** P3 · **Status:** Planned
+- **Priority:** Complete · **Status:** Released
 - **Benefit:** Help new contributors run the app and find a useful first task.
 - **Acceptance:**
-  - [ ] Provide a development Docker Compose setup.
-  - [ ] Clearly mark starter tasks for contributors.
-  - [ ] Document setup and verification steps.
+  - [x] Provide a development Docker Compose setup.
+  - [x] Clearly mark starter tasks for contributors.
+  - [x] Document setup and verification steps.
 - **Dependencies:** None.
 
 ## Deferred — separate product decisions required
@@ -330,24 +330,23 @@ These ideas are intentionally outside the planned queue. The ID records the topi
   - [ ] Decide and document useful metrics, privacy expectations, and data retention before scheduling.
 - **Dependencies:** Product decision.
 
-### DEC-05 — Replacement photo viewer (approved as CMP-01)
+## Delivered product decision — DEC-05
 
-- **Priority:** Deferred · **Status:** Deferred
-- **Benefit:** Offer a different client photo-viewing experience if the native Immich viewer becomes insufficient.
+- **Priority:** Complete · **Status:** Released
+- **Benefit:** View photos directly on the client page.
 - **Acceptance:**
-  - [ ] Decide and document required viewing and sharing features and their maintenance cost before scheduling.
-- **Dependencies:** Product decision.
+  - [x] Deliver the approved viewer scope through CMP-01, with navigation, slideshow, and download controls.
+- **Dependencies:** CMP-01.
 
-## Approved live-composer implementation — CMP-01
+## Released live composer — CMP-01
 
-**Status:** Implemented for review on `feature/live-composer`; not released or
-deployed. This replaces DEC-05's deferral following the approved composer plan.
+**Status:** Released and deployed as [v0.4.0](https://gitlab.com/wispd/ImmichPager/-/releases/v0.4.0), through [MR !36](https://gitlab.com/wispd/ImmichPager/-/merge_requests/36). This delivers DEC-05's approved scope.
 
 - [x] Ordered Albums, Photos, and rich Text blocks with legacy-page migration.
 - [x] Exact photo-block shares, durable retry, private drafts and explicit publication.
-- [x] One live canvas and Content/Design/Sharing inspector, replacing Preview mode.
+- [x] One live canvas with Content and Design inspectors, plus Page settings beside Publish.
 - [x] Direct header sizing/crop and inline text editing, responsive canvas widths.
 - [x] On-page album expansion and accessible photo viewer with slideshow/downloads.
-- [ ] Complete browser regression and review handoff.
+- [x] Complete browser regression, review, release publication, and deployment.
 
 See [implementation checkpoints](tasks/live-composer.md).

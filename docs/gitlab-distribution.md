@@ -1,7 +1,9 @@
 # GitLab CI and distribution
 
-GitLab is the active host. Merge requests target `dev`; `main` is unchanged by the
-release workflow. Historical GitHub upstream links and downloads remain.
+GitLab is the active host. Feature merge requests target `dev`; promote reviewed
+stable changes to `main` with a fast-forward. Release tags remain immutable, and
+deployment is a separate operator action. Historical GitHub upstream links and
+downloads remain.
 
 ## Required checks
 
@@ -11,6 +13,31 @@ same production build artifact and shard test files. Each job has one worker and
 an isolated fixture process/database; local browser runs remain serialized.
 The browser jobs use `needs: build`; release publication requires every gate.
 No tests are skipped to improve timing.
+
+### Local verification and runner minutes
+
+The same application checks can run on a development machine:
+
+```sh
+pnpm format:check
+pnpm lint
+pnpm check
+pnpm test
+pnpm build
+pnpm test:e2e
+```
+
+Docker smoke testing additionally requires access to a Docker daemon. A
+[self-managed project runner](https://docs.gitlab.com/ci/runners/runners_scope/#project-runners)
+can run the pipeline on your own machine; project runners are not affected by the
+[instance-runner compute quota](https://docs.gitlab.com/ci/pipelines/instance_runner_compute_minutes/).
+The current pipeline uses Docker images and TLS-enabled Docker-in-Docker, so its
+runner must support that executor and service configuration.
+
+For locally verified documentation-only maintenance, `git push -o ci.skip` skips
+the push pipeline. It does not skip merge-request pipelines. Keep the existing
+application checks and release prerequisites when working around a temporary
+hosted-minute shortage; the skip is not evidence of a new CI pass.
 
 Node 22.23.3 and pnpm 11.28.5 are asserted. The build job alone writes the
 lockfile-keyed pnpm cache; other jobs read it. Missing caches remain supported.

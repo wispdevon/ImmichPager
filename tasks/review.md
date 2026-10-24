@@ -1,8 +1,8 @@
-# Roadmap merge request review index
+# Merge request history
 
-The roadmap is in [TODO.md](../TODO.md). These changes are proposed for `dev`; an open merge request is not a release or an approved merge. `main` and the live deployment have not been changed. All appearance customization remains per page.
+The original roadmap and subsequent composer work are merged and released. See [the roadmap](../TODO.md), [changelog](../CHANGELOG.md), and [v0.4.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.4.0) for the current product state. All appearance settings remain per page.
 
-## Ready for review
+## Original roadmap — merged
 
 | Roadmap ID | Merge request                                                   | What it does for you                                                                                                        |
 | ---------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -25,21 +25,9 @@ The roadmap is in [TODO.md](../TODO.md). These changes are proposed for `dev`; a
 | LTR-02     | [!17](https://gitlab.com/wispd/ImmichPager/-/merge_requests/17) | Recognizes pages through safe branding thumbnails and filters drafts, published pages, changes, and synchronization states. |
 | WRK-02     | [!18](https://gitlab.com/wispd/ImmichPager/-/merge_requests/18) | Applies Classic, Centered, or Editorial header compositions to one private draft while preserving content and sharing.      |
 
-All 18 planned roadmap items have a proposed feature MR. MR !18 includes its !10/!16 dependency commits; approve those controls before the preset MR. Review each feature independently before approving the integrated merge candidate.
+[MR !19](https://gitlab.com/wispd/ImmichPager/-/merge_requests/19) preserved the combined history and conflict resolutions for these 18 features. Its verified result was included in the merged parity integration below and the v0.2.0 release.
 
-## Verified integration candidate
-
-[Draft MR !19](https://gitlab.com/wispd/ImmichPager/-/merge_requests/19) preserves the conflict resolutions and cross-feature fixes across all 18 feature MRs. Review and approve the individual features first, then promote and merge this candidate to preserve the verified combined result. Every final feature MR head is included in its history. Nothing has been merged into `dev` except documentation.
-
-Combined verification passed with Node 22.23.3 and pnpm 11.28.5: zero type/Svelte errors or warnings, 114 domain tests across 16 files, all 24 Chromium scenarios, lint, formatting, moderate-level dependency audit, and production build. No tests were disabled. Desktop/mobile screenshots were visually reviewed.
-
-The integration also ensures all five header controls survive design duplication and appearance export/import and appear in publication reviews. Older v1 appearance files receive defaults. Browser tests cover inline editing with responsive iframe previews, combined page-list actions, actual password-protected published views, and missing-cover fallback before hydration.
-
-The earlier roadmap-only fixture preview remains available on the review workstation: [client gallery](http://127.0.0.1:4300/page/acme) and [fixture editor login](http://127.0.0.1:4300/dev-login/alice). It does not connect to a real library. Use the fresh combined preview below to review all six Immich UI/UX follow-ups.
-
-## Immich UI and UX parity review
-
-These six follow-up MRs use official Immich v3.3.3 source and v3.3.4 public-demo screenshots. They build on draft !19 and target `dev` as requested. Until !19 is approved and merged, GitLab's full diff includes that prerequisite; each MR links a focused comparison and its own commits. MR !25 also includes the native-sidebar fixture and bridge prerequisite from !22.
+## Immich UI and UX parity — merged
 
 | Merge request                                                   | What it does for you                                                                                                           |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
@@ -50,20 +38,24 @@ These six follow-up MRs use official Immich v3.3.3 source and v3.3.4 public-demo
 | [!24](https://gitlab.com/wispd/ImmichPager/-/merge_requests/24) | Keeps Copy link visible on phones while putting secondary page actions in Immich's native menu; desktop actions stay visible.  |
 | [!25](https://gitlab.com/wispd/ImmichPager/-/merge_requests/25) | Follows Immich's light/dark preference in the editor and dialogs while preserving each client page's independent theme.        |
 
-[Draft MR !26](https://gitlab.com/wispd/ImmichPager/-/merge_requests/26) combines !19 and all six final parity MR heads for approval. The committed [comparison matrix](https://gitlab.com/wispd/ImmichPager/-/blob/qa/immich-ui-parity/docs/immich-ui-parity.md) records official source references, screenshot findings, the remaining interaction audit, and intentional product differences. Official public-demo photographs remain outside source control; committed images use synthetic or attributed NASA fixtures.
+[MR !26](https://gitlab.com/wispd/ImmichPager/-/merge_requests/26) combined the roadmap and six parity follow-ups. The [comparison matrix](../docs/immich-ui-parity.md) records source references, screenshots, and intentional product differences. The final integration passed 127 unit tests, 34 Chromium scenarios, compatibility checks, type checks, lint, formatting, audit, and build before release.
 
-The fresh fixture-only preview runs at [client gallery](http://127.0.0.1:4400/page/acme) and [editor login](http://127.0.0.1:4400/dev-login/alice). Its runtime files match the combined candidate; it does not connect to a real library. Mobile menus, host theme changes, gallery layouts, and keyboard flows were browser-checked.
+## Subsequent releases
 
-Final combined verification passed after the last count-label correction: 127 unit tests, 34 Chromium scenarios, 33 compatibility tests plus two compatibility browser checks, zero type/Svelte errors or warnings, lint, formatting, moderate-level dependency audit, and production build. No tests were disabled. Desktop/mobile screenshots were visually reviewed. No feature has been merged into `dev`.
+| Merge request                                                       | Result                                                                              |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| [!27](https://gitlab.com/wispd/ImmichPager/-/merge_requests/27)     | v0.2.0 release                                                                      |
+| [!28–!31](https://gitlab.com/wispd/ImmichPager/-/merge_requests/31) | Client visibility controls, portable design tokens, integration, and v0.3.0 release |
+| [!32](https://gitlab.com/wispd/ImmichPager/-/merge_requests/32)     | Visual customization and v0.3.1 release                                             |
+| [!33](https://gitlab.com/wispd/ImmichPager/-/merge_requests/33)     | Header centering fix and v0.3.1.1 release                                           |
+| [!34](https://gitlab.com/wispd/ImmichPager/-/merge_requests/34)     | Page settings and v0.3.2 release                                                    |
+| [!35](https://gitlab.com/wispd/ImmichPager/-/merge_requests/35)     | Version awareness, CI improvements, and v0.3.3 release                              |
+| [!36](https://gitlab.com/wispd/ImmichPager/-/merge_requests/36)     | Live composer, photo viewer, and v0.4.0 release                                     |
+| [!37](https://gitlab.com/wispd/ImmichPager/-/merge_requests/37)     | TLS-preserving container publisher and guarded recovery                             |
+| [!38](https://gitlab.com/wispd/ImmichPager/-/merge_requests/38)     | Registry installation and publication-recovery documentation                        |
 
-## Verification and limits
+## Verification and retained history
 
-Every feature MR records its own Node 22.23.3 / pnpm 11.28.5 checks, domain tests, build, and browser evidence. Browser tests use the isolated synthetic/NASA fixture library; no real client albums are published. The in-app browser connection was unavailable, so the repository's Playwright/Chromium workflow provides runtime checks.
+The v0.4.0 product passed 219 unit tests and 83 Chromium scenarios, plus type checks, lint, formatting, audit, production build, and Docker smoke checks. The [guarded publication pipeline](https://gitlab.com/wispd/ImmichPager/-/pipelines/2983390141) published amd64/arm64 images from the immutable release commit; image digests and labels were verified, and the ARM64 image passed native health/readiness checks. See [validation](../docs/validation.md) for evidence and limits.
 
-The local environment cannot access its Docker daemon. Compose configuration is validated, but the development container startup and distribution Docker smoke remain unverified. GitLab static CI lint passes; the review branches and merge requests have now been transferred to GitLab. GitLab attempted merge-request pipelines but created no jobs because the account is not verified. Hosted checks remain pending account verification; registry publishing has not been run. The destination is [gitlab.com/wispd/ImmichPager](https://gitlab.com/wispd/ImmichPager), with registry `registry.gitlab.com/wispd/immichpager`.
-
-## Merge and release discipline
-
-Some MRs touch the same editor, gallery renderer, appearance contract, or tests. Resolve overlaps in a review branch and run combined checks before merging the series. Header controls must be included when reviewing presets, design duplication, portable appearance files, and publication appearance summaries. The verified draft integration candidate above preserves these resolutions without merging features into `dev`.
-
-Do not mark roadmap entries “Implemented on dev” until their MRs are merged, and do not mark them “Released” until release verification and publication are complete. Deferred product ideas remain deferred.
+Obsolete source branches were removed after their exact heads were confirmed against merged MRs and their merge commits were found in `dev`. Release tags, commits, MR discussions, release downloads, and CI history remain available. Feature work continues through reviewed MRs into `dev`, with stable changes promoted to `main`.

@@ -1,14 +1,16 @@
 # Live composer implementation
 
+**Status:** Released and deployed as [v0.4.0](https://gitlab.com/wispd/ImmichPager/-/releases/v0.4.0), through [MR !36](https://gitlab.com/wispd/ImmichPager/-/merge_requests/36).
+
 Approved scope: replace separate edit/customize/preview screens with an always-live
-canvas and Content, Design, Sharing inspector. Repeatable Albums (Cards, Tiles,
+canvas with Content and Design inspectors and Page settings beside Publish. Repeatable Albums (Cards, Tiles,
 Editorial), Photos (Justified, Masonry, Square, Large, Carousel), and inline basic
 rich-text blocks. Direct header sizing/crop controls. Albums expand on the page;
 photos open a Folio-style accessible viewer with slideshow and downloads.
 
 Private drafts, explicit publication, ownership checks, /page isolation, and
 recoverable native sharing remain required. Existing pages migrate without
-changing their appearance or shares. Still images only. No release/deployment.
+changing their appearance or shares. Still images only. Release and deployment verification are recorded in the release notes and [validation record](../docs/validation.md).
 
 ## Verification checkpoints
 
