@@ -1,7 +1,7 @@
 # GitLab CI and distribution
 
 GitLab is the active host. Merge requests target `dev`; `main` is unchanged by the
-0.3.x release workflow. Historical GitHub upstream links and downloads remain.
+release workflow. Historical GitHub upstream links and downloads remain.
 
 ## Required checks
 
@@ -37,7 +37,7 @@ elapsed time; parallel setup may increase total runner usage.
 
 ## Releases
 
-The manual `publish_image` job is restricted to protected `vMAJOR.MINOR.PATCH`
+The manual `publish_image` job normally runs on protected `vMAJOR.MINOR.PATCH`
 tags. It waits for quality, build, both browser shards and Docker smoke. It uses
 GitLab job credentials and Buildx to publish amd64/arm64 images with exact-version,
 minor and latest tags. Production should use an exact version.
@@ -48,3 +48,15 @@ Release the reviewed tagged commit, verify downloadable checksums, preserve a
 recoverable configuration and complete stopped-volume backup (including SQLite
 WAL/SHM), and verify live version, readiness and data fingerprints after upgrade.
 See [deployment](deployment.md) for recovery and runtime-bundle deployment.
+
+Buildx uses a named Docker context containing the DinD TLS endpoint and client
+certificates; TLS stays enabled. If publishing fails because the tagged CI setup
+needs a fix, preserve the release tag. Merge the CI correction through a reviewed
+MR, then use an API-triggered pipeline on a protected
+`release/publish-vMAJOR.MINOR.PATCH` branch with `PAGER_RELEASE_TAG` and the exact
+40-character `PAGER_RELEASE_REVISION`. Pipeline-variable overrides must be allowed
+for the initiating operator; retain the project's existing restriction afterward.
+All required checks still run. The manual publisher verifies the tag and package
+version, rejects product-tree differences beyond `.gitlab-ci.yml`, and checks out
+the original release commit before building. Image revision labels therefore
+record the immutable release source, not the CI recovery commit.
