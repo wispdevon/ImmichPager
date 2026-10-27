@@ -61,4 +61,5 @@ license is included as LICENSE-CC-BY-3.0.txt in that directory.
 ImmichPager adaptations change composition, selectors, local typography, contrast,
 responsive flow, and content/viewer integration. Upstream scripts, photographs,
 fonts, icons and executable template engines are not distributed with these themes.
-Source credit is retained in native files, page snapshots and public page footers.
+Source credit is retained in native files, page snapshots and public page credits
+(Page info or the optional footer).

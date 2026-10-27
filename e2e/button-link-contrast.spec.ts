@@ -137,7 +137,11 @@ test('Immich button links retain theme contrast and ordinary links inherit', asy
   await page.goto('/dev-login/alice');
   const response = await page.request.post('/page/api/pages', {
     headers: { origin: 'http://127.0.0.1:3200' },
-    data: { title: 'Button contrast check', slug: 'button-contrast-check' },
+    data: {
+      title: 'Button contrast check',
+      slug: 'button-contrast-check',
+      clientUi: { showFooter: true },
+    },
   });
   expect(response.ok()).toBe(true);
   const draft = await response.json();
@@ -217,7 +221,7 @@ test('Immich button links retain theme contrast and ordinary links inherit', asy
       });
       expect(disabledLinkColors.color).toBe(disabledLinkColors.parentColor);
 
-      await page.goto('/page/acme');
+      await page.goto(`/page/manage/${draft.id}/preview`);
       await disableTransitions(page);
       await page.mouse.move(viewport.width - 1, viewport.height - 1);
       const publicRoot = page.locator('html');

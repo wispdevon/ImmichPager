@@ -127,4 +127,5 @@ Twelve licensed adaptations add three designs each for Wedding, Portraiture,
 Wildlife, and One size fits all. They include downloadable native JSON and retained
 source credit. See [the collection guide and source links](photography-themes.md).
 Native definitions can carry optional HTTPS-only `attribution` metadata; that credit
-is preserved in snapshots, library operations, portable files, and client footers.
+is preserved in snapshots, library operations, portable files, and client credits
+under Page info or the optional footer.

@@ -20,6 +20,20 @@
     mdiTableColumnWidth,
     mdiAspectRatio,
     mdiRoundedCorner,
+    mdiFormatTitle,
+    mdiText,
+    mdiImageAlbum,
+    mdiImageMultipleOutline,
+    mdiCalendarMonthOutline,
+    mdiCalendarRange,
+    mdiCounter,
+    mdiShareVariantOutline,
+    mdiPageLayoutFooter,
+    mdiInformationOutline,
+    mdiImageArea,
+    mdiFilterVariant,
+    mdiCollapseAllOutline,
+    mdiMagnify,
   } from '@mdi/js';
   import DesignGroup from './DesignGroup.svelte';
   import { tick, onMount } from 'svelte';
@@ -134,6 +148,15 @@
     colors: false,
     layout: false,
   });
+  let elementGroups = $state({
+    header: false,
+    browsing: false,
+    albums: false,
+    years: false,
+    footer: false,
+  });
+  const visibleCount = (keys: (keyof ClientUi)[]) =>
+    `${keys.filter((key) => fields.clientUi[key]).length} visible`;
   let appearanceFileError = $state('');
   let appearanceFileStatus = $state('');
   let tokenFileError = $state('');
@@ -386,6 +409,10 @@
     };
   }
 </script>
+
+{#snippet elementLabel(icon: string, label: string)}<span class="element-label"
+    ><Icon {icon} size="18px" aria-hidden /><span>{label}</span></span
+  >{/snippet}
 
 <section class="customize-panel" bind:this={root} tabindex="-1">
   <div class="panel-heading">
@@ -1341,13 +1368,18 @@
       aria-labelledby="customize-tab-elements"
       tabindex="0"
     >
-      <p class="hint">
-        Hidden elements keep their saved content and settings. They appear again
-        when you turn them back on.
-      </p>
-
-      <fieldset class="toggle-group">
-        <legend>Header</legend>
+      <DesignGroup
+        group="elements-header"
+        title="Header"
+        icon={mdiPageLayoutHeader}
+        value={visibleCount([
+          'showBanner',
+          'showLogo',
+          'showTitle',
+          'showDescription',
+        ])}
+        bind:open={elementGroups.header}
+      >
         <ResetField
           value={fields.clientUi.showBanner}
           defaultValue={defaults.clientUi.showBanner}
@@ -1360,7 +1392,7 @@
             ))}
         >
           <div class="toggle-row">
-            <span>Banner</span><Switch
+            {@render elementLabel(mdiImageOutline, 'Banner')}<Switch
               aria-label="Show banner"
               checked={fields.clientUi.showBanner}
               onCheckedChange={(value) => changeClientUi('showBanner', value)}
@@ -1376,7 +1408,7 @@
             (fields.clientUi = resetClientUiValue(fields.clientUi, 'showLogo'))}
         >
           <div class="toggle-row">
-            <span>Logo</span><Switch
+            {@render elementLabel(mdiImageArea, 'Logo')}<Switch
               aria-label="Show logo"
               checked={fields.clientUi.showLogo}
               onCheckedChange={(value) => changeClientUi('showLogo', value)}
@@ -1395,7 +1427,7 @@
             ))}
         >
           <div class="toggle-row">
-            <span>Title</span><Switch
+            {@render elementLabel(mdiFormatTitle, 'Title')}<Switch
               aria-label="Show title"
               checked={fields.clientUi.showTitle}
               onCheckedChange={(value) => changeClientUi('showTitle', value)}
@@ -1414,7 +1446,7 @@
             ))}
         >
           <div class="toggle-row">
-            <span>Description</span><Switch
+            {@render elementLabel(mdiText, 'Description')}<Switch
               aria-label="Show description"
               checked={fields.clientUi.showDescription}
               onCheckedChange={(value) =>
@@ -1422,10 +1454,15 @@
             />
           </div>
         </ResetField>
-      </fieldset>
+      </DesignGroup>
 
-      <fieldset class="toggle-group">
-        <legend>Browsing</legend>
+      <DesignGroup
+        group="elements-browsing"
+        title="Browsing"
+        icon={mdiMagnify}
+        value={fields.clientUi.showBrowsingControls ? 'On' : 'Off'}
+        bind:open={elementGroups.browsing}
+      >
         <ResetField
           value={fields.clientUi.showBrowsingControls}
           defaultValue={defaults.clientUi.showBrowsingControls}
@@ -1438,7 +1475,7 @@
             ))}
         >
           <div class="toggle-row">
-            <span>Browsing controls</span><Switch
+            {@render elementLabel(mdiFilterVariant, 'Browsing controls')}<Switch
               aria-label="Show browsing controls"
               checked={fields.clientUi.showBrowsingControls}
               onCheckedChange={(value) =>
@@ -1458,7 +1495,7 @@
             ))}
         >
           <div class="toggle-row nested">
-            <span>Album search</span><Switch
+            {@render elementLabel(mdiMagnify, 'Album search')}<Switch
               aria-label="Show album search"
               disabled={!fields.clientUi.showBrowsingControls}
               checked={fields.clientUi.showAlbumSearch}
@@ -1479,7 +1516,10 @@
             ))}
         >
           <div class="toggle-row nested">
-            <span>Month filter</span><Switch
+            {@render elementLabel(
+              mdiCalendarMonthOutline,
+              'Month filter',
+            )}<Switch
               aria-label="Show month filter"
               disabled={!fields.clientUi.showBrowsingControls}
               checked={fields.clientUi.showMonthFilter}
@@ -1500,7 +1540,7 @@
             ))}
         >
           <div class="toggle-row nested">
-            <span>Year navigation</span><Switch
+            {@render elementLabel(mdiCalendarRange, 'Year navigation')}<Switch
               aria-label="Show year navigation"
               disabled={!fields.clientUi.showBrowsingControls}
               checked={fields.clientUi.showYearNavigation}
@@ -1521,7 +1561,7 @@
             ))}
         >
           <div class="toggle-row nested">
-            <span>Results count</span><Switch
+            {@render elementLabel(mdiCounter, 'Results count')}<Switch
               aria-label="Show results count"
               disabled={!fields.clientUi.showBrowsingControls}
               checked={fields.clientUi.showResultsCount}
@@ -1530,10 +1570,15 @@
             />
           </div>
         </ResetField>
-      </fieldset>
+      </DesignGroup>
 
-      <fieldset class="toggle-group">
-        <legend>Albums</legend>
+      <DesignGroup
+        group="elements-albums"
+        title="Albums"
+        icon={mdiImageAlbum}
+        value={fields.clientUi.showAlbums ? 'Visible' : 'Hidden'}
+        bind:open={elementGroups.albums}
+      >
         <ResetField
           value={fields.clientUi.showAlbums}
           defaultValue={defaults.clientUi.showAlbums}
@@ -1546,7 +1591,7 @@
             ))}
         >
           <div class="toggle-row">
-            <span>Album section</span><Switch
+            {@render elementLabel(mdiImageAlbum, 'Album section')}<Switch
               aria-label="Show albums"
               disabled={!fields.clientUi.showAlbumCovers &&
                 !fields.clientUi.showAlbumTitles}
@@ -1567,7 +1612,7 @@
             ))}
         >
           <div class="toggle-row nested">
-            <span>Covers</span><Switch
+            {@render elementLabel(mdiImageMultipleOutline, 'Covers')}<Switch
               aria-label="Show album covers"
               disabled={fields.clientUi.showAlbums &&
                 !fields.clientUi.showAlbumTitles &&
@@ -1590,7 +1635,7 @@
             ))}
         >
           <div class="toggle-row nested">
-            <span>Names</span><Switch
+            {@render elementLabel(mdiFormatTitle, 'Names')}<Switch
               aria-label="Show album names"
               disabled={fields.clientUi.showAlbums &&
                 !fields.clientUi.showAlbumCovers &&
@@ -1617,7 +1662,7 @@
             ))}
         >
           <div class="toggle-row nested">
-            <span>Dates</span><Switch
+            {@render elementLabel(mdiCalendarMonthOutline, 'Dates')}<Switch
               aria-label="Show album dates"
               disabled={!fields.clientUi.showAlbums}
               checked={fields.clientUi.showAlbumDates}
@@ -1638,7 +1683,7 @@
             ))}
         >
           <div class="toggle-row nested">
-            <span>Item counts</span><Switch
+            {@render elementLabel(mdiCounter, 'Item counts')}<Switch
               aria-label="Show album item counts"
               disabled={!fields.clientUi.showAlbums}
               checked={fields.clientUi.showAlbumItemCounts}
@@ -1659,7 +1704,10 @@
             ))}
         >
           <div class="toggle-row nested">
-            <span>Shared labels</span><Switch
+            {@render elementLabel(
+              mdiShareVariantOutline,
+              'Shared labels',
+            )}<Switch
               aria-label="Show Shared labels"
               disabled={!fields.clientUi.showAlbums}
               checked={fields.clientUi.showSharedLabels}
@@ -1668,10 +1716,17 @@
             />
           </div>
         </ResetField>
-      </fieldset>
+      </DesignGroup>
 
-      <fieldset class="toggle-group">
-        <legend>Years</legend>
+      <DesignGroup
+        group="elements-years"
+        title="Years"
+        icon={mdiCalendarRange}
+        value={fields.clientUi.showYearHeadings
+          ? 'Headings shown'
+          : 'Headings hidden'}
+        bind:open={elementGroups.years}
+      >
         <ResetField
           value={fields.clientUi.showYearHeadings}
           defaultValue={defaults.clientUi.showYearHeadings}
@@ -1684,7 +1739,7 @@
             ))}
         >
           <div class="toggle-row">
-            <span>Year headings</span><Switch
+            {@render elementLabel(mdiCalendarRange, 'Year headings')}<Switch
               aria-label="Show year headings"
               checked={fields.clientUi.showYearHeadings}
               onCheckedChange={(value) =>
@@ -1704,7 +1759,7 @@
             ))}
         >
           <div class="toggle-row nested">
-            <span>Year counts</span><Switch
+            {@render elementLabel(mdiCounter, 'Year counts')}<Switch
               aria-label="Show year counts"
               checked={fields.clientUi.showYearCounts}
               onCheckedChange={(value) =>
@@ -1724,7 +1779,10 @@
             ))}
         >
           <div class="toggle-row nested">
-            <span>Allow collapsing years</span><Switch
+            {@render elementLabel(
+              mdiCollapseAllOutline,
+              'Allow collapsing years',
+            )}<Switch
               aria-label="Allow year groups to collapse"
               disabled={!fields.clientUi.showYearHeadings}
               checked={fields.clientUi.allowYearCollapse}
@@ -1737,10 +1795,35 @@
           Hiding year headings preserves album order and year navigation.
           Turning off collapsing leaves every group expanded.
         </p>
-      </fieldset>
+      </DesignGroup>
 
-      <fieldset class="toggle-group">
-        <legend>Footer</legend>
+      <DesignGroup
+        group="elements-footer"
+        title="Footer"
+        icon={mdiPageLayoutFooter}
+        value={fields.clientUi.showFooter ? 'Visible' : 'Hidden'}
+        bind:open={elementGroups.footer}
+      >
+        <ResetField
+          value={fields.clientUi.showFooter}
+          defaultValue={defaults.clientUi.showFooter}
+          label="Show footer"
+          disabled={busy}
+          onreset={() =>
+            (fields.clientUi = resetClientUiValue(
+              fields.clientUi,
+              'showFooter',
+            ))}
+        >
+          <div class="toggle-row">
+            {@render elementLabel(mdiPageLayoutFooter, 'Show footer')}<Switch
+              aria-label="Show footer"
+              checked={fields.clientUi.showFooter}
+              onCheckedChange={(value) => changeClientUi('showFooter', value)}
+            />
+          </div>
+        </ResetField>
+
         <ResetField
           value={fields.clientUi.showBranding}
           defaultValue={defaults.clientUi.showBranding}
@@ -1753,17 +1836,22 @@
             ))}
         >
           <div class="toggle-row">
-            <span>ImmichPager branding</span><Switch
+            {@render elementLabel(
+              mdiInformationOutline,
+              'ImmichPager branding',
+            )}<Switch
               aria-label="Show ImmichPager branding"
+              disabled={!fields.clientUi.showFooter}
               checked={fields.clientUi.showBranding}
               onCheckedChange={(value) => changeClientUi('showBranding', value)}
             />
           </div>
         </ResetField>
         <p class="hint">
-          Source and license access remains available in the page footer.
+          Source and theme credits are available from Page info when the footer
+          is hidden.
         </p>
-      </fieldset>
+      </DesignGroup>
     </div>
   {:else if activeTab === 'Themes'}
     <div
@@ -2228,27 +2316,15 @@
   }
 
   .elements-panel {
-    display: grid;
-    align-content: start;
-    gap: 16px;
+    display: block;
   }
 
-  .toggle-group {
-    display: grid;
-    gap: 6px;
-    min-inline-size: 0;
-    margin: 0;
-    padding: 12px;
-    border: 1px solid var(--pager-management-border);
-    border-radius: 8px;
+  .element-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
   }
-
-  .toggle-group legend {
-    padding-inline: 4px;
-    font-size: 14px;
-    font-weight: 600;
-  }
-
   .toggle-row {
     display: flex;
     align-items: center;
@@ -2263,7 +2339,7 @@
     color: var(--pager-management-text-secondary);
   }
 
-  .toggle-group .hint {
+  .elements-panel .hint {
     margin-block: 2px 8px;
   }
 

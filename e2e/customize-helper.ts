@@ -46,3 +46,12 @@ export async function openAllDesignGroups(root: Root) {
   ] as const)
     await openDesignGroup(root, group);
 }
+export async function openElementGroup(
+  root: Root,
+  group: 'header' | 'browsing' | 'albums' | 'years' | 'footer',
+) {
+  const details = root.locator(`[data-design-group="elements-${group}"]`);
+  if ((await details.getAttribute('open')) === null)
+    await details.locator('summary').click();
+  await expect(details).toHaveAttribute('open', '');
+}

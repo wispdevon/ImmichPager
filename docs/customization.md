@@ -182,8 +182,10 @@ Changes autosave to the private draft and appear on the canvas. Your client page
 
 ## Choose what clients can see
 
-Open **Design → Elements** to control the banner, logo, title, description,
-browsing tools, album details, year headings, and footer branding separately.
+Open **Design → Elements** for five expandable groups: Header, Browsing, Albums,
+Years, and Footer. Group headings show the current visibility; switches have
+matching Material icons. Control the banner, logo, title, description, browsing
+tools, album details, year headings, and footer separately.
 Turning off an element only hides it from the client page; its text, images, and
 settings remain in the draft. New pages start with browsing tools off. Existing
 pages receive visibility defaults that preserve their current appearance.
@@ -191,8 +193,12 @@ pages receive visibility defaults that preserve their current appearance.
 The album section must keep either its cover or its visible title. Album links
 keep an accessible name when the title is hidden. Hiding year headings keeps
 album order and year navigation. Turning off year collapsibility leaves groups
-expanded. The Source & license link stays in the footer when project branding
-is hidden.
+expanded. The entire footer is hidden by default. Enable **Footer → Show footer**
+to display it, then optionally include ImmichPager branding. When the footer is
+hidden, **Page info** opens source/license links and theme attribution in a
+compact dialog. Escape or its close button returns focus to Page info. Existing
+settings without an explicit footer choice also default to hidden. Changes to
+the switch save privately and take effect on the client page when published.
 
 ## Adjust the gallery layout
 

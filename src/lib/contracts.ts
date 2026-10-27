@@ -48,6 +48,7 @@ const clientUiShape = {
   showYearHeadings: z.boolean().default(true),
   showYearCounts: z.boolean().default(true),
   allowYearCollapse: z.boolean().default(true),
+  showFooter: z.boolean().default(false),
   showBranding: z.boolean().default(true),
 };
 

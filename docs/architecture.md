@@ -80,6 +80,13 @@ and mode, keep DOM order stable, and cancel if membership/mode/grouping changes.
 No-op comparison uses the action baseline, so a genuine move back to the old raw
 IDs still commits Manual. Drops outside the visible list do not commit.
 
+`clientUi.showFooter` is an additive boolean with default false. Missing values
+in new, legacy, and imported settings normalize to false; explicit opt-in is
+preserved. No database migration is needed. Gallery renders either the enabled
+footer or a PageInformation action with the same credits. Its native modal is
+outside the gallery CSS/paint boundary so page styling cannot hide the source
+links. Elements disclosure state is local to CustomizePanel, like Design state.
+
 ## Per-page controls and portable themes
 
 `clientUi` and `galleryStyle` are validated additive JSON settings in drafts, published records, and gallery DTOs. Reading legacy JSON fills compatibility defaults; creating a page disables browsing controls by default. Duplication copies these settings, and publication review identifies visibility and style changes before they reach clients. No SQLite schema migration is needed.

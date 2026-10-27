@@ -314,6 +314,33 @@ or browser exceptions. Visible style choices support keyboard selection and rese
 Review uses NASA fixtures and the established headless Chromium fallback. No
 hosted CI minutes were used.
 
+## Elements overview and optional footer (2026-10-27)
+
+Elements now uses five native disclosure groups with visibility summaries and 20
+decorative Material icons on its switches. Group state survives customization tab
+changes. Existing switch dependencies, visible-album guards, individual resets,
+and hidden content values are retained.
+
+The full footer defaults off through additive `clientUi.showFooter`; missing
+legacy choices normalize to false and explicit opt-in survives. The footer has no
+reserved space when hidden. The same source/theme credits remain reachable from
+Page info in a centered native modal outside the gallery styling boundary. An
+enabled footer displays them directly. Credits are not duplicated. Footer edits
+remain private until publication, and resetting visibility does not alter content.
+
+Local validation passes 249 unit tests, all 118 browser scenarios, type checks
+with zero errors/warnings, lint, formatting, and the production build. The three
+Elements/footer scenarios also pass after the final dialog-centering adjustment.
+Coverage checks default/legacy footer choices, explicit publication, credit links,
+native Escape/focus restoration, modal geometry, phone groups/icons, dependency
+guards, and reset focus. Footer contrast fixtures opt in explicitly, and all
+twelve credited theme scenarios open Page info to verify their source links.
+
+Visual review covers 1440px desktop, 390px phone, and 320px touch contexts in light
+and dark modes. All group headings fit initially, all 20 switch icons render, and
+no inspector overflow or browser exceptions occur. Screenshots use NASA fixtures
+and the established headless Chromium fallback. No hosted CI minutes were used.
+
 ## Ordering consistency, media actions, and layout icons (2026-10-27)
 
 Implemented the Astra UI review findings: inspector/gallery ordering shares a

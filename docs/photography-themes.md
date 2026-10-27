@@ -58,8 +58,8 @@ All twelve original designs are by AJ / HTML5 UP under the publisher's
 [Creative Commons Attribution 3.0 terms](https://html5up.net/license). The adapted
 native files retain a source comment and structured `attribution` with the original
 name, author, source URL, and license. Page snapshots, library copies and portable
-exports retain this data. Client pages show design attribution even when Pager's
-optional branding switch is off.
+exports retain this data. Client pages keep design attribution available in
+Page info, or in the optional footer, even when Pager branding is off.
 
 Original template engines, photographs, scripts, icons and font assets are not
 redistributed. Pager's renderer and application keep their existing license;

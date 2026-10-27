@@ -98,3 +98,10 @@ a visible chevron and separate actions menu. Layout choices expose descriptions
 to assistive technology and visually distinguish justified and square grids.
 Keep visible Reset all text, larger touch reset/row-action targets, and bundled
 Material icons beside gallery layout labels without replacing the labels.
+
+Elements uses the same five-group disclosure overview: Header, Browsing, Albums,
+Years, and Footer. Group summaries report current visibility; each switch has a
+matching decorative Material icon and retains its reset and dependency behavior.
+The full client footer is opt-in and absent by default, including its layout
+space. Keep source/theme credits accessible in a compact Page info action when
+the footer is hidden; an enabled footer contains those credits directly.

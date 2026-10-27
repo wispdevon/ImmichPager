@@ -99,7 +99,12 @@ test('each client element can be hidden without losing content or album names', 
       expect(draft.banner).toBe(true);
     }
     draft = await save(page, draft, {
-      clientUi: { ...original, showBranding: false, showAlbumTitles: false },
+      clientUi: {
+        ...original,
+        showFooter: true,
+        showBranding: false,
+        showAlbumTitles: false,
+      },
     });
     const published = await page.request.post(
       `/page/api/pages/${draft.id}/publish`,

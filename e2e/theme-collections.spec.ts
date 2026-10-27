@@ -68,6 +68,10 @@ for (const collection of photographyCollections) {
         expect(
           await page.evaluate(() => document.documentElement.scrollWidth),
         ).toBeLessThanOrEqual(width);
+        await expect(page.locator('.ip-footer')).toHaveCount(0);
+        await page
+          .getByRole('button', { name: 'Page info', exact: true })
+          .click();
         await expect(page.locator('.theme-credit')).toContainText(
           'AJ / HTML5 UP',
         );
@@ -75,6 +79,7 @@ for (const collection of photographyCollections) {
           'href',
           item.definition.attribution!.url,
         );
+        await page.keyboard.press('Escape');
         await page.locator('.ip-photo').first().click();
         await expect(
           page.getByRole('dialog', { name: 'Photo viewer' }),

@@ -5,6 +5,7 @@
     mdiImageSizeSelectLarge,
   } from '@mdi/js';
   import PageBlocks from './PageBlocks.svelte';
+  import PageInformation from './PageInformation.svelte';
   import { themeStylesheet } from '$lib/theme-render';
   import '$lib/theme-layouts.css';
   import { blockSchema, hasContent, type PageBlock } from '$lib/blocks';
@@ -169,6 +170,33 @@
     }
   });
 </script>
+
+{#snippet pageCredits()}
+  {#if ui.showBranding}<a
+      href="https://gitlab.com/wispd/ImmichPager"
+      target="_blank"
+      rel="noreferrer">ImmichPager</a
+    > ·
+  {/if}
+  <a
+    href="https://gitlab.com/wispd/ImmichPager/-/blob/main/LICENSE"
+    target="_blank"
+    rel="noreferrer">Source & license</a
+  >
+  {#if page.pageTheme?.definition.attribution}
+    {@const credit = page.pageTheme.definition.attribution}
+    <span class="theme-credit">
+      · Design adapted from
+      <a href={credit.url} target="_blank" rel="noreferrer">{credit.title}</a>
+      by {credit.author}
+      (<a
+        href="https://creativecommons.org/licenses/by/3.0/"
+        target="_blank"
+        rel="noreferrer">CC BY 3.0</a
+      >).
+    </span>
+  {/if}
+{/snippet}
 
 <div class="gallery-boundary" class:header-editor={editorHeader}>
   {@html galleryStyleStylesheet(page, { editorHeader })}
@@ -432,37 +460,16 @@
         onchange={onBlockChange}
         oninsert={onBlockInsert}
       />
-      <footer class="ip-footer">
-        {#if ui.showBranding}<a
-            href="https://gitlab.com/wispd/ImmichPager"
-            target="_blank"
-            rel="noreferrer">ImmichPager</a
-          > ·
-        {/if}
-        <a
-          href="https://gitlab.com/wispd/ImmichPager/-/blob/main/LICENSE"
-          target="_blank"
-          rel="noreferrer">Source & license</a
-        >
-        {#if page.pageTheme?.definition.attribution}
-          {@const credit = page.pageTheme.definition.attribution}
-          <span class="theme-credit">
-            · Design adapted from
-            <a href={credit.url} target="_blank" rel="noreferrer"
-              >{credit.title}</a
-            >
-            by {credit.author}
-            (<a
-              href="https://creativecommons.org/licenses/by/3.0/"
-              target="_blank"
-              rel="noreferrer">CC BY 3.0</a
-            >).
-          </span>
-        {/if}
-      </footer>
+      {#if ui.showFooter}<footer class="ip-footer">
+          {@render pageCredits()}
+        </footer>{/if}
     {/if}
   </div>
 </div>
+
+{#if !editorHeader && !ui.showFooter}<PageInformation
+    >{@render pageCredits()}</PageInformation
+  >{/if}
 
 <style>
   .banner {

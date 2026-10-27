@@ -20,7 +20,19 @@ describe('client UI settings', () => {
     expect(page.clientUi.showBrowsingControls).toBe(false);
     expect(page.clientUi.showAlbums).toBe(true);
     expect(page.clientUi.showTitle).toBe(true);
+    expect(page.clientUi.showFooter).toBe(false);
     expect(page.galleryStyle).toEqual(DEFAULT_GALLERY_STYLE);
+  });
+
+  it('keeps footers hidden for legacy settings without a footer choice and preserves explicit opt-in', () => {
+    expect(normalizeClientUi({ showBranding: true }).showFooter).toBe(false);
+    expect(normalizeClientUi({ showFooter: true }).showFooter).toBe(true);
+    expect(
+      clientUiSchema.parse({ showFooter: true, showBranding: false }),
+    ).toMatchObject({
+      showFooter: true,
+      showBranding: false,
+    });
   });
 
   it('keeps browsing controls off when a new page supplies only partial visibility settings', () => {

@@ -4,6 +4,7 @@ import {
   openCustomize,
   openAllDesignGroups,
   openDesignGroup,
+  openElementGroup,
 } from './customize-helper';
 
 async function createDraft(
@@ -213,6 +214,8 @@ test('element controls let hidden album sections be configured while enforcing a
   const record = await createDraft(page, 'customize-elements-guard');
   await page.goto('/page/manage/' + record.id);
   const dialog = await openCustomize(page, 'Elements');
+  await openElementGroup(page, 'albums');
+  await openElementGroup(page, 'years');
   const albums = dialog.getByRole('switch', { name: 'Show albums' });
   const covers = dialog.getByRole('switch', { name: 'Show album covers' });
   const names = dialog.getByRole('switch', { name: 'Show album names' });
