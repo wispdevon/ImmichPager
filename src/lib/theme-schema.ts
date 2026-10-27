@@ -42,12 +42,28 @@ export const themeDesignSchema = z
     galleryStyle: galleryStyleSchema.strict(),
   })
   .strict();
+const themeAttributionSchema = z
+  .object({
+    title: z.string().trim().min(1).max(100),
+    author: z.string().trim().min(1).max(120),
+    url: z
+      .string()
+      .max(500)
+      .url()
+      .refine(
+        (value) => value.startsWith('https://'),
+        'Use an HTTPS source link',
+      ),
+    license: z.literal('CC-BY-3.0'),
+  })
+  .strict();
 export const themeDefinitionSchema = z
   .object({
     name: z.string().trim().min(1).max(100),
     description: z.string().max(500).default(''),
     version: z.literal(1),
     layout: themeLayoutSchema,
+    attribution: themeAttributionSchema.optional(),
     headingFont: z.enum(FONT_FAMILY_IDS).default('inter'),
     variants: z
       .object({

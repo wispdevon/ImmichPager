@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+  import { onDestroy, tick } from 'svelte';
   import { Button, Icon } from '@immich/ui';
   import {
     mdiCheck,
@@ -20,6 +20,11 @@
     serializeThemeFile,
     restoreTheme,
   } from '$lib/themes';
+  import {
+    photographyCollections,
+    type PhotographyCategory,
+  } from '$lib/theme-collections';
+  import type { ThemePreviewActions } from '$lib/theme-preview';
   import type { ThemeDefinition } from '$lib/theme-schema';
   import { THEME_FILE_LIMIT } from '$lib/theme-schema';
   import { importThemeCss, type CssThemeFormat } from '$lib/theme-css-import';
@@ -33,7 +38,7 @@
     fields: PageInput;
     undo?: PageInput | null;
     busy?: boolean;
-    onPreview?: (page: PageInput | null) => void;
+    onPreview?: (page: PageInput | null, actions?: ThemePreviewActions) => void;
   } = $props();
   type RecordValue = {
     id: string;
@@ -68,7 +73,12 @@
   let warnings = $state<string[]>([]),
     recognized = $state<string[]>([]),
     imported = $state<ThemeDefinition | null>(null);
+  let themeTrigger: HTMLElement | null = null;
   let withoutCss = $state(false);
+  let category = $state<PhotographyCategory>('wedding');
+  const collection = $derived(
+    photographyCollections.find((item) => item.id === category)!,
+  );
   const visible = $derived(
     library.filter((t) => t.name.toLowerCase().includes(search.toLowerCase())),
   );
@@ -114,6 +124,11 @@
   });
   onDestroy(() => onPreview(null));
   function tryTheme(definition: ThemeDefinition | null) {
+    if (
+      document.activeElement instanceof HTMLElement &&
+      document.activeElement.closest('.themes')
+    )
+      themeTrigger = document.activeElement;
     audition = definition ? cloneTheme(definition) : null;
     classicPreview = !definition;
     error = '';
@@ -122,13 +137,28 @@
       ? applyTheme($state.snapshot(fields), definition)
       : applyClassic($state.snapshot(fields));
     if (withoutCss) value.customCss = '';
-    onPreview(value);
+    onPreview(value, {
+      name: definition?.name ?? 'Immich Classic',
+      apply,
+      cancel,
+      hasCustomCss: !!fields.customCss,
+      withoutCss,
+      setWithoutCss: (value) => {
+        withoutCss = value;
+        tryTheme(audition);
+      },
+    });
   }
   function cancel() {
     audition = null;
     classicPreview = false;
     withoutCss = false;
     onPreview(null);
+    void tick().then(
+      () =>
+        themeTrigger?.isConnected &&
+        themeTrigger.focus({ preventScroll: true }),
+    );
   }
   function apply() {
     undo = cloneTheme($state.snapshot(fields));
@@ -311,6 +341,42 @@
   }
 </script>
 
+{#snippet themeCard(item: ThemeDefinition)}
+  {@const active =
+    item.layout === 'classic'
+      ? !fields.pageTheme
+      : fields.pageTheme?.definition.name === item.name}
+  <button
+    type="button"
+    class="theme-card"
+    class:active
+    disabled={busy}
+    aria-label={`Try ${item.name} theme`}
+    aria-pressed={(audition?.name ??
+      (classicPreview ? 'Immich Classic' : '')) === item.name}
+    onclick={() => {
+      chosen = null;
+      tryTheme(item.layout === 'classic' ? null : item);
+    }}
+  >
+    <span
+      class={`mini mini-${item.layout}`}
+      style={`--mini-bg:${item.variants.light?.background ?? item.variants.dark?.background};--mini-fg:${item.variants.light?.foreground ?? item.variants.dark?.foreground};--mini-accent:${item.variants.light?.primary ?? item.variants.dark?.primary}`}
+      aria-hidden="true"
+      ><i class="mini-heading"></i><i class="mini-image"></i><span
+        class="mini-photos"><i></i><i></i><i></i><i></i></span
+      ></span
+    >
+    <strong
+      >{item.name}{#if active}<Icon
+          icon={mdiCheck}
+          size="16px"
+          aria-hidden
+        />{/if}</strong
+    ><small>{item.description}</small>
+  </button>
+{/snippet}
+
 <section class="themes" aria-label="Page themes">
   <div class="intro">
     <h2>Choose a complete design</h2>
@@ -321,62 +387,38 @@
   </div>
   <div class="theme-grid" aria-label="Built-in themes">
     {#each [classicTheme, ...builtInThemes] as item}
-      {@const active =
-        item.layout === 'classic'
-          ? !fields.pageTheme
-          : fields.pageTheme?.definition.layout === item.layout}
-      <button
-        type="button"
-        class="theme-card"
-        class:active
-        disabled={busy}
-        aria-label={`Try ${item.name} theme`}
-        aria-pressed={(audition?.layout ??
-          (classicPreview ? 'classic' : '')) === item.layout}
-        onclick={() => {
-          chosen = null;
-          tryTheme(item.layout === 'classic' ? null : item);
-        }}
-      >
-        <span
-          class={`mini mini-${item.layout}`}
-          style={`--mini-bg:${item.variants.light?.background ?? item.variants.dark?.background};--mini-fg:${item.variants.light?.foreground ?? item.variants.dark?.foreground};--mini-accent:${item.variants.light?.primary ?? item.variants.dark?.primary}`}
-          aria-hidden="true"
-          ><i class="mini-heading"></i><i class="mini-image"></i><span
-            class="mini-photos"><i></i><i></i><i></i><i></i></span
-          ></span
-        >
-        <strong
-          >{item.name}{#if active}<Icon
-              icon={mdiCheck}
-              size="16px"
-              aria-hidden
-            />{/if}</strong
-        ><small>{item.description}</small>
-      </button>
+      {@render themeCard(item)}
     {/each}
   </div>
-  {#if audition || classicPreview}<div
-      class="audition"
-      role="region"
-      aria-label="Theme preview"
+  <section
+    class="photography-collection"
+    aria-label="Photography theme collections"
+  >
+    <h2>For your photography</h2>
+    <label
+      >Photography speciality<select
+        aria-label="Photography speciality"
+        bind:value={category}
+      >
+        {#each photographyCollections as item}<option value={item.id}
+            >{item.label}</option
+          >{/each}
+      </select></label
     >
-      <h3>Trying {audition?.name ?? 'Immich Classic'}</h3>
-      <p>This is an unsaved preview. Rows use this theme’s layout defaults.</p>
-      {#if fields.customCss}<label
-          ><input
-            type="checkbox"
-            bind:checked={withoutCss}
-            onchange={() => tryTheme(audition)}
-          />Preview and apply without my custom CSS</label
-        >{/if}
-      <div class="actions">
-        <Button disabled={busy} onclick={apply}>Apply theme</Button><Button
-          variant="ghost"
-          onclick={cancel}>Cancel preview</Button
-        >
-      </div>
-    </div>{/if}
+    <p class="hint">{collection.description}</p>
+    <div class="theme-grid" aria-label={`${collection.label} themes`}>
+      {#each collection.themes as item (item.id)}<div class="collection-card">
+          {@render themeCard(item.definition)}
+          <a class="theme-download" href={item.path} download
+            >Download theme JSON</a
+          >
+        </div>{/each}
+    </div>
+    <p class="hint">
+      Adapted from HTML5 UP under CC BY 3.0. Source credit stays with each
+      design.
+    </p>
+  </section>
   {#if undo}<Button
       variant="ghost"
       onclick={() => {
@@ -675,6 +717,20 @@
   .mini-contact-sheet .mini-photos i {
     height: 65px;
   }
+  .collection-card {
+    min-width: 0;
+    display: grid;
+    gap: 8px;
+  }
+  .collection-card .theme-card {
+    width: 100%;
+    height: 100%;
+  }
+  .theme-download {
+    font-size: 0.75rem;
+    color: var(--pager-management-accent);
+    padding: 4px 8px;
+  }
   .actions {
     display: flex;
     flex-wrap: wrap;
@@ -699,22 +755,15 @@
     padding: 10px;
     font: inherit;
   }
-  input[type='checkbox'] {
-    accent-color: var(--pager-management-accent, #accbfa);
-  }
   textarea {
     font-family: monospace;
     font-size: 0.8rem;
   }
-  .audition,
   .import-review,
   .delete-confirm {
     padding: 16px;
     border: 1px solid var(--pager-management-border, #555);
     border-radius: 12px;
-  }
-  .audition {
-    border-color: var(--pager-management-accent, #accbfa);
   }
   h2 {
     font-size: 1.1rem;

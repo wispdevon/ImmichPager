@@ -1,0 +1,68 @@
+{
+  "format": "immichpager-theme",
+  "version": 1,
+  "theme": {
+    "name": "Big Picture Wildlife",
+    "description": "A centered, image-filling introduction and large, unhurried wildlife frames.",
+    "version": 1,
+    "layout": "cinematic",
+    "headingFont": "inter",
+    "variants": {
+      "light": {
+        "background": "#ffffff",
+        "foreground": "#39454b",
+        "primary": "#3c6e36",
+        "primaryForeground": "#ffffff",
+        "surface": "#f5f6f7",
+        "surfaceForeground": "#39454b",
+        "muted": "#53626a",
+        "border": "#39454b30",
+        "focus": "#3c6e36",
+        "hover": "#39454b12",
+        "hoverForeground": "#39454b"
+      }
+    },
+    "design": {
+      "alignment": "center",
+      "headerLayout": "overlay",
+      "headerSize": "tall",
+      "bannerHeight": 760,
+      "logoSize": 80,
+      "titleSize": 4,
+      "descriptionSize": 1.125,
+      "headerSpacing": 2.5,
+      "galleryStyle": {
+        "fontFamily": "inter",
+        "titleFontWeight": 700,
+        "bodyFontSize": 1,
+        "bodyFontWeight": 400,
+        "cardTitleSize": 1.125,
+        "cardTitleWeight": 600,
+        "contentWidth": 1440,
+        "pagePadding": 32,
+        "gridMinWidth": 224,
+        "gridRowGap": 32,
+        "gridColumnGap": 20,
+        "coverAspectRatio": 1.7,
+        "cardRadius": 0,
+        "logoShape": "rounded",
+        "logoPosition": "above",
+        "hoverTreatment": "surface"
+      }
+    },
+    "rows": {
+      "albums": "tiles",
+      "photos": "large",
+      "gap": 32,
+      "columns": 1,
+      "rowHeight": 480
+    },
+    "css": "/* Big Picture by HTML5 UP | html5up.net | @ajlkn | CC BY 3.0.\n * Adapted for ImmichPager; composition, typography and accessibility modified. */\n.ip-hero { min-height:min(900px, 90dvh); }\n.ip-hero .ip-header { text-align:center; max-width:1120px; margin:auto; align-self:center; }\n.ip-title { max-width:100%; font-size:clamp(var(--pager-title-min-size), calc(1rem + 3vw), var(--pager-title-size)); letter-spacing:-.045em; }\n.ip-description { margin-inline:auto; }\n.ip-hero .ip-navigation { justify-content:center; padding-block:16px; }\n.ip-block { padding-block:48px; }\n.ip-block .block-heading { text-align:center; }\n@media(max-width:760px) { .ip-hero { min-height:70dvh; } }\n\n.ip-hero:has(.ip-banner)::after { background:linear-gradient(#0009,#000b); }\n.ip-hero:has(.ip-banner) .ip-description { color:#ffffff; opacity:1; }\n\n.ip-description { opacity:1; }\n\n.ip-albums:not(.tiles) .ip-album-info p { opacity:1; color:var(--pager-muted); }\n.ip-albums.tiles .ip-album-info p { opacity:1; color:#ffffff; }\n",
+    "attribution": {
+      "title": "Big Picture",
+      "author": "AJ / HTML5 UP",
+      "url": "https://html5up.net/big-picture",
+      "license": "CC-BY-3.0"
+    }
+  }
+}

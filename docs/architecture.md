@@ -147,3 +147,17 @@ public pages. Applied snapshots survive library replacement/deletion. CSS import
 adapters parse declarations as data, resolve bounded local aliases, normalize
 colors with Culori, and discard source CSS. No external template or plugin runs.
 See [the theme contract and API](themes.md).
+
+The photography collections import twelve static native JSON definitions, using
+Node 22 JSON import attributes for direct test-runner compatibility. Attribution
+is optional validated data with an HTTPS source URL and an explicit supported
+license; it travels inside the immutable definition and renders outside optional
+Pager branding. No new database migration is required. Downloaded source/CSS
+hashes and a full license accompany the portable files.
+
+Canvas confirmation actions stay in process between the inspector and page
+component; function references never enter the iframe protocol, snapshots or
+autosave. The nonmodal dialog sits inside the canvas stage and restores focus on
+cancel/apply. Publication is disabled during an audition. Success feedback has a
+five-second cleaned-up timer and an explicit close action; manual popovers promote
+it above the page without light dismiss, with a fixed-position legacy fallback.

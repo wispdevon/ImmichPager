@@ -1,0 +1,68 @@
+{
+  "format": "immichpager-theme",
+  "version": 1,
+  "theme": {
+    "name": "Lens Portraiture",
+    "description": "A clean right-hand information rail beside an uninterrupted portrait grid.",
+    "version": 1,
+    "layout": "archive",
+    "headingFont": "inter",
+    "variants": {
+      "light": {
+        "background": "#ffffff",
+        "foreground": "#555555",
+        "primary": "#007e70",
+        "primaryForeground": "#ffffff",
+        "surface": "#f5f5f5",
+        "surfaceForeground": "#555555",
+        "muted": "#666666",
+        "border": "#55555530",
+        "focus": "#007e70",
+        "hover": "#55555512",
+        "hoverForeground": "#555555"
+      }
+    },
+    "design": {
+      "alignment": "left",
+      "headerLayout": "below",
+      "headerSize": "compact",
+      "bannerHeight": 160,
+      "logoSize": 80,
+      "titleSize": 2.5,
+      "descriptionSize": 1.125,
+      "headerSpacing": 2,
+      "galleryStyle": {
+        "fontFamily": "inter",
+        "titleFontWeight": 700,
+        "bodyFontSize": 1,
+        "bodyFontWeight": 400,
+        "cardTitleSize": 1.125,
+        "cardTitleWeight": 600,
+        "contentWidth": 1600,
+        "pagePadding": 24,
+        "gridMinWidth": 224,
+        "gridRowGap": 28,
+        "gridColumnGap": 24,
+        "coverAspectRatio": 1,
+        "cardRadius": 0,
+        "logoShape": "rounded",
+        "logoPosition": "above",
+        "hoverTreatment": "surface"
+      }
+    },
+    "rows": {
+      "albums": "cards",
+      "photos": "masonry",
+      "gap": 4,
+      "columns": 2,
+      "rowHeight": 260
+    },
+    "css": "/* Lens by HTML5 UP | html5up.net | @ajlkn | CC BY 3.0.\n * Adapted for ImmichPager; composition, typography and accessibility modified. */\n:scope { grid-template-columns:minmax(0,1fr) 300px; padding:24px; gap:32px; }\n.ip-hero { grid-column:2; grid-row:1; text-align:center; }\n.ip-hero .ip-header { text-align:center; }\n.ip-hero .ip-banner { height:160px; }\n.page-blocks { grid-column:1; }\n.ip-footer { grid-column:1; }\n.ip-title { letter-spacing:-.04em; }\n.ip-navigation { align-items:center; }\n.ip-block { padding-block:16px; }\n@media(max-width:760px) { :scope { display:block; padding:20px; } .ip-hero { text-align:left; } .ip-hero .ip-header { text-align:left; } .ip-navigation { align-items:flex-start; } }\n\n.ip-description { opacity:1; }\n\n.ip-albums:not(.tiles) .ip-album-info p { opacity:1; color:var(--pager-muted); }\n.ip-albums.tiles .ip-album-info p { opacity:1; color:#ffffff; }\n",
+    "attribution": {
+      "title": "Lens",
+      "author": "AJ / HTML5 UP",
+      "url": "https://html5up.net/lens",
+      "license": "CC-BY-3.0"
+    }
+  }
+}

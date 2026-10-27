@@ -1,0 +1,68 @@
+{
+  "format": "immichpager-theme",
+  "version": 1,
+  "theme": {
+    "name": "Dimension Portraiture",
+    "description": "A restrained dark cover, framed type and segmented navigation for dramatic portraits.",
+    "version": 1,
+    "layout": "cinematic",
+    "headingFont": "inter",
+    "variants": {
+      "dark": {
+        "background": "#1b1f22",
+        "foreground": "#ffffff",
+        "primary": "#ffffff",
+        "primaryForeground": "#1b1f22",
+        "surface": "#262b2f",
+        "surfaceForeground": "#ffffff",
+        "muted": "#dddddd",
+        "border": "#ffffff30",
+        "focus": "#ffffff",
+        "hover": "#ffffff12",
+        "hoverForeground": "#ffffff"
+      }
+    },
+    "design": {
+      "alignment": "center",
+      "headerLayout": "overlay",
+      "headerSize": "tall",
+      "bannerHeight": 640,
+      "logoSize": 80,
+      "titleSize": 2.5,
+      "descriptionSize": 1.125,
+      "headerSpacing": 2.5,
+      "galleryStyle": {
+        "fontFamily": "inter",
+        "titleFontWeight": 600,
+        "bodyFontSize": 1,
+        "bodyFontWeight": 400,
+        "cardTitleSize": 1.125,
+        "cardTitleWeight": 600,
+        "contentWidth": 1200,
+        "pagePadding": 40,
+        "gridMinWidth": 224,
+        "gridRowGap": 32,
+        "gridColumnGap": 20,
+        "coverAspectRatio": 1.7,
+        "cardRadius": 4,
+        "logoShape": "rounded",
+        "logoPosition": "above",
+        "hoverTreatment": "surface"
+      }
+    },
+    "rows": {
+      "albums": "tiles",
+      "photos": "large",
+      "gap": 24,
+      "columns": 1,
+      "rowHeight": 480
+    },
+    "css": "/* Dimension by HTML5 UP | html5up.net | @ajlkn | CC BY 3.0.\n * Adapted for ImmichPager; composition, typography and accessibility modified. */\n.ip-hero { align-items:center; padding:48px 24px; }\n.ip-hero .ip-banner { opacity:.4; }\n.ip-hero .ip-header { text-align:center; max-width:960px; padding:48px 24px; margin:auto; border-block:1px solid #ffffff99; align-self:center; }\n.ip-title { text-transform:uppercase; letter-spacing:.16em; line-height:1.35; max-width:100%; font-size:clamp(var(--pager-title-min-size), calc(1rem + 3vw), var(--pager-title-size)); }\n.ip-description { margin-inline:auto; }\n.ip-hero .ip-navigation { justify-content:center; background:transparent; border:1px solid #ffffff99; border-radius:4px; color:#ffffff; padding:0 24px; margin:24px auto 0; }\n.ip-block .block-heading { font-size:1.125rem; text-transform:uppercase; letter-spacing:.12em; }\n@media(max-width:760px) { .ip-hero { padding:32px 20px; } .ip-hero .ip-header { padding:32px 0; } .ip-hero .ip-navigation { padding:8px 16px; gap:8px 20px; } }\n\n.ip-hero:has(.ip-banner)::after { background:linear-gradient(#0009,#000b); }\n.ip-hero:has(.ip-banner) .ip-description { color:#ffffff; opacity:1; }\n\n.ip-description { opacity:1; }\n\n.ip-albums:not(.tiles) .ip-album-info p { opacity:1; color:var(--pager-muted); }\n.ip-albums.tiles .ip-album-info p { opacity:1; color:#ffffff; }\n",
+    "attribution": {
+      "title": "Dimension",
+      "author": "AJ / HTML5 UP",
+      "url": "https://html5up.net/dimension",
+      "license": "CC-BY-3.0"
+    }
+  }
+}

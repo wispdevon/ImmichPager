@@ -5,6 +5,7 @@
   } from '$lib/customization';
   import ResetField from './ResetField.svelte';
   import ThemePanel from './ThemePanel.svelte';
+  import type { ThemePreviewActions } from '$lib/theme-preview';
   import { themePalette } from '$lib/themes';
   import { mdiRestore } from '@mdi/js';
   import { tick, onMount } from 'svelte';
@@ -52,7 +53,10 @@
     busy?: boolean;
     onTitleInput: (value: string) => void;
     onResetAll: () => void;
-    onThemePreview?: (page: PageInput | null) => void;
+    onThemePreview?: (
+      page: PageInput | null,
+      actions?: ThemePreviewActions,
+    ) => void;
   } = $props();
 
   const defaults = $derived({
@@ -354,17 +358,16 @@
 
 <section class="customize-panel" bind:this={root} tabindex="-1">
   <div class="panel-heading">
-    <div>
-      <h1 id="customize-heading">Customize</h1>
-      <p>Changes save to this page’s private draft.</p>
-      <Button
-        variant="ghost"
-        size="small"
-        leadingIcon={mdiRestore}
-        disabled={busy}
-        onclick={onResetAll}>Reset all customization</Button
-      >
-    </div>
+    <h1 id="customize-heading">Customize</h1>
+    <Button
+      variant="ghost"
+      size="small"
+      leadingIcon={mdiRestore}
+      disabled={busy}
+      aria-label="Reset all customization"
+      title="Reset all customization"
+      onclick={onResetAll}
+    />
   </div>
 
   <div class="tab-list" role="tablist" aria-label="Page customization">
@@ -1902,11 +1905,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 20px 20px 12px;
+    padding: 8px 20px 4px;
   }
 
   .panel-heading h1,
-  .panel-heading p,
   .tab-panel h2,
   .tab-panel h3,
   .tab-panel p {
@@ -1914,11 +1916,10 @@
   }
 
   .panel-heading h1 {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 600;
   }
 
-  .panel-heading p,
   .hint {
     color: var(--pager-management-text-secondary);
     font-size: 12px;
@@ -1928,13 +1929,13 @@
   .tab-list {
     display: flex;
     gap: 4px;
-    padding: 0 16px 10px;
+    padding: 0 16px 6px;
     border-bottom: 1px solid var(--pager-management-border);
   }
 
   .tab-list button {
     flex: 1 1 0;
-    min-block-size: 40px;
+    min-block-size: 36px;
     border: 0;
     border-radius: 7px;
     padding-inline: 8px;
@@ -2152,7 +2153,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    min-block-size: 40px;
+    min-block-size: 36px;
     font-size: 13px;
   }
 

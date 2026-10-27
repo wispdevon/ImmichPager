@@ -1,0 +1,68 @@
+{
+  "format": "immichpager-theme",
+  "version": 1,
+  "theme": {
+    "name": "Parallelism Portfolio",
+    "description": "A coral-red title panel and compact horizontal image ribbons for mixed portfolios.",
+    "version": 1,
+    "layout": "contact-sheet",
+    "headingFont": "inter",
+    "variants": {
+      "dark": {
+        "background": "#1a1f2c",
+        "foreground": "#ffffff",
+        "primary": "#b72f48",
+        "primaryForeground": "#ffffff",
+        "surface": "#252c3c",
+        "surfaceForeground": "#ffffff",
+        "muted": "#d2d6de",
+        "border": "#ffffff30",
+        "focus": "#d64760",
+        "hover": "#ffffff12",
+        "hoverForeground": "#ffffff"
+      }
+    },
+    "design": {
+      "alignment": "left",
+      "headerLayout": "below",
+      "headerSize": "compact",
+      "bannerHeight": 220,
+      "logoSize": 80,
+      "titleSize": 2.5,
+      "descriptionSize": 1.125,
+      "headerSpacing": 1.5,
+      "galleryStyle": {
+        "fontFamily": "inter",
+        "titleFontWeight": 400,
+        "bodyFontSize": 1,
+        "bodyFontWeight": 400,
+        "cardTitleSize": 0.875,
+        "cardTitleWeight": 600,
+        "contentWidth": 1920,
+        "pagePadding": 24,
+        "gridMinWidth": 160,
+        "gridRowGap": 20,
+        "gridColumnGap": 12,
+        "coverAspectRatio": 1,
+        "cardRadius": 0,
+        "logoShape": "rounded",
+        "logoPosition": "above",
+        "hoverTreatment": "surface"
+      }
+    },
+    "rows": {
+      "albums": "tiles",
+      "photos": "carousel",
+      "gap": 12,
+      "columns": 4,
+      "rowHeight": 320
+    },
+    "css": "/* Parallelism by HTML5 UP | html5up.net | @ajlkn | CC BY 3.0.\n * Adapted for ImmichPager; composition, typography and accessibility modified. */\n.ip-hero { max-width:none; padding:32px; gap:24px; }\n.ip-hero .ip-header { background:#b72f48; color:#ffffff; --pager-muted:#ffffff; padding:32px; }\n.ip-hero .ip-banner { height:220px; }\n.ip-title { font-weight:var(--pager-title-font-weight); letter-spacing:-.035em; }\n.ip-hero .ip-navigation { padding:12px 0; border-color:#ffffff33; }\n.ip-block { max-width:none; padding-inline:24px; }\n.ip-block .block-heading { font-weight:400; }\n.ip-photo::after { display:none; }\n@media(max-width:760px) { .ip-hero { padding:20px; } .ip-hero .ip-header { padding:24px; } .ip-block { padding-inline:20px; } }\n\n.ip-description { opacity:1; }\n\n.ip-albums:not(.tiles) .ip-album-info p { opacity:1; color:var(--pager-muted); }\n.ip-albums.tiles .ip-album-info p { opacity:1; color:#ffffff; }\n",
+    "attribution": {
+      "title": "Parallelism",
+      "author": "AJ / HTML5 UP",
+      "url": "https://html5up.net/parallelism",
+      "license": "CC-BY-3.0"
+    }
+  }
+}

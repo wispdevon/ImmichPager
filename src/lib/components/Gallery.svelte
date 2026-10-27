@@ -444,6 +444,21 @@
           target="_blank"
           rel="noreferrer">Source & license</a
         >
+        {#if page.pageTheme?.definition.attribution}
+          {@const credit = page.pageTheme.definition.attribution}
+          <span class="theme-credit">
+            · Design adapted from
+            <a href={credit.url} target="_blank" rel="noreferrer"
+              >{credit.title}</a
+            >
+            by {credit.author}
+            (<a
+              href="https://creativecommons.org/licenses/by/3.0/"
+              target="_blank"
+              rel="noreferrer">CC BY 3.0</a
+            >).
+          </span>
+        {/if}
       </footer>
     {/if}
   </div>

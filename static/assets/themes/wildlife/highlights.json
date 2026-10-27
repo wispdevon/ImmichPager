@@ -1,0 +1,68 @@
+{
+  "format": "immichpager-theme",
+  "version": 1,
+  "theme": {
+    "name": "Highlights Wildlife",
+    "description": "A full-cover field introduction with a narrow journal of wildlife stories below.",
+    "version": 1,
+    "layout": "cinematic",
+    "headingFont": "inter",
+    "variants": {
+      "light": {
+        "background": "#eef0ef",
+        "foreground": "#313a3d",
+        "primary": "#3d7455",
+        "primaryForeground": "#eef0ef",
+        "surface": "#ffffff",
+        "surfaceForeground": "#313a3d",
+        "muted": "#61686b",
+        "border": "#313a3d30",
+        "focus": "#3d7455",
+        "hover": "#313a3d12",
+        "hoverForeground": "#313a3d"
+      }
+    },
+    "design": {
+      "alignment": "center",
+      "headerLayout": "overlay",
+      "headerSize": "tall",
+      "bannerHeight": 640,
+      "logoSize": 80,
+      "titleSize": 3,
+      "descriptionSize": 1.125,
+      "headerSpacing": 2.5,
+      "galleryStyle": {
+        "fontFamily": "inter",
+        "titleFontWeight": 700,
+        "bodyFontSize": 1,
+        "bodyFontWeight": 400,
+        "cardTitleSize": 1.125,
+        "cardTitleWeight": 600,
+        "contentWidth": 960,
+        "pagePadding": 32,
+        "gridMinWidth": 224,
+        "gridRowGap": 32,
+        "gridColumnGap": 20,
+        "coverAspectRatio": 1.7,
+        "cardRadius": 0,
+        "logoShape": "rounded",
+        "logoPosition": "above",
+        "hoverTreatment": "surface"
+      }
+    },
+    "rows": {
+      "albums": "editorial",
+      "photos": "large",
+      "gap": 32,
+      "columns": 1,
+      "rowHeight": 480
+    },
+    "css": "/* Highlights by HTML5 UP | html5up.net | @ajlkn | CC BY 3.0.\n * Adapted for ImmichPager; composition, typography and accessibility modified. */\n.ip-hero .ip-header { text-align:center; max-width:960px; margin:auto; align-self:center; }\n.ip-title { text-transform:uppercase; letter-spacing:.075em; max-width:100%; font-size:clamp(var(--pager-title-min-size), calc(1rem + 3vw), var(--pager-title-size)); }\n.ip-description { margin-inline:auto; }\n.ip-hero .ip-navigation { justify-content:center; }\n.page-blocks { width:min(100% - 32px, 960px); margin:auto; background:#ffffff; }\n.ip-block { padding-block:48px; border-bottom:1px solid var(--pager-border); }\n.ip-block .block-heading { text-align:center; text-transform:uppercase; font-size:1.25rem; letter-spacing:.08em; }\n@media(max-width:760px) { .page-blocks { width:100%; } .ip-block { padding-block:32px; } }\n\n.ip-hero:has(.ip-banner)::after { background:linear-gradient(#0009,#000b); }\n.ip-hero:has(.ip-banner) .ip-description { color:#ffffff; opacity:1; }\n\n.ip-description { opacity:1; }\n\n.ip-albums:not(.tiles) .ip-album-info p { opacity:1; color:var(--pager-muted); }\n.ip-albums.tiles .ip-album-info p { opacity:1; color:#ffffff; }\n",
+    "attribution": {
+      "title": "Highlights",
+      "author": "AJ / HTML5 UP",
+      "url": "https://html5up.net/highlights",
+      "license": "CC-BY-3.0"
+    }
+  }
+}

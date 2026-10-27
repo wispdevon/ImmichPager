@@ -1,7 +1,7 @@
 # Client-page themes
 
 In **Design → Themes**, choose an illustrated design card to try it on the live
-canvas. **Apply theme** saves to the private draft; **Cancel preview** leaves the
+canvas. The apply/cancel prompt appears over the center of that canvas. **Apply theme** saves to the private draft; **Cancel preview** leaves the
 draft alone. **Undo theme** restores the previous design while retaining later
 content edits. Publish explicitly when the page is ready for clients.
 
@@ -118,3 +118,11 @@ Another owner's IDs return 404. Stale updates/deletes return 409. Public renderi
 receives the design snapshot with private library name/description removed.
 Presentation-only publication rechecks ownership without changing native shares.
 See [schema upgrades](deployment.md#schema-upgrades) before deploying this branch.
+
+## Photography collections
+
+Twelve licensed adaptations add three designs each for Wedding, Portraiture,
+Wildlife, and One size fits all. They include downloadable native JSON and retained
+source credit. See [the collection guide and source links](photography-themes.md).
+Native definitions can carry optional HTTPS-only `attribution` metadata; that credit
+is preserved in snapshots, library operations, portable files, and client footers.

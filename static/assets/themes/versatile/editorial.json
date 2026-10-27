@@ -1,0 +1,68 @@
+{
+  "format": "immichpager-theme",
+  "version": 1,
+  "theme": {
+    "name": "Editorial Portfolio",
+    "description": "A serif information rail, coral rules and clearly separated project stories.",
+    "version": 1,
+    "layout": "archive",
+    "headingFont": "source-serif-4",
+    "variants": {
+      "light": {
+        "background": "#ffffff",
+        "foreground": "#3d4449",
+        "primary": "#f56a6a",
+        "primaryForeground": "#202020",
+        "surface": "#f5f6f7",
+        "surfaceForeground": "#3d4449",
+        "muted": "#58636b",
+        "border": "#3d444930",
+        "focus": "#f56a6a",
+        "hover": "#3d444912",
+        "hoverForeground": "#3d4449"
+      }
+    },
+    "design": {
+      "alignment": "left",
+      "headerLayout": "below",
+      "headerSize": "compact",
+      "bannerHeight": 200,
+      "logoSize": 80,
+      "titleSize": 2.25,
+      "descriptionSize": 1.125,
+      "headerSpacing": 2,
+      "galleryStyle": {
+        "fontFamily": "inter",
+        "titleFontWeight": 700,
+        "bodyFontSize": 1,
+        "bodyFontWeight": 400,
+        "cardTitleSize": 1.125,
+        "cardTitleWeight": 600,
+        "contentWidth": 1600,
+        "pagePadding": 32,
+        "gridMinWidth": 224,
+        "gridRowGap": 28,
+        "gridColumnGap": 24,
+        "coverAspectRatio": 1,
+        "cardRadius": 4,
+        "logoShape": "rounded",
+        "logoPosition": "above",
+        "hoverTreatment": "surface"
+      }
+    },
+    "rows": {
+      "albums": "editorial",
+      "photos": "masonry",
+      "gap": 24,
+      "columns": 3,
+      "rowHeight": 260
+    },
+    "css": "/* Editorial by HTML5 UP | html5up.net | @ajlkn | CC BY 3.0.\n * Adapted for ImmichPager; composition, typography and accessibility modified. */\n:scope { grid-template-columns:300px minmax(0,1fr); gap:48px; }\n.ip-hero { background:#f5f6f7; padding:24px; border-top:5px solid #f56a6a; }\n.ip-title { font-weight:var(--pager-title-font-weight); letter-spacing:-.02em; }\n.ip-navigation { text-transform:uppercase; font-size:.75rem; }\n.ip-block { padding-block:32px; border-bottom:1px solid #d8dee1; }\n.ip-block .block-heading { font-family:var(--pager-heading-font); border-bottom:3px solid #f56a6a; padding-bottom:12px; width:fit-content; max-width:100%; }\n@media(max-width:760px) { :scope { display:block; padding:20px; } .ip-hero { padding:24px; } }\n\n.ip-description { opacity:1; }\n\n.ip-albums:not(.tiles) .ip-album-info p { opacity:1; color:var(--pager-muted); }\n.ip-albums.tiles .ip-album-info p { opacity:1; color:#ffffff; }\n",
+    "attribution": {
+      "title": "Editorial",
+      "author": "AJ / HTML5 UP",
+      "url": "https://html5up.net/editorial",
+      "license": "CC-BY-3.0"
+    }
+  }
+}

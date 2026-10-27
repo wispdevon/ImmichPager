@@ -247,3 +247,23 @@ targets, so verification used the repository's headless Chromium without Xvfb.
 This is a feature-branch implementation with schema 4. The release version stays
 0.4.0; deploying the feature requires the complete stopped-volume/configuration
 backup and rollback procedure documented in the deployment guide.
+
+## Photography collections and editor feedback (2026-10-27)
+
+Local Node 22 validation passes 243 unit/domain tests and all 109 browser
+scenarios, plus type checks (zero errors/warnings), lint, formatting, and the
+production build. The fourteen collection/editor browser scenarios also passed
+after the final template typography adjustments. No hosted CI minutes were used.
+
+The twelve source adaptations retain portable attribution, reject unsafe source
+URLs, and pass semantic text/button contrast checks. Browser coverage includes
+three viewport sizes, editable typography, publication, the shared image viewer,
+JSON downloads, the centered nonmodal confirmation and keyboard focus, compact
+heading, mobile inspector dismissal, and dismissible five-second success feedback
+without workspace movement.
+
+Twenty-four desktop/phone captures use NASA fixtures, with no horizontal overflow,
+unloaded visible images, or browser exceptions. The local fixture server loses
+its in-memory native shares on restart; task-owned demo pages were unpublished
+and republished to recreate those fixture shares before capture. Production data
+and hosted repositories were unchanged.

@@ -1,0 +1,68 @@
+{
+  "format": "immichpager-theme",
+  "version": 1,
+  "theme": {
+    "name": "Multiverse Portfolio",
+    "description": "A dark, edge-to-edge image wall with compact labels and minimal chrome.",
+    "version": 1,
+    "layout": "contact-sheet",
+    "headingFont": "inter",
+    "variants": {
+      "dark": {
+        "background": "#242629",
+        "foreground": "#ffffff",
+        "primary": "#65d9bf",
+        "primaryForeground": "#242629",
+        "surface": "#36383c",
+        "surfaceForeground": "#ffffff",
+        "muted": "#c0c0c1",
+        "border": "#ffffff30",
+        "focus": "#65d9bf",
+        "hover": "#ffffff12",
+        "hoverForeground": "#ffffff"
+      }
+    },
+    "design": {
+      "alignment": "left",
+      "headerLayout": "below",
+      "headerSize": "compact",
+      "bannerHeight": 160,
+      "logoSize": 80,
+      "titleSize": 2,
+      "descriptionSize": 1.125,
+      "headerSpacing": 1.5,
+      "galleryStyle": {
+        "fontFamily": "inter",
+        "titleFontWeight": 400,
+        "bodyFontSize": 1,
+        "bodyFontWeight": 400,
+        "cardTitleSize": 0.875,
+        "cardTitleWeight": 600,
+        "contentWidth": 1920,
+        "pagePadding": 16,
+        "gridMinWidth": 160,
+        "gridRowGap": 0,
+        "gridColumnGap": 0,
+        "coverAspectRatio": 1.5,
+        "cardRadius": 0,
+        "logoShape": "rounded",
+        "logoPosition": "above",
+        "hoverTreatment": "surface"
+      }
+    },
+    "rows": {
+      "albums": "tiles",
+      "photos": "square",
+      "gap": 0,
+      "columns": 3,
+      "rowHeight": 180
+    },
+    "css": "/* Multiverse by HTML5 UP | html5up.net | @ajlkn | CC BY 3.0.\n * Adapted for ImmichPager; composition, typography and accessibility modified. */\n.ip-hero { max-width:none; padding:24px; border-bottom:1px solid #ffffff33; }\n.ip-hero .ip-banner { height:160px; }\n.ip-title { text-transform:uppercase; letter-spacing:.12em; font-size:clamp(var(--pager-title-min-size), calc(1rem + 3vw), var(--pager-title-size)); font-weight:var(--pager-title-font-weight); }\n.ip-navigation { border:0; }\n.ip-block { max-width:none; padding:16px 0; }\n.ip-block .block-heading { padding-inline:24px; font-size:1rem; text-transform:uppercase; letter-spacing:.1em; }\n.ip-photo::after { display:none; }\n@media(max-width:760px) { .ip-hero { padding:24px 20px; } .ip-block { padding-inline:0; } }\n\n.ip-description { opacity:1; }\n\n.ip-albums:not(.tiles) .ip-album-info p { opacity:1; color:var(--pager-muted); }\n.ip-albums.tiles .ip-album-info p { opacity:1; color:#ffffff; }\n",
+    "attribution": {
+      "title": "Multiverse",
+      "author": "AJ / HTML5 UP",
+      "url": "https://html5up.net/multiverse",
+      "license": "CC-BY-3.0"
+    }
+  }
+}

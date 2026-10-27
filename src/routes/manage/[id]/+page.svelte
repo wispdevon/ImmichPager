@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto, replaceState, beforeNavigate } from '$app/navigation';
   import { untrack, onMount, tick } from 'svelte';
-  import { Button, ConfirmModal, Icon } from '@immich/ui';
+  import { Button, ConfirmModal, Icon, Toast } from '@immich/ui';
   import {
     mdiTextBoxEditOutline,
     mdiPaletteOutline,
@@ -18,6 +18,9 @@
   import BlockInspector from '$lib/components/BlockInspector.svelte';
   import { blockSchema, pageBlocks, type PageBlock } from '$lib/blocks';
   import CustomizePanel from '$lib/components/CustomizePanel.svelte';
+  import ThemePreviewPrompt from '$lib/components/ThemePreviewPrompt.svelte';
+  import { manualToast } from '$lib/actions/manual-toast';
+  import type { ThemePreviewActions } from '$lib/theme-preview';
   import PublicationReview from '$lib/components/PublicationReview.svelte';
   import CopyLink from '$lib/components/CopyLink.svelte';
   import { resetCustomization } from '$lib/customization';
@@ -150,6 +153,13 @@
       : null,
   );
   let themeAudition = $state<PageInput | null>(null);
+  let themePreviewActions = $state<ThemePreviewActions | null>(null);
+  $effect(() => {
+    if (success) {
+      const timer = setTimeout(() => (success = ''), 5000);
+      return () => clearTimeout(timer);
+    }
+  });
   let themeUndo = $state<PageInput | null>(null);
   let systemColorMode = $state<'light' | 'dark'>('dark');
   const previewPage = $derived<GalleryPage>({
@@ -742,6 +752,7 @@
           busy ||
           conflict ||
           !canPublish ||
+          !!themeAudition ||
           saved?.status === 'error'}
         onclick={reviewPublication}
         >{busy
@@ -758,7 +769,19 @@
     >
       {message}
     </div>{/if}
-  {#if success}<div class="notice" role="status">{success}</div>{/if}
+  {#if success}<div
+      class="notice editor-toast"
+      use:manualToast
+      role="status"
+      aria-atomic="true"
+    >
+      <Toast
+        color="success"
+        size="full"
+        title={success}
+        onClose={() => (success = '')}
+      />
+    </div>{/if}
   {#if saved?.status === 'error'}<div class="notice">
       This page is hidden until sharing synchronization finishes. <Button
         onclick={() => requestAction('retry')}>Retry synchronization</Button
@@ -840,11 +863,22 @@
             bind:themeUndo
             {saved}
             {busy}
-            onThemePreview={(value) => (themeAudition = value)}
+            onThemePreview={(value, actions) => {
+              themeAudition = value;
+              themePreviewActions = actions ?? null;
+              if (value && narrow) inspectorOpen = false;
+              else if (!value && narrow)
+                void tick().then(() =>
+                  document
+                    .querySelector<HTMLButtonElement>('.mobile-settings')
+                    ?.focus({ preventScroll: true }),
+                );
+            }}
             onTitleInput={editTitle}
             onResetAll={() => {
               themeUndo = null;
               themeAudition = null;
+              themePreviewActions = null;
               fields = resetCustomization($state.snapshot(fields));
               success =
                 'Customization reset to defaults. Content and sharing settings kept.';
@@ -901,6 +935,10 @@
           ></iframe>{:else}<p role="status">
             Preparing your private canvas…
           </p>{/if}
+        {#if themePreviewActions}<ThemePreviewPrompt
+            preview={themePreviewActions}
+            {busy}
+          />{/if}
       </div>
     </section>
   </div>
@@ -1111,6 +1149,7 @@
     color: #dbe2ff;
   }
   .canvas-stage {
+    position: relative;
     display: flex;
     flex: 1;
     min-height: 0;
@@ -1136,6 +1175,19 @@
   .notice {
     padding: 12px 20px;
     background: var(--pager-management-surface, #17181b);
+  }
+  .editor-toast {
+    border: 0;
+    inset-block-end: auto;
+    inset-inline-start: auto;
+    position: fixed;
+    inset-block-start: 16px;
+    inset-inline-end: 16px;
+    z-index: 2000;
+    width: min(400px, calc(100vw - 32px));
+    padding: 0;
+    margin: 0;
+    background: transparent;
   }
   .error {
     color: #ffb4ab;

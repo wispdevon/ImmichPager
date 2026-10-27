@@ -48,3 +48,17 @@ https://github.com/ueberdosis/tiptap and https://github.com/ProseMirror.
 Theme color conversion uses Culori, copyright (c) 2018 Dan Burzo, under the
 MIT license. Its full license is retained in the installed culori package.
 The five bundled page compositions are original ImmichPager designs.
+
+Photography theme collections
+-----------------------------
+The native theme adaptations in static/assets/themes/ reference Story, Stellar,
+Ethereal, Lens, Strata, Dimension, Photon, Highlights, Big Picture, Multiverse,
+Editorial, and Parallelism by AJ / HTML5 UP (https://html5up.net), licensed under
+Creative Commons Attribution 3.0 Unported. Copyright remains with the original
+creator. Source names, links and retrieval hashes are in sources.json; the complete
+license is included as LICENSE-CC-BY-3.0.txt in that directory.
+
+ImmichPager adaptations change composition, selectors, local typography, contrast,
+responsive flow, and content/viewer integration. Upstream scripts, photographs,
+fonts, icons and executable template engines are not distributed with these themes.
+Source credit is retained in native files, page snapshots and public page footers.

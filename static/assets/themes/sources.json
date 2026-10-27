@@ -1,0 +1,127 @@
+{
+  "retrievedAt": "2026-10-27",
+  "author": "AJ / HTML5 UP",
+  "license": "CC-BY-3.0",
+  "themes": [
+    {
+      "category": "wedding",
+      "slug": "story",
+      "name": "Story Wedding",
+      "source": "https://html5up.net/story",
+      "download": "https://html5up.net/story/download",
+      "sourceCssSha256": "a198a25d76a576f37ee46aa3f0d8c3c4fdc1c26f8279c3e95ae49245729f0ea7",
+      "archiveSha256": "d21639f64bf00c89ce2068e4d3dab113759435a250cc70144318a8e945627ec8",
+      "adaptation": "Pager layout, local bundled fonts, source colors with contrast adjustments, shared viewer and responsive vertical page flow; no upstream scripts, photos, fonts or icons copied."
+    },
+    {
+      "category": "wedding",
+      "slug": "stellar",
+      "name": "Stellar Wedding",
+      "source": "https://html5up.net/stellar",
+      "download": "https://html5up.net/stellar/download",
+      "sourceCssSha256": "2941dfa9497db376589f25c0699b1db0c5f78a3fb0b9f2a3c697d91d7e3d7d56",
+      "archiveSha256": "4934fe819da48e6104014cc76b6bfdcdc4b8570f01e4cf4b2cf682b51ec16438",
+      "adaptation": "Pager layout, local bundled fonts, source colors with contrast adjustments, shared viewer and responsive vertical page flow; no upstream scripts, photos, fonts or icons copied."
+    },
+    {
+      "category": "wedding",
+      "slug": "ethereal",
+      "name": "Ethereal Wedding",
+      "source": "https://html5up.net/ethereal",
+      "download": "https://html5up.net/ethereal/download",
+      "sourceCssSha256": "18be87371ffaa5d34493c8f6f0d0c1f53fe0636f8427f791b48d5bde4daa3ab5",
+      "archiveSha256": "8de201340097da6c6db85cb4c5eed233676662c56df04285455f6f678509febc",
+      "adaptation": "Pager layout, local bundled fonts, source colors with contrast adjustments, shared viewer and responsive vertical page flow; no upstream scripts, photos, fonts or icons copied."
+    },
+    {
+      "category": "portraiture",
+      "slug": "lens",
+      "name": "Lens Portraiture",
+      "source": "https://html5up.net/lens",
+      "download": "https://html5up.net/lens/download",
+      "sourceCssSha256": "021fc7e2aa0b455db9f4fc3685348ec0b850f93367267929a4c609b29b499582",
+      "archiveSha256": "3adeb26b2fd2d0bc14ff929bf422382bc766bf00da2eff4a4fc22e25e09305a9",
+      "adaptation": "Pager layout, local bundled fonts, source colors with contrast adjustments, shared viewer and responsive vertical page flow; no upstream scripts, photos, fonts or icons copied."
+    },
+    {
+      "category": "portraiture",
+      "slug": "strata",
+      "name": "Strata Portraiture",
+      "source": "https://html5up.net/strata",
+      "download": "https://html5up.net/strata/download",
+      "sourceCssSha256": "1eb5605d578240d3b3d9dfcf4adc0909bf3bf5c787adc5164a3a70c37475c234",
+      "archiveSha256": "2aaca119437d3b342f36b87192172f878ee9a87982b293375b3eb3a3f59b7422",
+      "adaptation": "Pager layout, local bundled fonts, source colors with contrast adjustments, shared viewer and responsive vertical page flow; no upstream scripts, photos, fonts or icons copied."
+    },
+    {
+      "category": "portraiture",
+      "slug": "dimension",
+      "name": "Dimension Portraiture",
+      "source": "https://html5up.net/dimension",
+      "download": "https://html5up.net/dimension/download",
+      "sourceCssSha256": "45c38a6ccdb4e3efd9641043854e8cd835fd949fae22662a46159bcfdf11fc89",
+      "archiveSha256": "b3f851c45a7f379b777745ebbf176f1f42e06e6292d730c192877e3b22d10e3f",
+      "adaptation": "Pager layout, local bundled fonts, source colors with contrast adjustments, shared viewer and responsive vertical page flow; no upstream scripts, photos, fonts or icons copied."
+    },
+    {
+      "category": "wildlife",
+      "slug": "photon",
+      "name": "Photon Wildlife",
+      "source": "https://html5up.net/photon",
+      "download": "https://html5up.net/photon/download",
+      "sourceCssSha256": "bb94fb5ec55cc6ff3c66bbe20d2f13aa16e2afca416ae5077253e1c98441e3cf",
+      "archiveSha256": "3c17498c5eb9c340d01682d6ff6333f7d22eb67da4e0255ee39b0d2458ec4474",
+      "adaptation": "Pager layout, local bundled fonts, source colors with contrast adjustments, shared viewer and responsive vertical page flow; no upstream scripts, photos, fonts or icons copied."
+    },
+    {
+      "category": "wildlife",
+      "slug": "highlights",
+      "name": "Highlights Wildlife",
+      "source": "https://html5up.net/highlights",
+      "download": "https://html5up.net/highlights/download",
+      "sourceCssSha256": "e5c06f403ef18a30d2d08c8652d5be4d9634a71a26dcdfba836c09305f9bebb5",
+      "archiveSha256": "ba329107fa600a2f40128a41069fc096da5899eed3eb58191f132d98383dea0f",
+      "adaptation": "Pager layout, local bundled fonts, source colors with contrast adjustments, shared viewer and responsive vertical page flow; no upstream scripts, photos, fonts or icons copied."
+    },
+    {
+      "category": "wildlife",
+      "slug": "big-picture",
+      "name": "Big Picture Wildlife",
+      "source": "https://html5up.net/big-picture",
+      "download": "https://html5up.net/big-picture/download",
+      "sourceCssSha256": "dc68b424a35bb86fb54028ae20a7979b42f96d9aeba0fb9ff8d549c796430023",
+      "archiveSha256": "10549f9a696094e7890e36b574c16c423fb9a132a1d5d74657e63405971bdcaf",
+      "adaptation": "Pager layout, local bundled fonts, source colors with contrast adjustments, shared viewer and responsive vertical page flow; no upstream scripts, photos, fonts or icons copied."
+    },
+    {
+      "category": "versatile",
+      "slug": "multiverse",
+      "name": "Multiverse Portfolio",
+      "source": "https://html5up.net/multiverse",
+      "download": "https://html5up.net/multiverse/download",
+      "sourceCssSha256": "2d5ef4fb78de63c866ffc158f21e3f5cd670256510cc70731a9e990433dfee35",
+      "archiveSha256": "3666a9ccd87c741084c5825fb585be2ed2ebb026482130ab8d203ccbd835e963",
+      "adaptation": "Pager layout, local bundled fonts, source colors with contrast adjustments, shared viewer and responsive vertical page flow; no upstream scripts, photos, fonts or icons copied."
+    },
+    {
+      "category": "versatile",
+      "slug": "editorial",
+      "name": "Editorial Portfolio",
+      "source": "https://html5up.net/editorial",
+      "download": "https://html5up.net/editorial/download",
+      "sourceCssSha256": "98057b0a864e2a8f22277cb96c772cdb9452e00aadc4ca0e262dc9266f484f20",
+      "archiveSha256": "a7c4a436f9d7e8b7046b23826c3fdc8572a9506f9c0b377f0d77cc52b5062831",
+      "adaptation": "Pager layout, local bundled fonts, source colors with contrast adjustments, shared viewer and responsive vertical page flow; no upstream scripts, photos, fonts or icons copied."
+    },
+    {
+      "category": "versatile",
+      "slug": "parallelism",
+      "name": "Parallelism Portfolio",
+      "source": "https://html5up.net/parallelism",
+      "download": "https://html5up.net/parallelism/download",
+      "sourceCssSha256": "cb27089f1aa174e3a991fc30b6e8e694f683052673ea9d570298961d737de0a9",
+      "archiveSha256": "1e3a2f0a3e7f3bc9bffc8c100aef230f040ed7a683dca7b0c49aed393dfd045a",
+      "adaptation": "Pager layout, local bundled fonts, source colors with contrast adjustments, shared viewer and responsive vertical page flow; no upstream scripts, photos, fonts or icons copied."
+    }
+  ]
+}

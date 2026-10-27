@@ -95,7 +95,7 @@ The Content and Design inspectors sit beside one persistent live canvas. Desktop
 - **Header and branding:** Classic, Centered, or Editorial presets; below-banner or over-banner composition; direct sizing, crop, and logo controls.
 - **Design tools:** bundled fonts, typography, colors, spacing, scoped CSS, and individual or full presentation resets. Resets retain authored content, selected media, and access settings.
 - **Reusable appearance:** duplicate a design, transfer a version 4 appearance file, or import [DTCG design tokens](docs/design-tokens.md) after reviewing the import summary.
-- **Complete client themes:** Studio, Cinematic, Editorial, Contact Sheet, and Archive; preview before applying, reuse personal designs, or adapt shadcn/Tweakcn and daisyUI theme CSS. [Theme guide](docs/themes.md).
+- **Complete client themes:** five original layouts and [12 photography designs](docs/photography-themes.md) for weddings, portraiture, wildlife, and general portfolios; preview before applying, reuse personal designs, or adapt shadcn/Tweakcn and daisyUI theme CSS. [Theme guide](docs/themes.md).
 
 All edits autosave privately until you choose **Publish page** or **Update live page**. Page settings beside Publish holds the client URL, download permissions, password protection, and page-management actions. See the [customization guide](docs/customization.md).
 

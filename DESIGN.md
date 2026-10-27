@@ -62,3 +62,14 @@ Manual row changes override theme defaults. Preserve authored CSS as the final
 layer unless explicitly cleared. Personal library definitions are copied into page
 snapshots; importing external CSS extracts supported tokens into a Pager design.
 See [themes](docs/themes.md) for behavior and portable formats.
+
+The photographer collections adapt twelve credited HTML5 UP designs, three per
+speciality, as portable native theme definitions. Keep original source attribution
+through library operations and client rendering; do not bundle demo photos or
+external template engines. The existing shared viewer and access model apply.
+
+Theme audition uses a small nonmodal dialog centered within the live canvas,
+with Apply/Cancel, keyboard dismissal, and focus restoration. On phones the
+inspector closes to reveal it. Keep the customization heading to one compact row
+with an accessible reset icon. Success messages are dismissible five-second toasts
+that overlay the editor rather than pushing the canvas down; errors remain visible.

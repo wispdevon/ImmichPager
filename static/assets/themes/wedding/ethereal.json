@@ -1,0 +1,68 @@
+{
+  "format": "immichpager-theme",
+  "version": 1,
+  "theme": {
+    "name": "Ethereal Wedding",
+    "description": "An image-left introduction with rose and violet panels, followed by a photographic ribbon.",
+    "version": 1,
+    "layout": "studio",
+    "headingFont": "inter",
+    "variants": {
+      "light": {
+        "background": "#f4eeee",
+        "foreground": "#51435a",
+        "primary": "#77516d",
+        "primaryForeground": "#f4eeee",
+        "surface": "#fff9f5",
+        "surfaceForeground": "#51435a",
+        "muted": "#655969",
+        "border": "#51435a30",
+        "focus": "#77516d",
+        "hover": "#51435a12",
+        "hoverForeground": "#51435a"
+      }
+    },
+    "design": {
+      "alignment": "left",
+      "headerLayout": "below",
+      "headerSize": "standard",
+      "bannerHeight": 560,
+      "logoSize": 80,
+      "titleSize": 3.5,
+      "descriptionSize": 1.125,
+      "headerSpacing": 3.5,
+      "galleryStyle": {
+        "fontFamily": "inter",
+        "titleFontWeight": 650,
+        "bodyFontSize": 1,
+        "bodyFontWeight": 400,
+        "cardTitleSize": 1.125,
+        "cardTitleWeight": 600,
+        "contentWidth": 1440,
+        "pagePadding": 32,
+        "gridMinWidth": 224,
+        "gridRowGap": 32,
+        "gridColumnGap": 24,
+        "coverAspectRatio": 1.4,
+        "cardRadius": 0,
+        "logoShape": "rounded",
+        "logoPosition": "above",
+        "hoverTreatment": "surface"
+      }
+    },
+    "rows": {
+      "albums": "tiles",
+      "photos": "carousel",
+      "gap": 12,
+      "columns": 3,
+      "rowHeight": 360
+    },
+    "css": "/* Ethereal by HTML5 UP | html5up.net | @ajlkn | CC BY 3.0.\n * Adapted for ImmichPager; composition, typography and accessibility modified. */\n.ip-hero { grid-template-columns:minmax(0, 2fr) minmax(0, 3fr); grid-template-areas:'image copy' 'image nav'; padding:0; margin-block:40px; background:linear-gradient(115deg,#726193,#a04c64); box-shadow:0 16px 40px #2e2b3726; }\n.ip-hero .ip-header { padding:48px; color:#ffffff; --pager-muted:#ffffff; }\n.ip-hero .ip-banner { border-radius:0; }\n.ip-hero .ip-navigation { color:#ffffff; padding:20px 48px; }\n.ip-title { max-width:14ch; font-size:clamp(var(--pager-title-min-size), calc(1rem + 3vw), var(--pager-title-size)); letter-spacing:-.04em; }\n.ip-block { padding-block:40px; }\n@media(max-width:760px) { .ip-hero { grid-template-columns:minmax(0,1fr); grid-template-areas:'image' 'copy' 'nav'; margin:0; } .ip-hero .ip-header { padding:32px 24px; } .ip-hero .ip-banner { height:300px; min-height:0; } .ip-hero .ip-navigation { padding:20px 24px; } }\n\n.ip-description { opacity:1; }\n\n.ip-albums:not(.tiles) .ip-album-info p { opacity:1; color:var(--pager-muted); }\n.ip-albums.tiles .ip-album-info p { opacity:1; color:#ffffff; }\n",
+    "attribution": {
+      "title": "Ethereal",
+      "author": "AJ / HTML5 UP",
+      "url": "https://html5up.net/ethereal",
+      "license": "CC-BY-3.0"
+    }
+  }
+}
