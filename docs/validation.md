@@ -296,3 +296,20 @@ Desktop/phone captures at 1440/390 pixels in light and dark show all group headi
 in the initial viewport, no panel overflow, and no browser exceptions. Review used
 the existing headless Chromium fallback because the in-app browser reported no
 targets; screenshots use NASA fixtures. No hosted CI minutes were used.
+
+## Compact content row settings (2026-10-27)
+
+Albums, Photos, and Text rows group appearance controls in a named Presentation
+fieldset. Heading/media selection comes first; photo layout settings precede the
+photo list. Local label spacing and illustrated choice margins avoid inherited
+form whitespace, and row actions have a separate divider. Existing settings,
+theme overrides, individual resets, and selection/reorder behavior are retained.
+
+Local verification passes 243 unit tests, 29 browser scenarios, type checks with
+zero errors/warnings, lint, formatting, and the production build. Browser coverage
+includes album selection, multi-item dragging, keyboard alternatives, row styling,
+theme overrides, resets, and mixed-row publication. Twelve desktop/phone captures
+cover all three row types in native light/dark modes, with no inspector overflow
+or browser exceptions. Visible style choices support keyboard selection and reset.
+Review uses NASA fixtures and the established headless Chromium fallback. No
+hosted CI minutes were used.

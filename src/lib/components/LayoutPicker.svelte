@@ -73,6 +73,7 @@
     border-radius: 12px;
     min-width: 0;
     cursor: pointer;
+    margin: 0;
   }
   .choice.chosen {
     background: var(--pager-management-selected, #accbfa15);

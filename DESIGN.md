@@ -84,3 +84,8 @@ values; related sizing, crop, font and reset controls stay together. Keep group
 state while switching customization tabs, use compact label spacing, and expose
 hidden title/description fields inside Typography. Expanding groups is local UI
 state and does not autosave or publish.
+
+Content rows use the same compact label spacing. Keep heading/media selection
+before a Presentation group containing theme layout, style, and arrangement;
+place photo presentation before the potentially long photo list. Separate row
+duplication/deletion from the settings without adding nested disclosure steps.

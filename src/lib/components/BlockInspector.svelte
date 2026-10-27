@@ -112,6 +112,20 @@
   }
 </script>
 
+{#snippet themeLayout(block: PageBlock)}
+  {#if fields.pageTheme}<label class="theme-layout-toggle"
+      ><input
+        type="checkbox"
+        checked={block.presentationSource === 'theme'}
+        onchange={(e) =>
+          update({
+            ...block,
+            presentationSource: e.currentTarget.checked ? 'theme' : 'custom',
+          })}
+      />Use theme layout</label
+    >{/if}
+{/snippet}
+
 <section class="block-inspector" aria-label="Page content">
   <div class="add-buttons">
     {#each ['photos', 'albums', 'text'] as type}<Button
@@ -188,19 +202,6 @@
           >
         </div>
         {#if selectedId === block.id}<div class="block-settings">
-            {#if fields.pageTheme}<label class="theme-layout-toggle"
-                ><input
-                  type="checkbox"
-                  checked={block.presentationSource === 'theme'}
-                  onchange={(e) =>
-                    update({
-                      ...block,
-                      presentationSource: e.currentTarget.checked
-                        ? 'theme'
-                        : 'custom',
-                    })}
-                />Use theme layout</label
-              >{/if}
             <label
               >Heading <input
                 aria-label="Row heading"
@@ -222,88 +223,93 @@
                 }}
                 leadingIcon={mdiPlus}>Add albums</Button
               >
-              <ResetField
-                value={block.layout}
-                defaultValue={fields.pageTheme?.definition.rows.albums ??
-                  'cards'}
-                label="Album style"
-                onreset={() =>
-                  update({
-                    ...block,
-                    layout: fields.pageTheme?.definition.rows.albums ?? 'cards',
-                  })}
-              >
-                <div class="layout-setting">
-                  <span>Style</span><LayoutPicker
-                    label="Album style"
-                    value={block.layout}
-                    options={[
-                      {
-                        value: 'cards',
-                        label: 'Cards',
-                        description: 'Album covers with titles below',
-                      },
-                      {
-                        value: 'tiles',
-                        label: 'Tiles',
-                        description: 'Titles over album covers',
-                      },
-                      {
-                        value: 'editorial',
-                        label: 'Editorial',
-                        description: 'Album cover beside its description',
-                      },
-                    ]}
-                    onchange={(value) =>
-                      update({
-                        ...block,
-                        layout: value as typeof block.layout,
-                      })}
-                  />
-                </div>
-              </ResetField>
-              {#if block.layout === 'editorial'}<p class="hint">
-                  Uses album descriptions from Immich.
-                </p>{/if}
-              <ResetField
-                value={block.order}
-                defaultValue={'newest'}
-                label="Order"
-                onreset={() => update({ ...block, order: 'newest' })}
-                ><label
-                  >Order <select
-                    value={block.order}
-                    onchange={(e) =>
-                      update({
-                        ...block,
-                        order: e.currentTarget.value as typeof block.order,
-                      })}
-                    ><option value="newest">Newest first</option><option
-                      value="manual">Manual</option
-                    ></select
-                  ></label
-                ></ResetField
-              >
-              <ResetField
-                value={block.grouping}
-                defaultValue={'year'}
-                label="Group albums"
-                onreset={() => update({ ...block, grouping: 'year' })}
-                ><label
-                  >Group albums <select
-                    value={block.grouping}
-                    onchange={(e) =>
-                      update({
-                        ...block,
-                        grouping: e.currentTarget
-                          .value as typeof block.grouping,
-                      })}
-                    ><option value="year">By year</option><option value="none"
-                      >No grouping</option
-                    ></select
-                  ></label
-                ></ResetField
-              >
+              <fieldset class="row-presentation">
+                <legend>Presentation</legend>
+                {@render themeLayout(block)}
+                <ResetField
+                  value={block.layout}
+                  defaultValue={fields.pageTheme?.definition.rows.albums ??
+                    'cards'}
+                  label="Album style"
+                  onreset={() =>
+                    update({
+                      ...block,
+                      layout:
+                        fields.pageTheme?.definition.rows.albums ?? 'cards',
+                    })}
+                >
+                  <div class="layout-setting">
+                    <span>Style</span><LayoutPicker
+                      label="Album style"
+                      value={block.layout}
+                      options={[
+                        {
+                          value: 'cards',
+                          label: 'Cards',
+                          description: 'Album covers with titles below',
+                        },
+                        {
+                          value: 'tiles',
+                          label: 'Tiles',
+                          description: 'Titles over album covers',
+                        },
+                        {
+                          value: 'editorial',
+                          label: 'Editorial',
+                          description: 'Album cover beside its description',
+                        },
+                      ]}
+                      onchange={(value) =>
+                        update({
+                          ...block,
+                          layout: value as typeof block.layout,
+                        })}
+                    />
+                  </div>
+                </ResetField>
+                {#if block.layout === 'editorial'}<p class="hint">
+                    Uses album descriptions from Immich.
+                  </p>{/if}
+                <ResetField
+                  value={block.order}
+                  defaultValue={'newest'}
+                  label="Order"
+                  onreset={() => update({ ...block, order: 'newest' })}
+                  ><label
+                    >Order <select
+                      value={block.order}
+                      onchange={(e) =>
+                        update({
+                          ...block,
+                          order: e.currentTarget.value as typeof block.order,
+                        })}
+                      ><option value="newest">Newest first</option><option
+                        value="manual">Manual</option
+                      ></select
+                    ></label
+                  ></ResetField
+                >
+                <ResetField
+                  value={block.grouping}
+                  defaultValue={'year'}
+                  label="Group albums"
+                  onreset={() => update({ ...block, grouping: 'year' })}
+                  ><label
+                    >Group albums <select
+                      value={block.grouping}
+                      onchange={(e) =>
+                        update({
+                          ...block,
+                          grouping: e.currentTarget
+                            .value as typeof block.grouping,
+                        })}
+                      ><option value="year">By year</option><option value="none"
+                        >No grouping</option
+                      ></select
+                    ></label
+                  ></ResetField
+                >
+              </fieldset>
               <AlbumSelectionList {block} {albums} onchange={update} />
             {:else if block.type === 'photos'}
               <Button
@@ -315,6 +321,119 @@
                 }}
                 leadingIcon={mdiPlus}>Add photos</Button
               >
+
+              <fieldset class="row-presentation">
+                <legend>Presentation</legend>
+                {@render themeLayout(block)}
+                <ResetField
+                  value={block.layout}
+                  defaultValue={fields.pageTheme?.definition.rows.photos ??
+                    'justified'}
+                  label="Photo layout"
+                  onreset={() =>
+                    update({
+                      ...block,
+                      layout:
+                        fields.pageTheme?.definition.rows.photos ?? 'justified',
+                    })}
+                >
+                  <div class="layout-setting">
+                    <span>Layout</span><LayoutPicker
+                      label="Photo layout"
+                      value={block.layout}
+                      options={[
+                        'justified',
+                        'masonry',
+                        'square',
+                        'large',
+                        'carousel',
+                      ].map((value) => ({
+                        value,
+                        label: value[0].toUpperCase() + value.slice(1),
+                        description: `${value} photo layout`,
+                      }))}
+                      onchange={(value) =>
+                        update({
+                          ...block,
+                          layout: value as typeof block.layout,
+                        })}
+                    />
+                  </div>
+                </ResetField>
+                {#if ['square', 'masonry'].includes(block.layout)}<ResetField
+                    value={block.columns}
+                    defaultValue={fields.pageTheme?.definition.rows.columns ??
+                      3}
+                    label="Columns"
+                    onreset={() =>
+                      update({
+                        ...block,
+                        columns: fields.pageTheme?.definition.rows.columns ?? 3,
+                      })}
+                    ><label
+                      >Columns <input
+                        type="range"
+                        min="1"
+                        max="6"
+                        value={block.columns}
+                        oninput={(e) =>
+                          update({
+                            ...block,
+                            columns: Number(e.currentTarget.value),
+                          })}
+                      /><output>{block.columns}</output></label
+                    ></ResetField
+                  >{/if}
+                {#if ['justified', 'carousel'].includes(block.layout)}<ResetField
+                    value={block.rowHeight}
+                    defaultValue={fields.pageTheme?.definition.rows.rowHeight ??
+                      260}
+                    label="Photo height"
+                    onreset={() =>
+                      update({
+                        ...block,
+                        rowHeight:
+                          fields.pageTheme?.definition.rows.rowHeight ?? 260,
+                      })}
+                    ><label
+                      >Photo height <input
+                        type="range"
+                        min="120"
+                        max="600"
+                        step="10"
+                        value={block.rowHeight}
+                        oninput={(e) =>
+                          update({
+                            ...block,
+                            rowHeight: Number(e.currentTarget.value),
+                          })}
+                      /><output>{block.rowHeight}px</output></label
+                    ></ResetField
+                  >{/if}
+                <ResetField
+                  value={block.gap}
+                  defaultValue={fields.pageTheme?.definition.rows.gap ?? 16}
+                  label="Spacing"
+                  onreset={() =>
+                    update({
+                      ...block,
+                      gap: fields.pageTheme?.definition.rows.gap ?? 16,
+                    })}
+                  ><label
+                    >Spacing <input
+                      type="range"
+                      min="0"
+                      max="64"
+                      value={block.gap}
+                      oninput={(e) =>
+                        update({
+                          ...block,
+                          gap: Number(e.currentTarget.value),
+                        })}
+                    /><output>{block.gap}px</output></label
+                  ></ResetField
+                >
+              </fieldset>
               {#each block.photos as photo, i (photo.id)}<details
                   class="photo-settings"
                 >
@@ -380,133 +499,33 @@
                     >
                   </div>
                 </details>{/each}
-              <ResetField
-                value={block.layout}
-                defaultValue={fields.pageTheme?.definition.rows.photos ??
-                  'justified'}
-                label="Photo layout"
-                onreset={() =>
-                  update({
-                    ...block,
-                    layout:
-                      fields.pageTheme?.definition.rows.photos ?? 'justified',
-                  })}
-              >
-                <div class="layout-setting">
-                  <span>Layout</span><LayoutPicker
-                    label="Photo layout"
-                    value={block.layout}
-                    options={[
-                      'justified',
-                      'masonry',
-                      'square',
-                      'large',
-                      'carousel',
-                    ].map((value) => ({
-                      value,
-                      label: value[0].toUpperCase() + value.slice(1),
-                      description: `${value} photo layout`,
-                    }))}
-                    onchange={(value) =>
-                      update({
-                        ...block,
-                        layout: value as typeof block.layout,
-                      })}
-                  />
-                </div>
-              </ResetField>
-              {#if ['square', 'masonry'].includes(block.layout)}<ResetField
-                  value={block.columns}
-                  defaultValue={fields.pageTheme?.definition.rows.columns ?? 3}
-                  label="Columns"
-                  onreset={() =>
-                    update({
-                      ...block,
-                      columns: fields.pageTheme?.definition.rows.columns ?? 3,
-                    })}
+            {:else}<fieldset class="row-presentation">
+                <legend>Presentation</legend>
+                {@render themeLayout(block)}
+                <p class="hint">
+                  Click the text on the canvas to write and format it.
+                </p>
+                <ResetField
+                  value={block.alignment}
+                  defaultValue={'left'}
+                  label="Alignment"
+                  onreset={() => update({ ...block, alignment: 'left' })}
                   ><label
-                    >Columns <input
-                      type="range"
-                      min="1"
-                      max="6"
-                      value={block.columns}
-                      oninput={(e) =>
+                    >Alignment <select
+                      value={block.alignment}
+                      onchange={(e) =>
                         update({
                           ...block,
-                          columns: Number(e.currentTarget.value),
+                          alignment: e.currentTarget
+                            .value as typeof block.alignment,
                         })}
-                    /><output>{block.columns}</output></label
+                      ><option value="left">Left</option><option value="center"
+                        >Center</option
+                      ><option value="right">Right</option></select
+                    ></label
                   ></ResetField
-                >{/if}
-              {#if ['justified', 'carousel'].includes(block.layout)}<ResetField
-                  value={block.rowHeight}
-                  defaultValue={fields.pageTheme?.definition.rows.rowHeight ??
-                    260}
-                  label="Photo height"
-                  onreset={() =>
-                    update({
-                      ...block,
-                      rowHeight:
-                        fields.pageTheme?.definition.rows.rowHeight ?? 260,
-                    })}
-                  ><label
-                    >Photo height <input
-                      type="range"
-                      min="120"
-                      max="600"
-                      step="10"
-                      value={block.rowHeight}
-                      oninput={(e) =>
-                        update({
-                          ...block,
-                          rowHeight: Number(e.currentTarget.value),
-                        })}
-                    /><output>{block.rowHeight}px</output></label
-                  ></ResetField
-                >{/if}
-              <ResetField
-                value={block.gap}
-                defaultValue={fields.pageTheme?.definition.rows.gap ?? 16}
-                label="Spacing"
-                onreset={() =>
-                  update({
-                    ...block,
-                    gap: fields.pageTheme?.definition.rows.gap ?? 16,
-                  })}
-                ><label
-                  >Spacing <input
-                    type="range"
-                    min="0"
-                    max="64"
-                    value={block.gap}
-                    oninput={(e) =>
-                      update({ ...block, gap: Number(e.currentTarget.value) })}
-                  /><output>{block.gap}px</output></label
-                ></ResetField
-              >
-            {:else}<p class="hint">
-                Click the text on the canvas to write and format it.
-              </p>
-              <ResetField
-                value={block.alignment}
-                defaultValue={'left'}
-                label="Alignment"
-                onreset={() => update({ ...block, alignment: 'left' })}
-                ><label
-                  >Alignment <select
-                    value={block.alignment}
-                    onchange={(e) =>
-                      update({
-                        ...block,
-                        alignment: e.currentTarget
-                          .value as typeof block.alignment,
-                      })}
-                    ><option value="left">Left</option><option value="center"
-                      >Center</option
-                    ><option value="right">Right</option></select
-                  ></label
-                ></ResetField
-              >{/if}
+                >
+              </fieldset>{/if}
             <div class="block-actions">
               <Button
                 variant="ghost"
@@ -672,10 +691,25 @@
     min-width: 0;
     gap: 16px;
   }
+  .block-inspector :global(label) {
+    margin-block: 0;
+  }
+  .row-presentation {
+    display: grid;
+    gap: 14px;
+    padding-block: 12px 0;
+    border-top: 1px solid var(--pager-management-border, #ffffff26);
+  }
+  .row-presentation legend {
+    padding: 0 8px 0 0;
+    color: var(--pager-management-text-secondary, #aaa);
+    font-size: 12px;
+    font-weight: 600;
+  }
   label {
     display: grid;
     min-width: 0;
-    gap: 8px;
+    gap: 6px;
   }
   .theme-layout-toggle {
     display: flex;
@@ -719,6 +753,10 @@
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
+  }
+  .block-actions {
+    border-top: 1px solid var(--pager-management-border, #ffffff26);
+    padding-top: 12px;
   }
   .photo-settings summary {
     display: flex;
