@@ -1,5 +1,26 @@
 # Validation record
 
+## CSS example recipes (2026-10-27)
+
+The CSS tab provides 12 inspectable recipes across palettes, typography, album
+layouts, images, motion, and responsive spacing. Insertion appends a named snippet
+and preserves existing source; selection alone leaves the draft unchanged. The
+combined source retains the normal 20,000-character limit and CSS compiler.
+
+Local verification passes 252 unit tests, type checks with zero errors/warnings,
+lint, formatting, and the production build. All 11 scenarios in CSS examples,
+customization, and customization interactions pass. Coverage includes compiling
+every recipe, append boundaries, private autosave and explicit publication,
+keyboard code inspection, phone overflow, real typography overrides in Classic,
+and the album lift with both motion preferences. Initial browser verification
+identified Classic specificity conflicts; the recipes now use existing hover
+variables and sufficient stable-selector specificity without `!important`.
+
+Visual review covers 1440px dark desktop, 390px light phone, and 320px dark touch
+contexts with no inspector overflow or browser exceptions. Review uses synthetic
+NASA fixtures and the established headless Chromium fallback. No hosted CI
+minutes were used.
+
 ## Verified locally
 
 - Node 22.23.3 and pnpm 11.28.5; frozen dependency installation.

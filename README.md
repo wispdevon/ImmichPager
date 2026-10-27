@@ -93,7 +93,7 @@ The Content and Design inspectors sit beside one persistent live canvas. Desktop
 - **Photos rows:** Justified, Masonry, Square, Large, or Carousel layouts, with captions and ordering for your selected photos.
 - **Text rows:** headings, paragraphs, bold, italic, links, lists, and alignment.
 - **Header and branding:** Classic, Centered, or Editorial presets; below-banner or over-banner composition; direct sizing, crop, and logo controls.
-- **Design tools:** bundled fonts, typography, colors, spacing, scoped CSS, and individual or full presentation resets. Resets retain authored content, selected media, and access settings.
+- **Design tools:** bundled fonts, typography, colors, spacing, scoped CSS with [12 ready-to-use examples](docs/css-examples.md), and individual or full presentation resets. Resets retain authored content, selected media, and access settings.
 - **Reusable appearance:** duplicate a design, transfer a version 4 appearance file, or import [DTCG design tokens](docs/design-tokens.md) after reviewing the import summary.
 - **Complete client themes:** five original layouts and [12 photography designs](docs/photography-themes.md) for weddings, portraiture, wildlife, and general portfolios; preview before applying, reuse personal designs, or adapt shadcn/Tweakcn and daisyUI theme CSS. [Theme guide](docs/themes.md).
 

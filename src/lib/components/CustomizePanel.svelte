@@ -71,6 +71,7 @@
   import { FONT_CATALOG } from '$lib/font-catalog';
   import HeaderPresetPicker from './HeaderPresetPicker.svelte';
   import CodeMirrorCssEditor from './CodeMirrorCssEditor.svelte';
+  import { CSS_EXAMPLES, appendCssExample } from '$lib/css-examples';
 
   type Tab = 'Design' | 'Elements' | 'Themes' | 'CSS';
 
@@ -165,6 +166,20 @@
     null,
   );
   let cssExampleStatus = $state('');
+  let cssExampleId = $state<string>(CSS_EXAMPLES[0].id);
+  const selectedCssExample = $derived(
+    CSS_EXAMPLES.find((example) => example.id === cssExampleId) ??
+      CSS_EXAMPLES[0],
+  );
+  function insertCssExample() {
+    try {
+      fields.customCss = appendCssExample(fields.customCss, selectedCssExample);
+      cssExampleStatus = `${selectedCssExample.title} added to the end of your CSS.`;
+    } catch (error) {
+      cssExampleStatus =
+        error instanceof Error ? error.message : 'Could not add this example.';
+    }
+  }
   const tabs: Tab[] = ['Design', 'Elements', 'Themes', 'CSS'];
   const cssValidation = $derived(
     compileCustomCss(fields.customCss, saved?.id ?? 'preview'),
@@ -1995,6 +2010,34 @@
           CSS styles this gallery only. The editor and its controls keep Immich
           styling. Changes save privately and go live when you publish.
         </p>
+        <fieldset class="css-examples">
+          <legend>Examples</legend>
+          <Field label="CSS example"
+            ><Select
+              bind:value={cssExampleId}
+              options={CSS_EXAMPLES.map((example) => ({
+                value: example.id,
+                label: `${example.category} · ${example.title}`,
+              }))}
+              onChange={() => (cssExampleStatus = '')}
+            /></Field
+          >
+          <p class="hint">{selectedCssExample.description}</p>
+          <details>
+            <summary>View example CSS</summary>
+            <!-- svelte-ignore a11y_no_noninteractive_tabindex (Scrollable code needs keyboard access.) -->
+            <pre
+              role="region"
+              tabindex="0"
+              aria-label="Selected CSS example"><code
+                >{selectedCssExample.css}</code
+              ></pre>
+          </details>
+          <Button variant="ghost" disabled={busy} onclick={insertCssExample}
+            >Insert example</Button
+          >
+          {#if cssExampleStatus}<p role="status">{cssExampleStatus}</p>{/if}
+        </fieldset>
         <CodeMirrorCssEditor
           bind:value={fields.customCss}
           invalid={!!cssValidation.error}
@@ -2015,27 +2058,9 @@
         </p>
         <div class="css-actions">
           <a
-            href="https://gitlab.com/wispd/ImmichPager/-/blob/dev/docs/customization.md"
+            href="https://gitlab.com/wispd/ImmichPager/-/blob/dev/docs/css-examples.md"
             target="_blank"
             rel="noreferrer">CSS guide and examples ↗</a
-          >
-          <Button
-            variant="ghost"
-            onclick={() => {
-              const example =
-                ':scope { --pager-accent: #f0b67f; }\n.ip-title { font-family: Georgia, serif; }';
-              const separator = fields.customCss.trim() ? '\n\n' : '';
-              if (
-                fields.customCss.length + separator.length + example.length >
-                CUSTOM_CSS_LIMIT
-              ) {
-                cssExampleStatus =
-                  'There is not enough room to add the example. Clear or shorten CSS first.';
-                return;
-              }
-              fields.customCss += `${separator}${example}`;
-              cssExampleStatus = 'Example added to the end of your CSS.';
-            }}>Insert example</Button
           >
           <Button
             variant="ghost"
@@ -2046,7 +2071,6 @@
             }}>Clear custom CSS</Button
           >
         </div>
-        {#if cssExampleStatus}<p role="status">{cssExampleStatus}</p>{/if}
       </section>
     </div>
   {/if}
@@ -2410,6 +2434,43 @@
     color: var(--pager-management-danger);
   }
 
+  .css-examples {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    min-inline-size: 0;
+    padding: 12px;
+    margin: 0;
+    border: 1px solid var(--pager-management-border);
+    border-radius: 8px;
+  }
+  .css-examples legend {
+    font-size: 13px;
+    font-weight: 600;
+    padding-inline: 4px;
+  }
+  .css-examples summary {
+    cursor: pointer;
+    font-size: 12px;
+    padding-block: 6px;
+  }
+  .css-examples pre {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    max-block-size: 200px;
+    overflow: auto;
+    padding: 12px;
+    background: var(--pager-management-surface-quiet);
+    border-radius: 6px;
+    font:
+      12px/1.6 'JetBrains Mono',
+      monospace;
+  }
+  .css-examples pre:focus-visible,
+  .css-examples summary:focus-visible {
+    outline: 2px solid var(--pager-management-focus);
+    outline-offset: 2px;
+  }
   .css-actions {
     display: flex;
     flex-wrap: wrap;

@@ -252,16 +252,23 @@ Choose **Classic**, **Centered**, or **Editorial** in **Design → Design → He
 
 Open **Design → CSS** to enter ordinary CSS and see it on the canvas. CSS is limited to 20,000 characters. **Clear custom CSS** removes the draft stylesheet; publish that change to reset the live gallery too.
 
+The **Examples** picker includes 12 recipes for palettes, typography, album layouts,
+image treatments, motion, and phone spacing. Choose one and expand **View example
+CSS** to inspect it. **Insert example** appends a named snippet to your existing
+stylesheet and autosaves privately. Selecting an example alone changes no settings.
+See [CSS examples](css-examples.md) for every copyable recipe and combination tips.
+
 CSS is parsed and limited to this gallery. Selectors cannot change the management UI, preview toolbar, other pages, or native Immich album views. Positioned content is clipped to the gallery boundary, so fixed elements behave relative to the gallery rather than the browser viewport. There is no JavaScript or HTML editor.
 
 Errors include a source location where available. Invalid CSS remains saved in your private draft, but the **entire custom stylesheet is omitted** from preview and publication is blocked until you fix or clear it. The current live page keeps its last published settings. Variables are resolved by the browser; undefined variables or unsupported browser features can still cause individual declarations to be ignored.
 
 Use ordinary rules and selector lists, plus `@media`, `@supports`, and `@container`. Write separate rules instead of nested selectors. External resources are blocked: no `@import`, `@font-face`, `url()`, `image-set()`, `attr()`, or other resource/attribute functions. This also blocks same-origin resource URLs. Other at-rules, including keyframes, are not supported. Existing Immich-selected branding and album covers remain available through the normal controls. Use bundled/system fonts and CSS gradients rather than downloading resources.
 
-Gallery style defaults are scoped through zero-specificity `:where()` rules.
+Gallery design-variable defaults are scoped through zero-specificity `:where()` rules.
 Set a documented variable on `:scope` to override it without `!important`.
-Direct property overrides still follow normal selector specificity. Start with
-the stable hooks below rather than Svelte's generated classes.
+Direct property overrides still follow normal selector specificity; repeating a
+stable class can override Classic component rules without `!important`. Start
+with the stable hooks below rather than Svelte's generated classes.
 
 ### Stable selectors
 
@@ -283,6 +290,8 @@ Selectors are relative to the gallery. Use `:scope` for the gallery root, **not*
 | `.ip-album`                     | Album link/card                   |
 | `.ip-cover` / `.ip-cover img`   | Cover area / image                |
 | `.ip-album-info`                | Album title, dates and item count |
+| `.ip-block`                     | Content row                       |
+| `.ip-photo`                     | Individual photo tile             |
 | `.ip-footer`                    | Project/source attribution        |
 
 The documented hooks and variables are the customization interface. Other classes and generated scope attributes are implementation details.
@@ -292,11 +301,15 @@ The documented hooks and variables are the customization interface. Other classe
 Set these on `:scope`. When omitted, the corresponding Design setting or
 selected theme remains in use.
 
-| Variable             | Effect                                                               |
-| -------------------- | -------------------------------------------------------------------- |
-| `--pager-accent`     | Album-title hover color; can be reused elsewhere                     |
-| `--pager-background` | Gallery background                                                   |
-| `--pager-foreground` | Gallery text; overlay header uses white unless explicitly overridden |
+| Variable                     | Effect                                                               |
+| ---------------------------- | -------------------------------------------------------------------- |
+| `--pager-accent`             | Album-title hover color; can be reused elsewhere                     |
+| `--pager-background`         | Gallery background                                                   |
+| `--pager-foreground`         | Gallery text; overlay header uses white unless explicitly overridden |
+| `--pager-muted`              | Secondary text in complete themes                                    |
+| `--pager-surface`            | Surface background in complete themes                                |
+| `--pager-surface-foreground` | Text on those theme surfaces                                         |
+| `--pager-primary-foreground` | Text on the primary color in complete themes                         |
 
 ```css
 :scope {
