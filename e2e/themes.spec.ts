@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openCustomize } from './customize-helper';
+import { openCustomize, openDesignGroup } from './customize-helper';
 
 test('theme auditions do not save, apply stays private, and undo preserves content', async ({
   page,
@@ -333,6 +333,7 @@ test('external theme review applies to the canvas and per-row settings can overr
   await page.getByRole('checkbox', { name: 'Use theme layout' }).check();
   await expect(canvas.locator('.photo-grid')).toHaveCSS('gap', '20px');
   await openCustomize(page, 'Design');
+  await openDesignGroup(page, 'colors');
   await page.getByLabel('Accent color', { exact: true }).fill('#ff0000');
   await expect(canvas.locator('.ip-gallery')).toHaveCSS(
     '--pager-accent',

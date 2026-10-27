@@ -63,6 +63,12 @@ Initial source review targets Immich v3.3.1. See [validation](validation.md) for
 
 Header composition presets, banner and logo size, typography, spacing, and custom CSS are additive per-page JSON settings with defaults applied on read, so no schema upgrade is needed. They remain in the working copy until explicit publication. The shared CSS Tree compiler validates allowed syntax, guards each selector's target with the page's gallery boundary, and blocks resource loading. Invalid CSS is preserved privately, omitted from preview, and rejected by publication before changing live settings or shares. A separate layout/paint containment wrapper protects editor controls from positioned gallery content. The renderer escapes HTML-opening characters in compiled CSS before serializing the stylesheet. Documented selectors and theme variables form the supported styling interface; see [customization](customization.md).
 
+`DesignGroup` supplies native details/summary disclosures for the five customization
+areas. Open state belongs to the mounted CustomizePanel and survives tab changes;
+it is excluded from page data and autosave. Hidden header copy opens Typography
+initially. Existing bindings, control limits, palette behavior, and reset defaults
+remain in CustomizePanel.
+
 ## Per-page controls and portable themes
 
 `clientUi` and `galleryStyle` are validated additive JSON settings in drafts, published records, and gallery DTOs. Reading legacy JSON fills compatibility defaults; creating a page disables browsing controls by default. Duplication copies these settings, and publication review identifies visibility and style changes before they reach clients. No SQLite schema migration is needed.

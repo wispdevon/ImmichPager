@@ -279,3 +279,20 @@ theme cards without descriptive paragraphs. Public captures have no horizontal
 overflow, unloaded visible images, or browser exceptions. The in-app browser
 reported no available targets; review used headless Playwright with existing NASA
 fixtures. No hosted CI minutes were used.
+
+## Grouped customization workflow (2026-10-27)
+
+The Design tab now starts with the current theme and five native disclosure
+groups. All original setting labels and reset actions remain; typography controls
+are together and banner sizing/crop follows header composition. Panel-scoped label
+spacing prevents global form margins from spreading out the controls.
+
+Local checks pass 243 unit tests, 42 browser scenarios, type checks with no
+errors/warnings, lint, formatting, and the production build. Coverage includes
+keyboard disclosure toggling, no draft revision changes when opening groups,
+preserved disclosure state across customization tabs, private autosave, resets,
+focus, crop dragging, appearance imports, theme auditions and publication review.
+Desktop/phone captures at 1440/390 pixels in light and dark show all group headings
+in the initial viewport, no panel overflow, and no browser exceptions. Review used
+the existing headless Chromium fallback because the in-app browser reported no
+targets; screenshots use NASA fixtures. No hosted CI minutes were used.

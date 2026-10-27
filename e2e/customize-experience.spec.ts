@@ -2,7 +2,8 @@ import { expect, test } from '@playwright/test';
 import {
   closeCustomize,
   openCustomize,
-  openAdvancedDesign,
+  openAllDesignGroups,
+  openDesignGroup,
 } from './customize-helper';
 
 async function createDraft(
@@ -29,7 +30,7 @@ test('acknowledged draft saves refresh the preview without moving settings focus
   const record = await createDraft(page, 'customize-focus-ack');
   await page.goto('/page/manage/' + record.id);
   await openCustomize(page);
-  await openAdvancedDesign(page);
+  await openAllDesignGroups(page);
 
   const frame = page.getByTestId('responsive-preview-frame');
   const before = await frame.getAttribute('src');
@@ -59,7 +60,7 @@ test('Immich selects support pointer and keyboard input in Customize', async ({
   const record = await createDraft(page, 'customize-select-input');
   await page.goto('/page/manage/' + record.id);
   const dialog = await openCustomize(page);
-  await openAdvancedDesign(page);
+  await openAllDesignGroups(page);
   const layout = dialog.getByRole('button', {
     name: 'Header layout',
     exact: true,
@@ -97,7 +98,7 @@ test('failed saves keep edits visible and can be retried', async ({ page }) => {
   const record = await createDraft(page, 'customize-save-failure');
   await page.goto('/page/manage/' + record.id);
   await openCustomize(page);
-  await openAdvancedDesign(page);
+  await openAllDesignGroups(page);
 
   await page.route('**/page/api/pages/' + record.id, async (route) => {
     if (route.request().method() !== 'PUT') return route.continue();
@@ -191,6 +192,7 @@ test('phone inspector keeps the live canvas and CSS editing reachable with focus
   await expect(editor).toHaveAttribute('aria-invalid', 'false');
 
   await dialog.getByRole('tab', { name: 'Design', exact: true }).click();
+  await openDesignGroup(page, 'colors');
   await dialog.getByLabel('Accent color').fill('#ff0000');
   await dialog.getByRole('button', { name: 'Reset colors' }).click();
   await expect(dialog.getByLabel('Background color')).toHaveValue('#000000');

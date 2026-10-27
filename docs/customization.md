@@ -30,7 +30,7 @@ is opt-in. Originals and ZIP downloads are available when Page settings allows d
 
 ## Colors and accent
 
-Choose Dark, Light, or System under **Design → Design**. Use the color controls to override background, text, and accent colors. The default accent is Immich blue (`#accbfa`). In Immich Classic, accent changes **album-title text on hover**; it does not recolor the page title, banner, management buttons, or native Immich album viewer. CSS can use the same accent for other gallery elements.
+Choose Dark, Light, or System under **Design → Design → Colors**. Use the color controls to override background, text, and accent colors. The default accent is Immich blue (`#accbfa`). In Immich Classic, accent changes **album-title text on hover**; it does not recolor the page title, banner, management buttons, or native Immich album viewer. CSS can use the same accent for other gallery elements.
 
 ## Move a design between pages
 
@@ -146,14 +146,18 @@ Content or Design. Open **Page settings** beside Publish for sharing options. Hi
 in Content → Header and branding. Public galleries and the standalone read-only
 owner view do not expose editing controls.
 
-Design begins with visual header presets, logo options, fonts, and colors.
-Expand Advanced design at the end for detailed sizing and spacing. Preset cards
-show which layout matches the current header settings; fine-tuning those settings
-can leave no preset selected.
+Design opens with the current theme and five expandable groups: **Header &
+banner**, **Logo**, **Typography**, **Colors**, and **Gallery layout**. Each group
+shows its current value; expand the area you want to change. Fonts and title,
+description, body, and album-title sizing are together in Typography. Header
+composition, spacing, banner height, and crop are together in Header & banner.
+**Change theme** opens the theme picker. Opening groups does not save a change;
+groups keep their open state while switching customization tabs. Preset cards
+show which layout matches the header; fine-tuning can leave no preset selected.
 
 ## Compose the header over a banner
 
-Add a banner using **Choose from Immich**, an upload, or a file drop. In **Design → Design → Advanced design**, change **Header layout** from **Below banner** to **Over banner**. Your logo, title, and description move together onto the image. Header alignment controls left or centered composition. Banner crop position controls the image's vertical focal point.
+Add a banner using **Choose from Immich**, an upload, or a file drop. In **Design → Design → Header & banner**, change **Header layout** from **Below banner** to **Over banner**. Your logo, title, and description move together onto the image. Header alignment controls left or centered composition. Banner crop position controls the image's vertical focal point.
 
 Overlay mode uses white text and a dark gradient to keep the header readable. The banner grows to fit longer text on narrow screens. If you remove the banner, the header returns to the normal layout; the saved overlay choice takes effect when you add a banner again. Existing pages default to Below banner.
 
@@ -161,7 +165,7 @@ Overlay mode uses white text and a dark gradient to keep the header readable. Th
 
 ## Set header size
 
-In **Design → Design → Advanced design**, choose **Compact**, **Standard**, or **Tall** for the banner composition. Standard keeps the existing responsive banner height. Compact and Tall give you shorter or deeper compositions in both Below banner and Over banner layouts. Use the logo-size slider to choose a size from 48–160 px; existing and new pages default to 80 px.
+In **Design → Design → Header & banner**, choose **Compact**, **Standard**, or **Tall** for the banner composition. Standard keeps the existing responsive banner height. Compact and Tall give you shorter or deeper compositions in both Below banner and Over banner layouts. Open **Logo** for its shape, position, and size. Use the logo-size slider to choose a size from 48–160 px; existing and new pages default to 80 px.
 
 Choose a logo shape of square, rounded, or circle, and place it above or to the
 left of the title and description. Existing and new pages default to rounded
@@ -172,7 +176,7 @@ Changes autosave to the private draft, appear on the canvas, and only update you
 
 ## Set typography and spacing
 
-In **Design → Design → Advanced design**, use the sliders to set title size (1.5–4 rem), description size (0.875–1.5 rem), and header spacing (1.5–5 rem). The title scales with page width while preserving the selected size at phone widths, and spacing adjusts on narrow screens. Google Sans remains the default font. Existing and new pages start with a 3 rem title, 1.125 rem description, and 2.5 rem header spacing.
+In **Design → Design → Typography**, set title size (1.5–4 rem) and description size (0.875–1.5 rem). Header spacing (1.5–5 rem) is in **Header & banner**. The title scales with page width while preserving the selected size at phone widths, and spacing adjusts on narrow screens. Google Sans remains the default font. Existing and new pages start with a 3 rem title, 1.125 rem description, and 2.5 rem header spacing.
 
 Changes autosave to the private draft and appear on the canvas. Your client page changes only after you publish. Existing pages receive defaults without a database migration.
 
@@ -192,12 +196,11 @@ is hidden.
 
 ## Adjust the gallery layout
 
-Open **Design → Design** to choose the gallery font. Google Sans remains the
+Open **Design → Design → Typography** to choose the gallery font. Google Sans remains the
 default; six additional open-license families are bundled locally, and System
-uses installed fonts. See the [font catalog and licenses](fonts.md). Expand
-**Advanced design** at the end of the tab for title/body/card typography, content
-width, page padding, grid density, row and column spacing, cover aspect ratio,
-corner radius, and hover treatment. The initial layout
+uses installed fonts. See the [font catalog and licenses](fonts.md). **Gallery
+layout** groups content width, page padding, grid density, row and column spacing,
+cover aspect ratio, corner radius, and hover treatment. The initial layout
 keeps Immich's 1600 px content width, 224 px minimum album track, square covers,
 16 px card corners, and subtle hover surface.
 
@@ -219,7 +222,7 @@ checkboxes, then drag a grip to move the selected albums together within their g
 
 ## Apply a header preset
 
-Choose **Classic**, **Centered**, or **Editorial** in **Design → Design** to start with a complete header composition. Each preset sets only layout, alignment, banner size, logo size, title size, description size, and header spacing for the current page. It keeps your title and description text, theme and colors, banner crop, CSS, logo and banner images, albums and their order, password, and page URL. Presets are private draft edits until you publish; Google Sans remains the default font.
+Choose **Classic**, **Centered**, or **Editorial** in **Design → Design → Header & banner** to start with a complete header composition. Each preset sets only layout, alignment, banner size, logo size, title size, description size, and header spacing for the current page. It keeps your title and description text, theme and colors, banner crop, CSS, logo and banner images, albums and their order, password, and page URL. Presets are private draft edits until you publish; Google Sans remains the default font.
 
 ## Add CSS
 

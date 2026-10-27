@@ -24,9 +24,25 @@ export async function closeCustomize(root: Root) {
   });
   if (await close.isVisible()) await close.click();
 }
-export async function openAdvancedDesign(root: Root) {
-  const details = root.locator('details.advanced-design');
+export type DesignGroup =
+  | 'header'
+  | 'logo'
+  | 'typography'
+  | 'colors'
+  | 'layout';
+export async function openDesignGroup(root: Root, group: DesignGroup) {
+  const details = root.locator(`details[data-design-group="${group}"]`);
   if ((await details.getAttribute('open')) === null)
     await details.locator('summary').click();
   await expect(details).toHaveAttribute('open', '');
+}
+export async function openAllDesignGroups(root: Root) {
+  for (const group of [
+    'header',
+    'logo',
+    'typography',
+    'colors',
+    'layout',
+  ] as const)
+    await openDesignGroup(root, group);
 }

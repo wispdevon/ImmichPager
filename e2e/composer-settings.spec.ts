@@ -1,3 +1,4 @@
+import { openAllDesignGroups } from './customize-helper';
 import { expect, test, type Page } from '@playwright/test';
 
 const origin = 'http://127.0.0.1:3200';
@@ -116,7 +117,7 @@ test('individual and full resets restore presentation defaults while preserving 
   await page.goto(`/page/manage/${draft.id}`);
 
   await page.getByRole('button', { name: 'Design inspector' }).click();
-  await page.locator('.advanced-design > summary').click();
+  await openAllDesignGroups(page);
   const titleWeight = page.getByRole('slider', {
     name: 'Title weight',
     exact: true,

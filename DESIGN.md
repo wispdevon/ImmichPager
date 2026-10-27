@@ -77,3 +77,10 @@ with Apply/Cancel, keyboard dismissal, and focus restoration. On phones the
 inspector closes to reveal it. Keep the customization heading to one compact row
 with an accessible reset icon. Success messages are dismissible five-second toasts
 that overlay the editor rather than pushing the canvas down; errors remain visible.
+
+Design opens with the current theme and five native disclosure groups: Header &
+banner, Logo, Typography, Colors, and Gallery layout. Each summary shows current
+values; related sizing, crop, font and reset controls stay together. Keep group
+state while switching customization tabs, use compact label spacing, and expose
+hidden title/description fields inside Typography. Expanding groups is local UI
+state and does not autosave or publish.

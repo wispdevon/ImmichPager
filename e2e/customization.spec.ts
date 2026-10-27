@@ -5,7 +5,7 @@ import { confirmPublication } from './publication-helper';
 import {
   closeCustomize,
   openCustomize,
-  openAdvancedDesign,
+  openAllDesignGroups,
 } from './customize-helper';
 
 test('banner composition and scoped CSS autosave privately, preview and publish', async ({
@@ -40,7 +40,7 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
     .setInputFiles('fixtures/photos/earthrise.webp');
   await expect(page.getByAltText('Logo preview')).toBeVisible();
   await openCustomize(page);
-  await openAdvancedDesign(page);
+  await openAllDesignGroups(page);
   await page
     .getByRole('button', { name: 'Header layout', exact: true })
     .click();
@@ -92,7 +92,7 @@ test('banner composition and scoped CSS autosave privately, preview and publish'
   await page.getByRole('button', { name: 'Desktop canvas' }).click();
   await closeCustomize(page);
   await openCustomize(page);
-  await openAdvancedDesign(page);
+  await openAllDesignGroups(page);
   await page.getByRole('button', { name: 'Header size', exact: true }).click();
   await page.getByRole('option', { name: 'Tall', exact: true }).click();
   await page.getByRole('slider', { name: 'Logo size' }).press('ArrowRight');
@@ -306,7 +306,7 @@ test('header presets stay per-page and private until publication', async ({
   await expect(live.locator('.ip-logo')).toHaveCSS('width', '80px');
 
   await openCustomize(page);
-  await openAdvancedDesign(page);
+  await openAllDesignGroups(page);
   await page.getByRole('button', { name: /^Editorial/ }).click();
   await closeCustomize(page);
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
@@ -392,7 +392,7 @@ test('CSS cannot style editor siblings, escape paint containment, or inject HTML
   await setHeaderText(page, 'Title', 'CSS containment');
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await openCustomize(page);
-  await openAdvancedDesign(page);
+  await openAllDesignGroups(page);
   await page
     .getByRole('button', { name: 'Header layout', exact: true })
     .click();
@@ -514,7 +514,7 @@ test('long header text, missing images, themes, and keyboard controls stay usabl
     page.getByRole('dialog', { name: 'Page inspector' }),
   ).toHaveCount(0);
   await openCustomize(page);
-  await openAdvancedDesign(page);
+  await openAllDesignGroups(page);
   await page.getByRole('button', { name: 'Appearance', exact: true }).click();
   await page.getByRole('option', { name: 'Light', exact: true }).click();
   await closeCustomize(page);
