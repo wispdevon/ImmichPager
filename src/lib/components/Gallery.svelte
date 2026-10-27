@@ -491,6 +491,10 @@
       sans-serif;
     cursor: ns-resize;
     touch-action: none;
+    flex: none;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    min-inline-size: max-content;
   }
   .logo-wrap {
     position: relative;

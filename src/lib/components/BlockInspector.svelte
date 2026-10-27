@@ -188,7 +188,7 @@
           >
         </div>
         {#if selectedId === block.id}<div class="block-settings">
-            {#if fields.pageTheme}<label
+            {#if fields.pageTheme}<label class="theme-layout-toggle"
                 ><input
                   type="checkbox"
                   checked={block.presentationSource === 'theme'}
@@ -677,7 +677,21 @@
     min-width: 0;
     gap: 8px;
   }
-  input:not([type='range']),
+  .theme-layout-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-block-size: 44px;
+    cursor: pointer;
+  }
+  .theme-layout-toggle input {
+    inline-size: 1.125em;
+    block-size: 1.125em;
+    flex: none;
+    margin: 0;
+    accent-color: var(--pager-management-accent, #accbfa);
+  }
+  input:not([type='range'], [type='checkbox']),
   select {
     width: 100%;
     min-width: 0;

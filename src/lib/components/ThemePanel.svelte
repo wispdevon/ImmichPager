@@ -373,17 +373,13 @@
           size="16px"
           aria-hidden
         />{/if}</strong
-    ><small>{item.description}</small>
+    >
   </button>
 {/snippet}
 
 <section class="themes" aria-label="Page themes">
   <div class="intro">
     <h2>Choose a complete design</h2>
-    <p>
-      Change the composition, typography, and gallery layout. Your photographs
-      and words stay yours.
-    </p>
   </div>
   <div class="theme-grid" aria-label="Built-in themes">
     {#each [classicTheme, ...builtInThemes] as item}
@@ -405,7 +401,6 @@
           >{/each}
       </select></label
     >
-    <p class="hint">{collection.description}</p>
     <div class="theme-grid" aria-label={`${collection.label} themes`}>
       {#each collection.themes as item (item.id)}<div class="collection-card">
           {@render themeCard(item.definition)}
@@ -591,7 +586,6 @@
     gap: 24px;
     min-width: 0;
   }
-  .intro p,
   .hint,
   small {
     color: var(--pager-management-text-secondary, #aaa);
@@ -622,10 +616,6 @@
     gap: 4px;
     font-size: 0.875rem;
     margin-block: 10px 4px;
-  }
-  .theme-card small {
-    display: block;
-    font-size: 0.75rem;
   }
   .theme-card:focus-visible,
   button:focus-visible {

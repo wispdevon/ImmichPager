@@ -55,6 +55,10 @@ information rail on desktop and moves it above content on phones. Each has paire
 light/dark variants, bundled typography, and responsive row defaults. Management
 controls retain Immich styling.
 
+Theme cards show a layout thumbnail and name without descriptive paragraphs.
+Keep theme-layout checkboxes beside their labels, with native keyboard behavior.
+Banner crop/height controls remain on one line even on narrow theme images.
+
 Theme cards audition on the existing canvas without saving; Apply adopts row
 presentation and saves privately. Cancel restores the working canvas; Undo changes
 design only. Content order, media, visibility, and access survive theme application.

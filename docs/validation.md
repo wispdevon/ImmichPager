@@ -267,3 +267,15 @@ unloaded visible images, or browser exceptions. The local fixture server loses
 its in-memory native shares on restart; task-owned demo pages were unpublished
 and republished to recreate those fixture shares before capture. Production data
 and hosted repositories were unchanged.
+
+## Theme picker and wedding refinements (2026-10-27)
+
+Local validation passes 243 unit tests, 26 theme browser scenarios, type checks
+with zero errors/warnings, lint, formatting, and the production build. Browser
+review of all three wedding themes at 1440 and 390 pixels confirms inline native
+checkboxes with 44px label targets, click/Space toggling, keyboard banner-height
+changes, unwrapped crop/height controls within their banners, and thumbnail/name
+theme cards without descriptive paragraphs. Public captures have no horizontal
+overflow, unloaded visible images, or browser exceptions. The in-app browser
+reported no available targets; review used headless Playwright with existing NASA
+fixtures. No hosted CI minutes were used.

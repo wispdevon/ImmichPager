@@ -9,8 +9,8 @@ phones, choosing a theme closes the inspector so the preview remains visible.
 
 | Collection        | Pager theme / portable JSON                                                 | Original design                                | Adapted composition                                                  |
 | ----------------- | --------------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------- |
-| Wedding           | [Story Wedding](../static/assets/themes/wedding/story.json)                 | [Story](https://html5up.net/story)             | Airy split introduction and justified wedding sequences              |
-| Wedding           | [Stellar Wedding](../static/assets/themes/wedding/stellar.json)             | [Stellar](https://html5up.net/stellar)         | Lavender masthead, white panels, centered navigation                 |
+| Wedding           | [Story Wedding](../static/assets/themes/wedding/story.json)                 | [Story](https://html5up.net/story)             | Ivory split introduction, serif headings and justified sequences     |
+| Wedding           | [Stellar Wedding](../static/assets/themes/wedding/stellar.json)             | [Stellar](https://html5up.net/stellar)         | Soft lavender introduction, wide photograph and white story panels   |
 | Wedding           | [Ethereal Wedding](../static/assets/themes/wedding/ethereal.json)           | [Ethereal](https://html5up.net/ethereal)       | Image-left introduction, rose/violet panels and photographic ribbons |
 | Portraiture       | [Lens Portraiture](../static/assets/themes/portraiture/lens.json)           | [Lens](https://html5up.net/lens)               | White right-hand profile rail with an uninterrupted image grid       |
 | Portraiture       | [Strata Portraiture](../static/assets/themes/portraiture/strata.json)       | [Strata](https://html5up.net/strata)           | Dark photographic profile rail and rounded project photographs       |
@@ -36,6 +36,10 @@ file. Import it through the existing theme importer or apply the card directly.
 Use **Save current design as theme** to keep an adjusted version in your personal
 library. Preview, apply, undo, row overrides, resets, exports, and explicit
 publication behave like the original five Pager themes.
+
+Cards show just the thumbnail and name. Wedding designs use bundled serif
+headings, restrained spacing, and responsive banner sizes; Stellar places its
+full-width photograph before navigation instead of cropping it into a small circle.
 
 The source designs have one original color treatment each. These adaptations
 preserve a single light or dark mode rather than inventing an unrelated second
