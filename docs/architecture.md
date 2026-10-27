@@ -47,7 +47,7 @@ Use exactly one Pager process/container per database. A process-local mutation l
 
 ## Storage and migrations
 
-SQLite schema version 3 is initialized and migrated transactionally in `Store`. Version 2 adds independent `drafts` and `draft_branding` tables; existing `pages` and `branding` retain the live version. Migration copies existing pages/media into working copies and preserves native shares, password hashes, and client sessions. Brand-new drafts need no published row until publication. Tables hold pages, dedicated links, expiring public sessions, branding images, and password-attempt buckets. Forward migrations must use `PRAGMA user_version` and remain covered by tests. A newer database is refused by an older application. Future migrations must be added sequentially; do not modify the meaning of an existing version.
+SQLite schema version 4 is initialized and migrated transactionally in `Store`. Version 4 adds an owner-indexed personal theme library without rewriting existing records. Version 2 adds independent `drafts` and `draft_branding` tables; existing `pages` and `branding` retain the live version. Migration copies existing pages/media into working copies and preserves native shares, password hashes, and client sessions. Brand-new drafts need no published row until publication. Tables hold pages, dedicated links, expiring public sessions, branding images, and password-attempt buckets. Forward migrations must use `PRAGMA user_version` and remain covered by tests. A newer database is refused by an older application. Future migrations must be added sequentially; do not modify the meaning of an existing version.
 
 Branding uploads accept JPEG, PNG, and WebP up to 5 MB / 32 megapixels and are decoded, rotated, resized, stripped of metadata, and re-encoded to WebP. The photo picker searches owned images using Immich v3 metadata filters, with cursor pagination, filenames, album scope, and favorites. Results expose minimal metadata; each thumbnail and branding selection rechecks ownership and excludes locked, trashed, offline, or non-image assets. PNG/WebP selections use bounded originals to retain transparency; other images use previews. Only same-upstream, same-asset media redirects are followed. Selected branding becomes a processed local copy, so removal of the Immich original does not break it. Photo covers are streamed from Immich. Protect the data volume: it contains share capabilities and session authorization, even though it contains no photo originals.
 
@@ -69,7 +69,7 @@ Header composition presets, banner and logo size, typography, spacing, and custo
 
 The shared renderer emits gallery-scoped `--pager-*` defaults with zero specificity so authored CSS can override visual controls. The inspector sends validated local working state to the owner-only canvas iframe immediately. Autosave acknowledgments update persisted membership without reloading the iframe or disturbing focus. Client CSS stays isolated from native inspector controls, and compiler guards exclude canvas editor controls. Failed saves retain local working fields and show retry feedback.
 
-Appearance-file version 3 carries visibility, visual settings, banner height, and CSS. Version 1 and 2 imports leave unsupported newer settings intact. Content and resource identifiers are excluded. DTCG 2025.10 token files carry only recognized style values, resolve local aliases without network access, and present recognized/unsupported tokens before applying. Imports remain bounded at 96 KiB, and custom CSS retains its 20,000-character limit and resource-loading restrictions.
+Appearance-file version 4 carries visibility, visual settings, banner height, CSS, and the optional complete theme snapshot. Versions 1–3 import through Classic and retain compatibility behavior for unsupported newer settings. Content and resource identifiers are excluded. DTCG 2025.10 token files carry only recognized style values, resolve local aliases without network access, and present recognized/unsupported tokens before applying. Imports remain bounded at 96 KiB, and custom CSS retains its 20,000-character limit and resource-loading restrictions.
 
 ## Version awareness
 
@@ -121,3 +121,29 @@ inside editable canvases; rich text is stored as validated JSON and rendered by
 an allowlisted escaping renderer. Page CSS remains isolated from the inspector.
 
 Presentation resets derive page defaults from the page input schema and block defaults from the block schema. They preserve content, media selections, and access policy, and follow the regular private autosave path. Sharing uses the Page settings dialog; album membership and ordering have a single editing surface in Content.
+
+## Complete themes (schema 4)
+
+`pageTheme` is an optional validated snapshot containing a versioned native
+definition, palette overrides, and a heading-font override. Legacy records omit it
+and keep Classic. Theme application copies design values into the existing flat
+controls and marks rows as following theme defaults. Rendering resolves those rows
+without mutating content; manual row adjustments opt out. Trusted family CSS is
+bundled with the renderer; palettes and theme CSS are scoped, with page-authored
+CSS emitted last. An optional compiler specificity tier places imported/native
+theme CSS above first-party family rules and authored page CSS above theme CSS,
+while retaining the independent boundary/editor-control guard. Classic keeps its
+existing cascade. System mode uses media queries publicly and resolves the editor's
+device preference explicitly for its isolated iframe.
+
+Theme audition is separate from saved fields. It locks canvas editing, ignores
+canvas mutations, and remains intact across delayed autosave acknowledgments.
+Applying modifies the private working copy; cancel discards audition state. Undo
+restores design by stable row ID without restoring content.
+
+Schema 4 adds the owner-indexed `themes` table transactionally. The library API
+checks owners and optimistic revisions, lists metadata, and never shares IDs with
+public pages. Applied snapshots survive library replacement/deletion. CSS import
+adapters parse declarations as data, resolve bounded local aliases, normalize
+colors with Culori, and discard source CSS. No external template or plugin runs.
+See [the theme contract and API](themes.md).

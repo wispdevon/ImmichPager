@@ -132,6 +132,7 @@ export class DraftService {
           order: 'newest',
           allowDownload: true,
           theme: source.theme,
+          pageTheme: source.pageTheme,
           background: source.background,
           foreground: source.foreground,
           accent: source.accent,

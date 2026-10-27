@@ -47,7 +47,7 @@ Use exactly one Pager process/container per database. A process-local mutation l
 
 ## Storage and migrations
 
-SQLite schema version 3 is initialized and migrated transactionally in `Store`. Version 3 normalizes legacy pages/drafts into one Albums block and adds a separate `photo_shares` table while retaining existing album links and client sessions. Version 2 adds independent `drafts` and `draft_branding` tables; existing `pages` and `branding` retain the live version. Migration copies existing pages/media into working copies and preserves native shares, password hashes, and client sessions. Brand-new drafts need no published row until publication. Tables hold pages, dedicated links, expiring public sessions, branding images, and password-attempt buckets. Forward migrations must use `PRAGMA user_version` and remain covered by tests. A newer database is refused by an older application. Future migrations must be added sequentially; do not modify the meaning of an existing version.
+SQLite schema version 4 is initialized and migrated transactionally in `Store`. Version 3 normalizes legacy pages/drafts into one Albums block and adds a separate `photo_shares` table while retaining existing album links and client sessions. Version 4 adds an owner-indexed personal theme library without rewriting existing records. Version 2 adds independent `drafts` and `draft_branding` tables; existing `pages` and `branding` retain the live version. Migration copies existing pages/media into working copies and preserves native shares, password hashes, and client sessions. Brand-new drafts need no published row until publication. Tables hold pages, dedicated links, expiring public sessions, branding images, and password-attempt buckets. Forward migrations must use `PRAGMA user_version` and remain covered by tests. A newer database is refused by an older application. Future migrations must be added sequentially; do not modify the meaning of an existing version.
 
 Branding uploads accept JPEG, PNG, and WebP up to 5 MB / 32 megapixels and are decoded, rotated, resized, stripped of metadata, and re-encoded to WebP. The photo picker searches owned images using Immich v3 metadata filters, with cursor pagination, filenames, album scope, and favorites. Results expose minimal metadata; each thumbnail and branding selection rechecks ownership and excludes locked, trashed, offline, or non-image assets. PNG/WebP selections use bounded originals to retain transparency; other images use previews. Only same-upstream, same-asset media redirects are followed. Selected branding becomes a processed local copy, so removal of the Immich original does not break it. Photo covers are streamed from Immich. Protect the data volume: it contains share capabilities and session authorization, even though it contains no photo originals.
 
@@ -69,7 +69,7 @@ Header composition presets, banner and logo size, typography, spacing, and custo
 
 The shared renderer emits gallery-scoped `--pager-*` defaults with zero specificity so authored CSS can override visual controls. The inspector sends validated local working state to the owner-only canvas iframe immediately. Autosave acknowledgments update persisted membership without reloading the iframe or disturbing focus. Client CSS stays isolated from native inspector controls, and compiler guards exclude canvas editor controls. Failed saves retain local working fields and show retry feedback.
 
-Appearance-file version 3 carries visibility, visual settings, banner height, and CSS. Version 1 and 2 imports leave unsupported newer settings intact. Content and resource identifiers are excluded. DTCG 2025.10 token files carry only recognized style values, resolve local aliases without network access, and present recognized/unsupported tokens before applying. Imports remain bounded at 96 KiB, and custom CSS retains its 20,000-character limit and resource-loading restrictions.
+Appearance-file version 4 carries visibility, visual settings, banner height, CSS, and a complete theme snapshot. Versions 1–3 import through Classic and retain compatibility behavior for settings they cannot express. Content and resource identifiers are excluded. DTCG 2025.10 token files carry only recognized style values, resolve local aliases without network access, and present recognized/unsupported tokens before applying. Imports remain bounded at 96 KiB, and custom CSS retains its 20,000-character limit and resource-loading restrictions.
 
 ## Page access and publication review
 
@@ -117,3 +117,10 @@ write protection applies to archive preparation and streaming.
 Appearance-file version 3 adds optional numeric `bannerHeight` (140–900 pixels).
 Versions 1 and 2 still import and preserve newer height settings. Appearance files
 continue to exclude block documents, asset identifiers, passwords and capabilities.
+
+## Saved themes
+
+The owner-scoped `/page/api/themes` endpoints, immutable applied snapshots,
+revision checks, native portable format, and import adapters are documented in
+[the theme API contract](themes.md#storage-and-api). This development feature
+requires schema 4; the published 0.4.0 release uses schema 3.

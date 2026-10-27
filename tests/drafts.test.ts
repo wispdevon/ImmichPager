@@ -355,7 +355,7 @@ it('migrates v1 published pages, branding, and sessions without changing the liv
     store.putBranding(page.id, 'logo', new Uint8Array([3, 4]));
     const token = store.createSession(page, { a: 'native-cookie' });
     store.db.exec(
-      'DROP TABLE draft_branding; DROP TABLE drafts; PRAGMA user_version=1',
+      'DROP TABLE themes; DROP TABLE draft_branding; DROP TABLE drafts; PRAGMA user_version=1',
     );
     store.close();
     store = new Store(path);
@@ -742,4 +742,41 @@ it('does not mark reverted draft settings as unpublished changes', async () => {
     expectedDraftRevision: d.draftRevision,
   });
   expect(d.hasUnpublishedChanges).toBe(false);
+});
+
+it('publishes theme-only changes without mutating native shares and duplicates the design without content', async () => {
+  const { applyTheme, builtInThemes } = await import('../src/lib/themes');
+  const { store, drafts, upstream } = setup();
+  let d = await drafts.save('alice', null, values);
+  d = await drafts.publish('alice', d.id, {
+    password: '',
+    passwordMode: 'keep',
+    expectedDraftRevision: d.draftRevision,
+  });
+  upstream.createShare.mockClear();
+  upstream.updateShare.mockClear();
+  upstream.deleteShare.mockClear();
+  d = await drafts.save('alice', d.id, {
+    ...applyTheme(
+      { ...d, password: '', passwordMode: 'keep' },
+      builtInThemes[0],
+    ),
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(store.publicPage(values.slug)!.pageTheme).toBeUndefined();
+  d = await drafts.publish('alice', d.id, {
+    password: '',
+    passwordMode: 'keep',
+    expectedDraftRevision: d.draftRevision,
+  });
+  expect(store.publicPage(values.slug)!.pageTheme!.definition.layout).toBe(
+    'studio',
+  );
+  expect(upstream.createShare).not.toHaveBeenCalled();
+  expect(upstream.updateShare).not.toHaveBeenCalled();
+  expect(upstream.deleteShare).not.toHaveBeenCalled();
+  const duplicate = await drafts.duplicateDesign('alice', d.id);
+  expect(duplicate.pageTheme).toEqual(d.pageTheme);
+  expect(duplicate.albumIds).toEqual([]);
+  expect(duplicate.title).toBe('');
 });

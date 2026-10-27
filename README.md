@@ -94,7 +94,8 @@ The Content and Design inspectors sit beside one persistent live canvas. Desktop
 - **Text rows:** headings, paragraphs, bold, italic, links, lists, and alignment.
 - **Header and branding:** Classic, Centered, or Editorial presets; below-banner or over-banner composition; direct sizing, crop, and logo controls.
 - **Design tools:** bundled fonts, typography, colors, spacing, scoped CSS, and individual or full presentation resets. Resets retain authored content, selected media, and access settings.
-- **Reusable appearance:** duplicate a design, transfer a version 3 appearance file, or import [DTCG design tokens](docs/design-tokens.md) after reviewing the import summary.
+- **Reusable appearance:** duplicate a design, transfer a version 4 appearance file, or import [DTCG design tokens](docs/design-tokens.md) after reviewing the import summary.
+- **Complete client themes:** Studio, Cinematic, Editorial, Contact Sheet, and Archive; preview before applying, reuse personal designs, or adapt shadcn/Tweakcn and daisyUI theme CSS. [Theme guide](docs/themes.md).
 
 All edits autosave privately until you choose **Publish page** or **Update live page**. Page settings beside Publish holds the client URL, download permissions, password protection, and page-management actions. See the [customization guide](docs/customization.md).
 
@@ -131,7 +132,7 @@ The v0.4.0 feature set passed 219 unit tests, 83 Chromium scenarios, type checki
 
 The sidebar bridge is a maintained DOM integration rather than an official Immich plugin API. Use one Pager container per database. When upstream revocation fails, the overview is hidden; existing native links remain subject to Immich until the owner finishes synchronization. See [validation notes](docs/validation.md).
 
-**Upgrading an existing installation:** this update migrates Pager to schema version 3. Back up the complete stopped Pager volume first. Rolling back to an older image requires restoring that backup too. See [upgrade and rollback](docs/deployment.md#schema-upgrades).
+**Upgrading an existing installation:** the current development branch migrates Pager to schema version 4 (the published 0.4.0 release uses schema 3). Back up the complete stopped Pager volume first. Rolling back to an older image requires restoring that backup too. See [upgrade and rollback](docs/deployment.md#schema-upgrades).
 
 ## Development
 

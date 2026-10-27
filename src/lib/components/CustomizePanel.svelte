@@ -4,11 +4,14 @@
     resetClientUiValue,
   } from '$lib/customization';
   import ResetField from './ResetField.svelte';
+  import ThemePanel from './ThemePanel.svelte';
+  import { themePalette } from '$lib/themes';
   import { mdiRestore } from '@mdi/js';
-  import { tick } from 'svelte';
+  import { tick, onMount } from 'svelte';
   import { Button, Field, Select, Switch, Input, Textarea } from '@immich/ui';
   import {
     APPEARANCE_FILE_MAX_BYTES,
+    applyAppearanceSettings,
     parseAppearanceFile,
     serializeAppearanceFile,
     type AppearanceSettings,
@@ -36,18 +39,64 @@
 
   let {
     fields = $bindable(),
+    themeUndo = $bindable<PageInput | null>(null),
     saved,
     busy = false,
     onTitleInput,
     onResetAll,
+    onThemePreview = () => {},
   }: {
     fields: PageInput;
+    themeUndo?: PageInput | null;
     saved: DraftEditorPage | null;
     busy?: boolean;
     onTitleInput: (value: string) => void;
     onResetAll: () => void;
+    onThemePreview?: (page: PageInput | null) => void;
   } = $props();
 
+  const defaults = $derived({
+    ...customizationDefaults,
+    ...fields.pageTheme?.definition.design,
+    theme:
+      fields.pageTheme && !fields.pageTheme.definition.variants.dark
+        ? ('light' as const)
+        : customizationDefaults.theme,
+  });
+  let preferredMode = $state<'light' | 'dark'>('dark');
+  onMount(() => {
+    const media = matchMedia('(prefers-color-scheme: dark)');
+    const update = () => (preferredMode = media.matches ? 'dark' : 'light');
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  });
+  const currentPalette = $derived(
+    themePalette(fields, fields.theme === 'system' ? preferredMode : undefined),
+  );
+  function paletteInput(
+    role: 'background' | 'foreground' | 'primary',
+    value: string,
+  ) {
+    if (fields.pageTheme) {
+      fields.pageTheme = {
+        ...fields.pageTheme,
+        overrides: { ...fields.pageTheme.overrides, [role]: value },
+      };
+      if (role === 'primary') fields.accent = customizationDefaults.accent;
+      else fields[role] = null;
+    } else if (role === 'primary') fields.accent = value;
+    else fields[role] = value;
+  }
+  function resetPalette(role: 'background' | 'foreground' | 'primary') {
+    if (fields.pageTheme) {
+      const overrides = { ...fields.pageTheme.overrides };
+      delete overrides[role];
+      fields.pageTheme = { ...fields.pageTheme, overrides };
+    }
+    if (role === 'primary') fields.accent = customizationDefaults.accent;
+    else fields[role] = null;
+  }
   let root: HTMLElement;
   let activeTab = $state<Tab>('Design');
   let appearanceFileError = $state('');
@@ -101,6 +150,7 @@
   function currentAppearance(): AppearanceSettings {
     return {
       theme: fields.theme,
+      pageTheme: fields.pageTheme,
       background: fields.background,
       foreground: fields.foreground,
       accent: fields.accent,
@@ -161,7 +211,7 @@
         await file.text(),
         currentAppearance(),
       );
-      Object.assign(fields, imported);
+      fields = applyAppearanceSettings($state.snapshot(fields), imported);
       appearanceFileStatus =
         'Appearance imported into this private draft. Publish when you are ready to share it.';
     } catch (cause) {
@@ -345,11 +395,10 @@
     >
       <ResetField
         value={fields.bannerHeight}
-        defaultValue={customizationDefaults.bannerHeight}
+        defaultValue={defaults.bannerHeight}
         label="Banner height"
         disabled={busy}
-        onreset={() =>
-          (fields.bannerHeight = customizationDefaults.bannerHeight)}
+        onreset={() => (fields.bannerHeight = defaults.bannerHeight)}
       >
         <label class="canvas-height-control"
           >Banner height {fields.bannerHeight
@@ -398,21 +447,28 @@
       {/if}
       <section>
         <h2>Header</h2>
-        <HeaderPresetPicker {fields} onSelect={applyPreset} />
-        <p class="hint">
-          Choose a starting layout. Presets change header composition only.
-        </p>
+        {#if !fields.pageTheme || fields.pageTheme.definition.layout === 'classic'}<HeaderPresetPicker
+            {fields}
+            onSelect={applyPreset}
+          />{:else}<p class="hint">
+            {fields.pageTheme.definition.name} controls this header composition.
+            Size, crop, and typography remain adjustable below.
+          </p>{/if}
+        {#if !fields.pageTheme || fields.pageTheme.definition.layout === 'classic'}<p
+            class="hint"
+          >
+            Choose a starting layout. Presets change header composition only.
+          </p>{/if}
       </section>
       <section>
         <h2>Logo</h2>
         <ResetField
           value={fields.galleryStyle.logoShape}
-          defaultValue={customizationDefaults.galleryStyle.logoShape}
+          defaultValue={defaults.galleryStyle.logoShape}
           label="Logo shape"
           disabled={busy}
           onreset={() =>
-            (fields.galleryStyle.logoShape =
-              customizationDefaults.galleryStyle.logoShape)}
+            (fields.galleryStyle.logoShape = defaults.galleryStyle.logoShape)}
         >
           <Field label="Logo shape"
             ><Select
@@ -427,12 +483,12 @@
         </ResetField>
         <ResetField
           value={fields.galleryStyle.logoPosition}
-          defaultValue={customizationDefaults.galleryStyle.logoPosition}
+          defaultValue={defaults.galleryStyle.logoPosition}
           label="Logo position"
           disabled={busy}
           onreset={() =>
             (fields.galleryStyle.logoPosition =
-              customizationDefaults.galleryStyle.logoPosition)}
+              defaults.galleryStyle.logoPosition)}
         >
           <Field label="Logo position"
             ><Select
@@ -446,10 +502,10 @@
         </ResetField>
         <ResetField
           value={fields.logoSize}
-          defaultValue={customizationDefaults.logoSize}
+          defaultValue={defaults.logoSize}
           label="Logo size"
           disabled={busy}
-          onreset={() => (fields.logoSize = customizationDefaults.logoSize)}
+          onreset={() => (fields.logoSize = defaults.logoSize)}
         >
           <label class="range-setting">
             Logo size
@@ -471,12 +527,11 @@
         <h2>Font</h2>
         <ResetField
           value={fields.galleryStyle.fontFamily}
-          defaultValue={customizationDefaults.galleryStyle.fontFamily}
+          defaultValue={defaults.galleryStyle.fontFamily}
           label="Font family"
           disabled={busy}
           onreset={() =>
-            (fields.galleryStyle.fontFamily =
-              customizationDefaults.galleryStyle.fontFamily)}
+            (fields.galleryStyle.fontFamily = defaults.galleryStyle.fontFamily)}
         >
           <Field label="Font family"
             ><Select
@@ -488,6 +543,41 @@
             /></Field
           >
         </ResetField>
+        {#if fields.pageTheme}
+          <ResetField
+            value={fields.pageTheme.headingFont ??
+              fields.pageTheme.definition.headingFont}
+            defaultValue={fields.pageTheme.definition.headingFont}
+            label="Heading font"
+            disabled={busy}
+            onreset={() => {
+              if (fields.pageTheme)
+                fields.pageTheme = {
+                  ...fields.pageTheme,
+                  headingFont: undefined,
+                };
+            }}
+          >
+            <Field label="Heading font"
+              ><Select
+                value={fields.pageTheme.headingFont ??
+                  fields.pageTheme.definition.headingFont}
+                options={FONT_CATALOG.map((f) => ({
+                  value: f.id,
+                  label: f.name,
+                }))}
+                onChange={(value) => {
+                  if (fields.pageTheme)
+                    fields.pageTheme = {
+                      ...fields.pageTheme,
+                      headingFont:
+                        value as typeof fields.pageTheme.definition.headingFont,
+                    };
+                }}
+              /></Field
+            >
+          </ResetField>
+        {/if}
         <p class="hint">
           Fonts are bundled locally. System uses the fonts installed on each
           visitor’s device.
@@ -497,10 +587,10 @@
         <h2>Appearance</h2>
         <ResetField
           value={fields.theme}
-          defaultValue={customizationDefaults.theme}
+          defaultValue={defaults.theme}
           label="Appearance"
           disabled={busy}
-          onreset={() => (fields.theme = customizationDefaults.theme)}
+          onreset={() => (fields.theme = defaults.theme)}
         >
           <Field label="Appearance">
             <Select
@@ -509,64 +599,74 @@
                 { value: 'dark', label: 'Dark' },
                 { value: 'light', label: 'Light' },
                 { value: 'system', label: 'System' },
-              ]}
+              ].filter(
+                (option) =>
+                  !fields.pageTheme ||
+                  (option.value === 'system'
+                    ? !!fields.pageTheme.definition.variants.light &&
+                      !!fields.pageTheme.definition.variants.dark
+                    : !!fields.pageTheme.definition.variants[
+                        option.value as 'light' | 'dark'
+                      ]),
+              )}
             />
           </Field>
         </ResetField>
         <div class="color-row">
           <ResetField
-            value={fields.background}
-            defaultValue={customizationDefaults.background}
+            value={fields.pageTheme?.overrides.background ?? fields.background}
+            defaultValue={defaults.background}
             label="Background color"
             disabled={busy}
-            onreset={() =>
-              (fields.background = customizationDefaults.background)}
+            onreset={() => resetPalette('background')}
           >
             <label class="color-setting">
               Background
               <input
                 type="color"
                 aria-label="Background color"
-                value={fields.background ??
+                value={currentPalette?.background.slice(0, 7) ??
+                  fields.background ??
                   (fields.theme === 'light' ? '#ffffff' : '#000000')}
                 oninput={(event) =>
-                  (fields.background = event.currentTarget.value)}
+                  paletteInput('background', event.currentTarget.value)}
               />
             </label>
           </ResetField>
           <ResetField
-            value={fields.foreground}
-            defaultValue={customizationDefaults.foreground}
+            value={fields.pageTheme?.overrides.foreground ?? fields.foreground}
+            defaultValue={defaults.foreground}
             label="Text color"
             disabled={busy}
-            onreset={() =>
-              (fields.foreground = customizationDefaults.foreground)}
+            onreset={() => resetPalette('foreground')}
           >
             <label class="color-setting">
               Text
               <input
                 type="color"
                 aria-label="Text color"
-                value={fields.foreground ??
+                value={currentPalette?.foreground.slice(0, 7) ??
+                  fields.foreground ??
                   (fields.theme === 'light' ? '#191919' : '#e5e7eb')}
                 oninput={(event) =>
-                  (fields.foreground = event.currentTarget.value)}
+                  paletteInput('foreground', event.currentTarget.value)}
               />
             </label>
           </ResetField>
           <ResetField
-            value={fields.accent}
-            defaultValue={customizationDefaults.accent}
+            value={fields.pageTheme?.overrides.primary ?? fields.accent}
+            defaultValue={defaults.accent}
             label="Accent color"
             disabled={busy}
-            onreset={() => (fields.accent = customizationDefaults.accent)}
+            onreset={() => resetPalette('primary')}
           >
             <label class="color-setting">
               Accent
               <input
                 type="color"
                 aria-label="Accent color"
-                bind:value={fields.accent}
+                value={currentPalette?.primary.slice(0, 7) ?? fields.accent}
+                oninput={(e) => paletteInput('primary', e.currentTarget.value)}
               />
             </label>
           </ResetField>
@@ -574,6 +674,8 @@
         <Button
           variant="ghost"
           onclick={() => {
+            if (fields.pageTheme)
+              fields.pageTheme = { ...fields.pageTheme, overrides: {} };
             fields.background = null;
             fields.foreground = null;
             fields.accent = '#accbfa';
@@ -590,10 +692,10 @@
           <h2>Header details</h2>
           <ResetField
             value={fields.alignment}
-            defaultValue={customizationDefaults.alignment}
+            defaultValue={defaults.alignment}
             label="Header alignment"
             disabled={busy}
-            onreset={() => (fields.alignment = customizationDefaults.alignment)}
+            onreset={() => (fields.alignment = defaults.alignment)}
           >
             <Field label="Header alignment">
               <Select
@@ -605,31 +707,30 @@
               />
             </Field>
           </ResetField>
-          <ResetField
-            value={fields.headerLayout}
-            defaultValue={customizationDefaults.headerLayout}
-            label="Header layout"
-            disabled={busy}
-            onreset={() =>
-              (fields.headerLayout = customizationDefaults.headerLayout)}
-          >
-            <Field label="Header layout">
-              <Select
-                bind:value={fields.headerLayout}
-                options={[
-                  { value: 'below', label: 'Below banner' },
-                  { value: 'overlay', label: 'Over banner' },
-                ]}
-              />
-            </Field>
-          </ResetField>
+          {#if !fields.pageTheme || fields.pageTheme.definition.layout === 'classic'}<ResetField
+              value={fields.headerLayout}
+              defaultValue={defaults.headerLayout}
+              label="Header layout"
+              disabled={busy}
+              onreset={() => (fields.headerLayout = defaults.headerLayout)}
+            >
+              <Field label="Header layout">
+                <Select
+                  bind:value={fields.headerLayout}
+                  options={[
+                    { value: 'below', label: 'Below banner' },
+                    { value: 'overlay', label: 'Over banner' },
+                  ]}
+                />
+              </Field>
+            </ResetField>
+          {/if}
           <ResetField
             value={fields.headerSize}
-            defaultValue={customizationDefaults.headerSize}
+            defaultValue={defaults.headerSize}
             label="Header size"
             disabled={busy}
-            onreset={() =>
-              (fields.headerSize = customizationDefaults.headerSize)}
+            onreset={() => (fields.headerSize = defaults.headerSize)}
           >
             <Field label="Header size">
               <Select
@@ -647,10 +748,10 @@
           {/if}
           <ResetField
             value={fields.titleSize}
-            defaultValue={customizationDefaults.titleSize}
+            defaultValue={defaults.titleSize}
             label="Title size"
             disabled={busy}
-            onreset={() => (fields.titleSize = customizationDefaults.titleSize)}
+            onreset={() => (fields.titleSize = defaults.titleSize)}
           >
             <label class="range-setting">
               Title size
@@ -669,11 +770,10 @@
           </ResetField>
           <ResetField
             value={fields.descriptionSize}
-            defaultValue={customizationDefaults.descriptionSize}
+            defaultValue={defaults.descriptionSize}
             label="Description size"
             disabled={busy}
-            onreset={() =>
-              (fields.descriptionSize = customizationDefaults.descriptionSize)}
+            onreset={() => (fields.descriptionSize = defaults.descriptionSize)}
           >
             <label class="range-setting">
               Description size
@@ -692,11 +792,10 @@
           </ResetField>
           <ResetField
             value={fields.headerSpacing}
-            defaultValue={customizationDefaults.headerSpacing}
+            defaultValue={defaults.headerSpacing}
             label="Header spacing"
             disabled={busy}
-            onreset={() =>
-              (fields.headerSpacing = customizationDefaults.headerSpacing)}
+            onreset={() => (fields.headerSpacing = defaults.headerSpacing)}
           >
             <label class="range-setting">
               Header spacing
@@ -742,12 +841,11 @@
               </small>
               <ResetField
                 value={fields.bannerPosition}
-                defaultValue={customizationDefaults.bannerPosition}
+                defaultValue={defaults.bannerPosition}
                 label="Banner crop position"
                 disabled={busy}
                 onreset={() =>
-                  (fields.bannerPosition =
-                    customizationDefaults.bannerPosition)}
+                  (fields.bannerPosition = defaults.bannerPosition)}
               >
                 <div class="crop-position-control">
                   <label for="banner-crop-position">Banner crop position</label>
@@ -771,12 +869,12 @@
           <h2>Typography</h2>
           <ResetField
             value={fields.galleryStyle.titleFontWeight}
-            defaultValue={customizationDefaults.galleryStyle.titleFontWeight}
+            defaultValue={defaults.galleryStyle.titleFontWeight}
             label="Title weight"
             disabled={busy}
             onreset={() =>
               (fields.galleryStyle.titleFontWeight =
-                customizationDefaults.galleryStyle.titleFontWeight)}
+                defaults.galleryStyle.titleFontWeight)}
           >
             <label class="range-setting">
               Title weight
@@ -800,12 +898,12 @@
           </ResetField>
           <ResetField
             value={fields.galleryStyle.bodyFontSize}
-            defaultValue={customizationDefaults.galleryStyle.bodyFontSize}
+            defaultValue={defaults.galleryStyle.bodyFontSize}
             label="Body size"
             disabled={busy}
             onreset={() =>
               (fields.galleryStyle.bodyFontSize =
-                customizationDefaults.galleryStyle.bodyFontSize)}
+                defaults.galleryStyle.bodyFontSize)}
           >
             <label class="range-setting">
               Body size
@@ -829,12 +927,12 @@
           </ResetField>
           <ResetField
             value={fields.galleryStyle.bodyFontWeight}
-            defaultValue={customizationDefaults.galleryStyle.bodyFontWeight}
+            defaultValue={defaults.galleryStyle.bodyFontWeight}
             label="Body weight"
             disabled={busy}
             onreset={() =>
               (fields.galleryStyle.bodyFontWeight =
-                customizationDefaults.galleryStyle.bodyFontWeight)}
+                defaults.galleryStyle.bodyFontWeight)}
           >
             <label class="range-setting">
               Body weight
@@ -858,12 +956,12 @@
           </ResetField>
           <ResetField
             value={fields.galleryStyle.cardTitleSize}
-            defaultValue={customizationDefaults.galleryStyle.cardTitleSize}
+            defaultValue={defaults.galleryStyle.cardTitleSize}
             label="Album title size"
             disabled={busy}
             onreset={() =>
               (fields.galleryStyle.cardTitleSize =
-                customizationDefaults.galleryStyle.cardTitleSize)}
+                defaults.galleryStyle.cardTitleSize)}
           >
             <label class="range-setting">
               Album title size
@@ -887,12 +985,12 @@
           </ResetField>
           <ResetField
             value={fields.galleryStyle.cardTitleWeight}
-            defaultValue={customizationDefaults.galleryStyle.cardTitleWeight}
+            defaultValue={defaults.galleryStyle.cardTitleWeight}
             label="Album title weight"
             disabled={busy}
             onreset={() =>
               (fields.galleryStyle.cardTitleWeight =
-                customizationDefaults.galleryStyle.cardTitleWeight)}
+                defaults.galleryStyle.cardTitleWeight)}
           >
             <label class="range-setting">
               Album title weight
@@ -920,12 +1018,12 @@
           <h2>Layout</h2>
           <ResetField
             value={fields.galleryStyle.contentWidth}
-            defaultValue={customizationDefaults.galleryStyle.contentWidth}
+            defaultValue={defaults.galleryStyle.contentWidth}
             label="Content width"
             disabled={busy}
             onreset={() =>
               (fields.galleryStyle.contentWidth =
-                customizationDefaults.galleryStyle.contentWidth)}
+                defaults.galleryStyle.contentWidth)}
           >
             <label class="range-setting">
               Content width
@@ -949,12 +1047,12 @@
           </ResetField>
           <ResetField
             value={fields.galleryStyle.pagePadding}
-            defaultValue={customizationDefaults.galleryStyle.pagePadding}
+            defaultValue={defaults.galleryStyle.pagePadding}
             label="Page padding"
             disabled={busy}
             onreset={() =>
               (fields.galleryStyle.pagePadding =
-                customizationDefaults.galleryStyle.pagePadding)}
+                defaults.galleryStyle.pagePadding)}
           >
             <label class="range-setting">
               Page padding
@@ -978,12 +1076,12 @@
           </ResetField>
           <ResetField
             value={fields.galleryStyle.gridMinWidth}
-            defaultValue={customizationDefaults.galleryStyle.gridMinWidth}
+            defaultValue={defaults.galleryStyle.gridMinWidth}
             label="Grid density"
             disabled={busy}
             onreset={() =>
               (fields.galleryStyle.gridMinWidth =
-                customizationDefaults.galleryStyle.gridMinWidth)}
+                defaults.galleryStyle.gridMinWidth)}
           >
             <label class="range-setting">
               Grid density
@@ -1007,12 +1105,12 @@
           </ResetField>
           <ResetField
             value={fields.galleryStyle.gridRowGap}
-            defaultValue={customizationDefaults.galleryStyle.gridRowGap}
+            defaultValue={defaults.galleryStyle.gridRowGap}
             label="Row spacing"
             disabled={busy}
             onreset={() =>
               (fields.galleryStyle.gridRowGap =
-                customizationDefaults.galleryStyle.gridRowGap)}
+                defaults.galleryStyle.gridRowGap)}
           >
             <label class="range-setting">
               Row spacing
@@ -1036,12 +1134,12 @@
           </ResetField>
           <ResetField
             value={fields.galleryStyle.gridColumnGap}
-            defaultValue={customizationDefaults.galleryStyle.gridColumnGap}
+            defaultValue={defaults.galleryStyle.gridColumnGap}
             label="Column spacing"
             disabled={busy}
             onreset={() =>
               (fields.galleryStyle.gridColumnGap =
-                customizationDefaults.galleryStyle.gridColumnGap)}
+                defaults.galleryStyle.gridColumnGap)}
           >
             <label class="range-setting">
               Column spacing
@@ -1065,12 +1163,12 @@
           </ResetField>
           <ResetField
             value={fields.galleryStyle.coverAspectRatio}
-            defaultValue={customizationDefaults.galleryStyle.coverAspectRatio}
+            defaultValue={defaults.galleryStyle.coverAspectRatio}
             label="Cover aspect ratio"
             disabled={busy}
             onreset={() =>
               (fields.galleryStyle.coverAspectRatio =
-                customizationDefaults.galleryStyle.coverAspectRatio)}
+                defaults.galleryStyle.coverAspectRatio)}
           >
             <label class="range-setting">
               Cover aspect ratio
@@ -1096,12 +1194,12 @@
           </ResetField>
           <ResetField
             value={fields.galleryStyle.cardRadius}
-            defaultValue={customizationDefaults.galleryStyle.cardRadius}
+            defaultValue={defaults.galleryStyle.cardRadius}
             label="Corner radius"
             disabled={busy}
             onreset={() =>
               (fields.galleryStyle.cardRadius =
-                customizationDefaults.galleryStyle.cardRadius)}
+                defaults.galleryStyle.cardRadius)}
           >
             <label class="range-setting">
               Corner radius
@@ -1125,12 +1223,12 @@
           </ResetField>
           <ResetField
             value={fields.galleryStyle.hoverTreatment}
-            defaultValue={customizationDefaults.galleryStyle.hoverTreatment}
+            defaultValue={defaults.galleryStyle.hoverTreatment}
             label="Hover treatment"
             disabled={busy}
             onreset={() =>
               (fields.galleryStyle.hoverTreatment =
-                customizationDefaults.galleryStyle.hoverTreatment)}
+                defaults.galleryStyle.hoverTreatment)}
           >
             <Field label="Hover treatment">
               <Select
@@ -1164,7 +1262,7 @@
         <legend>Header</legend>
         <ResetField
           value={fields.clientUi.showBanner}
-          defaultValue={customizationDefaults.clientUi.showBanner}
+          defaultValue={defaults.clientUi.showBanner}
           label="Show banner"
           disabled={busy}
           onreset={() =>
@@ -1183,7 +1281,7 @@
         </ResetField>
         <ResetField
           value={fields.clientUi.showLogo}
-          defaultValue={customizationDefaults.clientUi.showLogo}
+          defaultValue={defaults.clientUi.showLogo}
           label="Show logo"
           disabled={busy}
           onreset={() =>
@@ -1199,7 +1297,7 @@
         </ResetField>
         <ResetField
           value={fields.clientUi.showTitle}
-          defaultValue={customizationDefaults.clientUi.showTitle}
+          defaultValue={defaults.clientUi.showTitle}
           label="Show title"
           disabled={busy}
           onreset={() =>
@@ -1218,7 +1316,7 @@
         </ResetField>
         <ResetField
           value={fields.clientUi.showDescription}
-          defaultValue={customizationDefaults.clientUi.showDescription}
+          defaultValue={defaults.clientUi.showDescription}
           label="Show description"
           disabled={busy}
           onreset={() =>
@@ -1242,7 +1340,7 @@
         <legend>Browsing</legend>
         <ResetField
           value={fields.clientUi.showBrowsingControls}
-          defaultValue={customizationDefaults.clientUi.showBrowsingControls}
+          defaultValue={defaults.clientUi.showBrowsingControls}
           label="Show browsing controls"
           disabled={busy}
           onreset={() =>
@@ -1262,7 +1360,7 @@
         </ResetField>
         <ResetField
           value={fields.clientUi.showAlbumSearch}
-          defaultValue={customizationDefaults.clientUi.showAlbumSearch}
+          defaultValue={defaults.clientUi.showAlbumSearch}
           label="Show album search"
           disabled={busy}
           onreset={() =>
@@ -1283,7 +1381,7 @@
         </ResetField>
         <ResetField
           value={fields.clientUi.showMonthFilter}
-          defaultValue={customizationDefaults.clientUi.showMonthFilter}
+          defaultValue={defaults.clientUi.showMonthFilter}
           label="Show month filter"
           disabled={busy}
           onreset={() =>
@@ -1304,7 +1402,7 @@
         </ResetField>
         <ResetField
           value={fields.clientUi.showYearNavigation}
-          defaultValue={customizationDefaults.clientUi.showYearNavigation}
+          defaultValue={defaults.clientUi.showYearNavigation}
           label="Show year navigation"
           disabled={busy}
           onreset={() =>
@@ -1325,7 +1423,7 @@
         </ResetField>
         <ResetField
           value={fields.clientUi.showResultsCount}
-          defaultValue={customizationDefaults.clientUi.showResultsCount}
+          defaultValue={defaults.clientUi.showResultsCount}
           label="Show results count"
           disabled={busy}
           onreset={() =>
@@ -1350,7 +1448,7 @@
         <legend>Albums</legend>
         <ResetField
           value={fields.clientUi.showAlbums}
-          defaultValue={customizationDefaults.clientUi.showAlbums}
+          defaultValue={defaults.clientUi.showAlbums}
           label="Show albums"
           disabled={busy}
           onreset={() =>
@@ -1371,7 +1469,7 @@
         </ResetField>
         <ResetField
           value={fields.clientUi.showAlbumCovers}
-          defaultValue={customizationDefaults.clientUi.showAlbumCovers}
+          defaultValue={defaults.clientUi.showAlbumCovers}
           label="Show album covers"
           disabled={busy}
           onreset={() =>
@@ -1394,7 +1492,7 @@
         </ResetField>
         <ResetField
           value={fields.clientUi.showAlbumTitles}
-          defaultValue={customizationDefaults.clientUi.showAlbumTitles}
+          defaultValue={defaults.clientUi.showAlbumTitles}
           label="Show album names"
           disabled={busy}
           onreset={() =>
@@ -1421,7 +1519,7 @@
         </p>
         <ResetField
           value={fields.clientUi.showAlbumDates}
-          defaultValue={customizationDefaults.clientUi.showAlbumDates}
+          defaultValue={defaults.clientUi.showAlbumDates}
           label="Show album dates"
           disabled={busy}
           onreset={() =>
@@ -1442,7 +1540,7 @@
         </ResetField>
         <ResetField
           value={fields.clientUi.showAlbumItemCounts}
-          defaultValue={customizationDefaults.clientUi.showAlbumItemCounts}
+          defaultValue={defaults.clientUi.showAlbumItemCounts}
           label="Show album item counts"
           disabled={busy}
           onreset={() =>
@@ -1463,7 +1561,7 @@
         </ResetField>
         <ResetField
           value={fields.clientUi.showSharedLabels}
-          defaultValue={customizationDefaults.clientUi.showSharedLabels}
+          defaultValue={defaults.clientUi.showSharedLabels}
           label="Show Shared labels"
           disabled={busy}
           onreset={() =>
@@ -1488,7 +1586,7 @@
         <legend>Years</legend>
         <ResetField
           value={fields.clientUi.showYearHeadings}
-          defaultValue={customizationDefaults.clientUi.showYearHeadings}
+          defaultValue={defaults.clientUi.showYearHeadings}
           label="Show year headings"
           disabled={busy}
           onreset={() =>
@@ -1508,7 +1606,7 @@
         </ResetField>
         <ResetField
           value={fields.clientUi.showYearCounts}
-          defaultValue={customizationDefaults.clientUi.showYearCounts}
+          defaultValue={defaults.clientUi.showYearCounts}
           label="Show year counts"
           disabled={busy}
           onreset={() =>
@@ -1528,7 +1626,7 @@
         </ResetField>
         <ResetField
           value={fields.clientUi.allowYearCollapse}
-          defaultValue={customizationDefaults.clientUi.allowYearCollapse}
+          defaultValue={defaults.clientUi.allowYearCollapse}
           label="Allow year groups to collapse"
           disabled={busy}
           onreset={() =>
@@ -1557,7 +1655,7 @@
         <legend>Footer</legend>
         <ResetField
           value={fields.clientUi.showBranding}
-          defaultValue={customizationDefaults.clientUi.showBranding}
+          defaultValue={defaults.clientUi.showBranding}
           label="Show ImmichPager branding"
           disabled={busy}
           onreset={() =>
@@ -1587,115 +1685,125 @@
       aria-labelledby="customize-tab-themes"
       tabindex="0"
     >
-      <section>
-        <h2>Pager appearance file</h2>
-        <p class="hint">
-          Share a complete design with visibility, visual settings, and CSS.
-          Page title, description, URL, albums, passwords, and branding images
-          stay on this page.
-        </p>
-        <Button variant="ghost" onclick={exportAppearance} disabled={busy}
-          >Export appearance JSON</Button
-        >
-        <label for="appearance-file">Import appearance JSON</label>
-        <input
-          id="appearance-file"
-          type="file"
-          accept="application/json,.json"
-          aria-describedby="appearance-file-help appearance-file-status"
-          onchange={importAppearance}
-          disabled={busy}
-        />
-        <small id="appearance-file-help"
-          >Appearance files up to 96 KiB are supported. Imports autosave
-          privately; publish to update the client page.</small
-        >
-        <p
-          id="appearance-file-status"
-          class:error={!!appearanceFileError}
-          role={appearanceFileError
-            ? 'alert'
-            : appearanceFileStatus
-              ? 'status'
-              : undefined}
-        >
-          {appearanceFileError || appearanceFileStatus}
-        </p>
-      </section>
+      <ThemePanel
+        bind:fields
+        bind:undo={themeUndo}
+        {busy}
+        onPreview={onThemePreview}
+      />
+      <details>
+        <summary>Advanced appearance and token files</summary>
+        <section>
+          <h2>Pager appearance file</h2>
+          <p class="hint">
+            Share a complete design with visibility, visual settings, and CSS.
+            Page title, description, URL, albums, passwords, and branding images
+            stay on this page.
+          </p>
+          <Button variant="ghost" onclick={exportAppearance} disabled={busy}
+            >Export appearance JSON</Button
+          >
+          <label for="appearance-file">Import appearance JSON</label>
+          <input
+            id="appearance-file"
+            type="file"
+            accept="application/json,.json"
+            aria-describedby="appearance-file-help appearance-file-status"
+            onchange={importAppearance}
+            disabled={busy}
+          />
+          <small id="appearance-file-help"
+            >Appearance files up to 96 KiB are supported. Imports autosave
+            privately; publish to update the client page.</small
+          >
+          <p
+            id="appearance-file-status"
+            class:error={!!appearanceFileError}
+            role={appearanceFileError
+              ? 'alert'
+              : appearanceFileStatus
+                ? 'status'
+                : undefined}
+          >
+            {appearanceFileError || appearanceFileStatus}
+          </p>
+        </section>
 
-      <section>
-        <h2>Design tokens</h2>
-        <p class="hint">
-          Import or export visual settings in DTCG JSON format. Token files
-          update colors and styling while keeping visibility and custom CSS as
-          saved.
-        </p>
-        <Button variant="ghost" onclick={exportTokens} disabled={busy}
-          >Export .tokens.json</Button
-        >
-        <label for="token-file">Import .tokens.json</label>
-        <input
-          id="token-file"
-          type="file"
-          accept="application/json,.json"
-          aria-describedby="token-file-help token-file-status"
-          onchange={previewTokens}
-          disabled={busy}
-        />
-        <small id="token-file-help"
-          >Token files up to 96 KiB are supported. Review recognized and
-          unsupported paths before applying.</small
-        >
-        {#if tokenPreview}
-          <div class="token-summary" aria-live="polite">
-            <h3>Import summary</h3>
-            <p>
-              {tokenPreview.recognized.length} recognized token{tokenPreview
-                .recognized.length === 1
-                ? ''
-                : 's'}; {tokenPreview.unsupported.length} unsupported path{tokenPreview
-                .unsupported.length === 1
-                ? ''
-                : 's'}.
-            </p>
-            {#if tokenPreview.recognized.length}
-              <ul aria-label="Recognized design tokens">
-                {#each tokenPreview.recognized as token (token.path)}
-                  <li>
-                    <code>{token.path}</code><span>{String(token.value)}</span>
-                  </li>
-                {/each}
-              </ul>
-            {/if}
-            {#if tokenPreview.unsupported.length}
-              <details>
-                <summary>Unsupported token paths</summary>
-                <ul>
-                  {#each tokenPreview.unsupported as path (path)}<li>
-                      <code>{path}</code>
-                    </li>{/each}
+        <section>
+          <h2>Design tokens</h2>
+          <p class="hint">
+            Import or export visual settings in DTCG JSON format. Token files
+            update colors and styling while keeping visibility and custom CSS as
+            saved.
+          </p>
+          <Button variant="ghost" onclick={exportTokens} disabled={busy}
+            >Export .tokens.json</Button
+          >
+          <label for="token-file">Import .tokens.json</label>
+          <input
+            id="token-file"
+            type="file"
+            accept="application/json,.json"
+            aria-describedby="token-file-help token-file-status"
+            onchange={previewTokens}
+            disabled={busy}
+          />
+          <small id="token-file-help"
+            >Token files up to 96 KiB are supported. Review recognized and
+            unsupported paths before applying.</small
+          >
+          {#if tokenPreview}
+            <div class="token-summary" aria-live="polite">
+              <h3>Import summary</h3>
+              <p>
+                {tokenPreview.recognized.length} recognized token{tokenPreview
+                  .recognized.length === 1
+                  ? ''
+                  : 's'}; {tokenPreview.unsupported.length} unsupported path{tokenPreview
+                  .unsupported.length === 1
+                  ? ''
+                  : 's'}.
+              </p>
+              {#if tokenPreview.recognized.length}
+                <ul aria-label="Recognized design tokens">
+                  {#each tokenPreview.recognized as token (token.path)}
+                    <li>
+                      <code>{token.path}</code><span>{String(token.value)}</span
+                      >
+                    </li>
+                  {/each}
                 </ul>
-              </details>
-            {/if}
-            <Button
-              variant="ghost"
-              disabled={busy || !tokenPreview.hasApplicableTokens}
-              onclick={applyTokens}>Apply styling</Button
-            >
-          </div>
-        {/if}
-        <p
-          id="token-file-status"
-          class:error={!!tokenFileError}
-          role={tokenFileError
-            ? 'alert'
-            : tokenFileStatus
-              ? 'status'
-              : undefined}
-        >
-          {tokenFileError || tokenFileStatus}
-        </p>
-      </section>
+              {/if}
+              {#if tokenPreview.unsupported.length}
+                <details>
+                  <summary>Unsupported token paths</summary>
+                  <ul>
+                    {#each tokenPreview.unsupported as path (path)}<li>
+                        <code>{path}</code>
+                      </li>{/each}
+                  </ul>
+                </details>
+              {/if}
+              <Button
+                variant="ghost"
+                disabled={busy || !tokenPreview.hasApplicableTokens}
+                onclick={applyTokens}>Apply styling</Button
+              >
+            </div>
+          {/if}
+          <p
+            id="token-file-status"
+            class:error={!!tokenFileError}
+            role={tokenFileError
+              ? 'alert'
+              : tokenFileStatus
+                ? 'status'
+                : undefined}
+          >
+            {tokenFileError || tokenFileStatus}
+          </p>
+        </section>
+      </details>
     </div>
   {:else}
     <div

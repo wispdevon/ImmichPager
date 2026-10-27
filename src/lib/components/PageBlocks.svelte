@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Icon } from '@immich/ui';
+  import { resolveBlockTheme } from '$lib/themes';
   import { mdiPlus, mdiPencilOutline } from '@mdi/js';
   import AlbumBlock from './AlbumBlock.svelte';
   import type { GalleryPage } from '$lib/contracts';
@@ -58,7 +59,8 @@
 {/snippet}
 <div class="page-blocks">
   {@render insert(0)}
-  {#each blocks as block, index (block.id)}
+  {#each blocks as rawBlock, index (rawBlock.id)}
+    {@const block = resolveBlockTheme(rawBlock, page.pageTheme?.definition)}
     {#if editable || hasContent([block])}
       <section
         class="page-block ip-block"

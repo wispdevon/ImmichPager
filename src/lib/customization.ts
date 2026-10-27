@@ -8,6 +8,7 @@ const defaults = pageInputSchema.parse({
 });
 const keys = [
   'theme',
+  'pageTheme',
   'background',
   'foreground',
   'accent',
@@ -34,6 +35,7 @@ export function resetBlockPresentation(block: PageBlock): PageBlock {
   if (block.type === 'albums' && preset.type === 'albums')
     return {
       ...block,
+      presentationSource: undefined,
       layout: preset.layout,
       order: preset.order,
       grouping: preset.grouping,
@@ -41,13 +43,18 @@ export function resetBlockPresentation(block: PageBlock): PageBlock {
   if (block.type === 'photos' && preset.type === 'photos')
     return {
       ...block,
+      presentationSource: undefined,
       layout: preset.layout,
       columns: preset.columns,
       gap: preset.gap,
       rowHeight: preset.rowHeight,
     };
   if (block.type === 'text' && preset.type === 'text')
-    return { ...block, alignment: preset.alignment };
+    return {
+      ...block,
+      presentationSource: undefined,
+      alignment: preset.alignment,
+    };
   return block;
 }
 

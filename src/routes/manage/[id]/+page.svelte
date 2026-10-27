@@ -44,6 +44,7 @@
     slug: initial?.slug ?? '',
     description: initial?.description ?? '',
     theme: initial?.theme ?? 'dark',
+    pageTheme: initial?.pageTheme ?? null,
     background: initial?.background ?? null,
     foreground: initial?.foreground ?? null,
     accent: initial?.accent ?? '#accbfa',
@@ -98,7 +99,11 @@
   let canvasSequence = $state(0);
   function insertBlock(index: number, type: PageBlock['type']) {
     if ((fields.blocks?.length ?? 0) >= 100) return;
-    const block = blockSchema.parse({ id: crypto.randomUUID(), type });
+    const block = blockSchema.parse({
+      id: crypto.randomUUID(),
+      type,
+      ...(fields.pageTheme ? { presentationSource: 'theme' } : {}),
+    });
     const next = [...(fields.blocks ?? [])];
     next.splice(index, 0, block);
     fields.blocks = next;
@@ -144,8 +149,11 @@
       ? `/page/media/${saved.id}/branding/banner?preview=1&v=${brandingVersion}`
       : null,
   );
+  let themeAudition = $state<PageInput | null>(null);
+  let themeUndo = $state<PageInput | null>(null);
+  let systemColorMode = $state<'light' | 'dark'>('dark');
   const previewPage = $derived<GalleryPage>({
-    ...fields,
+    ...(themeAudition ?? fields),
     id: saved?.id ?? 'preview',
     title: fields.title,
     logo,
@@ -178,12 +186,16 @@
       draftRevision: saved.draftRevision,
       selectedBlockId,
       ackSequence: canvasSequence,
-      locked: busy || conflict,
+      locked: busy || conflict || !!themeAudition,
       page: {
         id: page.id,
         title: page.title,
         description: page.description,
-        theme: page.theme,
+        theme:
+          page.pageTheme && page.theme === 'system'
+            ? systemColorMode
+            : page.theme,
+        pageTheme: page.pageTheme,
         background: page.background,
         foreground: page.foreground,
         accent: page.accent,
@@ -228,6 +240,8 @@
   }
   $effect(() => {
     void snapshot();
+    void themeAudition;
+    void systemColorMode;
     void brandingVersion;
     void saved?.draftRevision;
     void selectedBlockId;
@@ -323,6 +337,11 @@
   });
   onMount(() => {
     editorReady = true;
+    const colorPreference = matchMedia('(prefers-color-scheme: dark)');
+    const updateColorPreference = () =>
+      (systemColorMode = colorPreference.matches ? 'dark' : 'light');
+    updateColorPreference();
+    colorPreference.addEventListener('change', updateColorPreference);
     const media = matchMedia('(max-width:700px)');
     narrow = media.matches;
     const resize = () => {
@@ -364,6 +383,7 @@
         parsed.data.sequence <= canvasSequence
       )
         return;
+      if (themeAudition) return;
       const change = parsed.data;
       canvasSequence = change.sequence;
       if (change.action === 'header') {
@@ -393,6 +413,7 @@
     window.addEventListener('message', receiveInlineHeaderChange);
     return () => {
       media.removeEventListener('change', resize);
+      colorPreference.removeEventListener('change', updateColorPreference);
       window.removeEventListener('beforeunload', warn);
       window.removeEventListener('message', receiveInlineHeaderChange);
     };
@@ -816,10 +837,14 @@
           />
         {:else if inspectorTab === 'Design'}<CustomizePanel
             bind:fields
+            bind:themeUndo
             {saved}
             {busy}
+            onThemePreview={(value) => (themeAudition = value)}
             onTitleInput={editTitle}
             onResetAll={() => {
+              themeUndo = null;
+              themeAudition = null;
               fields = resetCustomization($state.snapshot(fields));
               success =
                 'Customization reset to defaults. Content and sharing settings kept.';

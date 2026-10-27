@@ -49,6 +49,9 @@ test('appearance files round-trip between private drafts without copying page da
   const source = await sourceResponse.json();
   await page.goto(`/page/manage/${source.id}`);
   await openCustomize(page, 'Themes');
+  await page
+    .getByText('Advanced appearance and token files', { exact: true })
+    .click();
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     page.getByRole('button', { name: 'Export appearance JSON' }).click(),
@@ -59,7 +62,7 @@ test('appearance files round-trip between private drafts without copying page da
   const exported = JSON.parse(exportedText);
   expect(exported).toMatchObject({
     format: 'immichpager-appearance',
-    version: 3,
+    version: 4,
     appearance: {
       theme: 'light',
       background: '#f4f2ef',
@@ -104,6 +107,9 @@ test('appearance files round-trip between private drafts without copying page da
   const target = await targetResponse.json();
   await page.goto(`/page/manage/${target.id}`);
   await openCustomize(page, 'Themes');
+  await page
+    .getByText('Advanced appearance and token files', { exact: true })
+    .click();
   await page.getByLabel('Import appearance JSON').scrollIntoViewIfNeeded();
   await page.screenshot({
     path: 'test-results/appearance-import-export.png',
@@ -168,6 +174,7 @@ test('appearance files round-trip between private drafts without copying page da
   delete legacyAppearance.titleSize;
   delete legacyAppearance.descriptionSize;
   delete legacyAppearance.headerSpacing;
+  delete legacyAppearance.pageTheme;
   delete legacyAppearance.clientUi;
   delete legacyAppearance.galleryStyle;
   await page.getByLabel('Import appearance JSON').setInputFiles({

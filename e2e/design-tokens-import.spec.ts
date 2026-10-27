@@ -42,6 +42,9 @@ test('token preview reports unsupported paths and applies styling without changi
   const source = await sourceResponse.json();
   await page.goto('/page/manage/' + source.id);
   const sourceDialog = await openCustomize(page, 'Themes');
+  await page
+    .getByText('Advanced appearance and token files', { exact: true })
+    .click();
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     sourceDialog.getByRole('button', { name: 'Export .tokens.json' }).click(),
@@ -75,6 +78,9 @@ test('token preview reports unsupported paths and applies styling without changi
   const target = await targetResponse.json();
   await page.goto('/page/manage/' + target.id);
   const dialog = await openCustomize(page, 'Themes');
+  await page
+    .getByText('Advanced appearance and token files', { exact: true })
+    .click();
   await dialog.getByLabel('Import .tokens.json').setInputFiles({
     name: 'immichpager-design.tokens.json',
     mimeType: 'application/json',

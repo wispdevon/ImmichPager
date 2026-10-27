@@ -37,7 +37,7 @@ export class Store {
       (this.db.prepare('PRAGMA user_version').get() as { user_version: number })
         .user_version,
     );
-    if (version > 3) throw new Error('Database is newer than this application');
+    if (version > 4) throw new Error('Database is newer than this application');
     if (version < 1)
       this.db.exec(`
       BEGIN;
@@ -105,6 +105,12 @@ export class Store {
         throw cause;
       }
     }
+    if (version < 4)
+      this.db.exec(`BEGIN;
+      CREATE TABLE themes (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, revision INTEGER NOT NULL, document TEXT NOT NULL, updated_at TEXT NOT NULL);
+      CREATE INDEX themes_owner ON themes(owner_id, id);
+      PRAGMA user_version=4; COMMIT;
+    `);
     // An interrupted external operation remains private until its owner retries it.
     for (const row of this.db.prepare('SELECT document FROM pages').all() as {
       document: string;

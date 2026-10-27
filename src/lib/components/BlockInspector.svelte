@@ -9,6 +9,7 @@
     mdiClose,
   } from '@mdi/js';
   import type { Album, PageInput } from '$lib/contracts';
+  import { resolveBlockTheme } from '$lib/themes';
   import { blockSchema, type PageBlock } from '$lib/blocks';
   import LayoutPicker from './LayoutPicker.svelte';
   import ResetField from './ResetField.svelte';
@@ -44,10 +45,28 @@
     }
   });
   function update(block: PageBlock) {
+    const previous = blocks.find((b) => b.id === block.id);
+    const old =
+      previous && resolveBlockTheme(previous, fields.pageTheme?.definition);
+    if (
+      old &&
+      ['layout', 'gap', 'columns', 'rowHeight'].some(
+        (key) =>
+          key in old &&
+          key in block &&
+          (old as unknown as Record<string, unknown>)[key] !==
+            (block as unknown as Record<string, unknown>)[key],
+      )
+    )
+      block = { ...block, presentationSource: 'custom' };
     fields.blocks = blocks.map((b) => (b.id === block.id ? block : b));
   }
   function add(type: PageBlock['type']) {
-    const block = blockSchema.parse({ id: crypto.randomUUID(), type });
+    const block = blockSchema.parse({
+      id: crypto.randomUUID(),
+      type,
+      ...(fields.pageTheme ? { presentationSource: 'theme' } : {}),
+    });
     fields.blocks = [...blocks, block];
     selectedId = block.id;
   }
@@ -110,7 +129,8 @@
     <span>Drag to reorder</span>
   </div>
   <fieldset {disabled}>
-    {#each blocks as block, index (block.id)}
+    {#each blocks as rawBlock, index (rawBlock.id)}
+      {@const block = resolveBlockTheme(rawBlock, fields.pageTheme?.definition)}
       <article
         class:active={selectedId === block.id}
         ondragover={(event) => event.preventDefault()}
@@ -168,6 +188,19 @@
           >
         </div>
         {#if selectedId === block.id}<div class="block-settings">
+            {#if fields.pageTheme}<label
+                ><input
+                  type="checkbox"
+                  checked={block.presentationSource === 'theme'}
+                  onchange={(e) =>
+                    update({
+                      ...block,
+                      presentationSource: e.currentTarget.checked
+                        ? 'theme'
+                        : 'custom',
+                    })}
+                />Use theme layout</label
+              >{/if}
             <label
               >Heading <input
                 aria-label="Row heading"
@@ -191,9 +224,14 @@
               >
               <ResetField
                 value={block.layout}
-                defaultValue="cards"
+                defaultValue={fields.pageTheme?.definition.rows.albums ??
+                  'cards'}
                 label="Album style"
-                onreset={() => update({ ...block, layout: 'cards' })}
+                onreset={() =>
+                  update({
+                    ...block,
+                    layout: fields.pageTheme?.definition.rows.albums ?? 'cards',
+                  })}
               >
                 <div class="layout-setting">
                   <span>Style</span><LayoutPicker
@@ -344,9 +382,15 @@
                 </details>{/each}
               <ResetField
                 value={block.layout}
-                defaultValue="justified"
+                defaultValue={fields.pageTheme?.definition.rows.photos ??
+                  'justified'}
                 label="Photo layout"
-                onreset={() => update({ ...block, layout: 'justified' })}
+                onreset={() =>
+                  update({
+                    ...block,
+                    layout:
+                      fields.pageTheme?.definition.rows.photos ?? 'justified',
+                  })}
               >
                 <div class="layout-setting">
                   <span>Layout</span><LayoutPicker
@@ -373,9 +417,13 @@
               </ResetField>
               {#if ['square', 'masonry'].includes(block.layout)}<ResetField
                   value={block.columns}
-                  defaultValue={3}
+                  defaultValue={fields.pageTheme?.definition.rows.columns ?? 3}
                   label="Columns"
-                  onreset={() => update({ ...block, columns: 3 })}
+                  onreset={() =>
+                    update({
+                      ...block,
+                      columns: fields.pageTheme?.definition.rows.columns ?? 3,
+                    })}
                   ><label
                     >Columns <input
                       type="range"
@@ -392,9 +440,15 @@
                 >{/if}
               {#if ['justified', 'carousel'].includes(block.layout)}<ResetField
                   value={block.rowHeight}
-                  defaultValue={260}
+                  defaultValue={fields.pageTheme?.definition.rows.rowHeight ??
+                    260}
                   label="Photo height"
-                  onreset={() => update({ ...block, rowHeight: 260 })}
+                  onreset={() =>
+                    update({
+                      ...block,
+                      rowHeight:
+                        fields.pageTheme?.definition.rows.rowHeight ?? 260,
+                    })}
                   ><label
                     >Photo height <input
                       type="range"
@@ -412,9 +466,13 @@
                 >{/if}
               <ResetField
                 value={block.gap}
-                defaultValue={16}
+                defaultValue={fields.pageTheme?.definition.rows.gap ?? 16}
                 label="Spacing"
-                onreset={() => update({ ...block, gap: 16 })}
+                onreset={() =>
+                  update({
+                    ...block,
+                    gap: fields.pageTheme?.definition.rows.gap ?? 16,
+                  })}
                 ><label
                   >Spacing <input
                     type="range"

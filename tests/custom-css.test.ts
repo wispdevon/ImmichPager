@@ -69,3 +69,22 @@ it('excludes editing controls and their descendants from every authored selector
     ':not([data-pager-editor-ui],[data-pager-editor-ui] *)',
   );
 });
+
+it('adds theme precedence without removing the gallery or editor-control boundary', () => {
+  const css = compileCustomCss(
+    ':scope + .editor, h1::after {color:red}',
+    'page',
+    { precedence: 'page' },
+  );
+  expect(css.error).toBeNull();
+  expect(css.css).toContain(':is(*,#pager-authored-css#pager-authored-css)');
+  expect(css.css).toContain('[data-pager-gallery="page"]');
+  expect(css.css).toContain(
+    ':not([data-pager-editor-ui],[data-pager-editor-ui] *)',
+  );
+  expect(
+    compileCustomCss('a{background:url(https://unsafe.test)}', 'page', {
+      precedence: 'page',
+    }).error,
+  ).toBeTruthy();
+});

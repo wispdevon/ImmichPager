@@ -39,6 +39,7 @@ export async function gallery(
     title,
     description,
     theme,
+    pageTheme,
     background,
     foreground,
     accent,
@@ -65,6 +66,7 @@ export async function gallery(
     title,
     description,
     theme,
+    pageTheme,
     background,
     foreground,
     accent,
@@ -88,6 +90,15 @@ export async function gallery(
     banner: page.banner ? `/page/media/${id}/branding/banner${suffix}` : null,
     albums: [],
   };
+  if (result.pageTheme && !access.preview)
+    result.pageTheme = {
+      ...result.pageTheme,
+      definition: {
+        ...result.pageTheme.definition,
+        name: 'Page theme',
+        description: '',
+      },
+    };
   // Bound concurrency to avoid flooding a small Immich server.
   for (let i = 0; i < page.albumIds.length; i += 6) {
     result.albums.push(

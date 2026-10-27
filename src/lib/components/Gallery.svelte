@@ -5,7 +5,9 @@
     mdiImageSizeSelectLarge,
   } from '@mdi/js';
   import PageBlocks from './PageBlocks.svelte';
-  import { blockSchema, type PageBlock } from '$lib/blocks';
+  import { themeStylesheet } from '$lib/theme-render';
+  import '$lib/theme-layouts.css';
+  import { blockSchema, hasContent, type PageBlock } from '$lib/blocks';
   import { tick } from 'svelte';
   import { Textarea, Icon } from '@immich/ui';
   import { compileCustomCss, stylesheetMarkup } from '$lib/custom-css';
@@ -50,6 +52,14 @@
   let titleEditButton = $state<HTMLButtonElement | null>(null);
   let descriptionEditButton = $state<HTMLButtonElement | null>(null);
   const ui = $derived(page.clientUi);
+  const navigationBlocks = $derived(
+    (page.blocks ?? []).filter(
+      (block) =>
+        (compositionEdit || hasContent([block])) &&
+        (block.heading || block.type !== 'text') &&
+        (block.type !== 'albums' || ui.showAlbums || compositionEdit),
+    ),
+  );
   const clientHeaderVisible = $derived(
     editorHeader ||
       (inlineHeaderEdit && (ui.showTitle || ui.showDescription)) ||
@@ -70,7 +80,9 @@
     ],
   });
   const styling = $derived(
-    compileCustomCss(editorHeader ? '' : (page.customCss ?? ''), page.id),
+    compileCustomCss(editorHeader ? '' : (page.customCss ?? ''), page.id, {
+      precedence: page.pageTheme ? 'page' : undefined,
+    }),
   );
   const overlay = $derived(
     page.headerLayout === 'overlay' &&
@@ -160,9 +172,10 @@
 
 <div class="gallery-boundary" class:header-editor={editorHeader}>
   {@html galleryStyleStylesheet(page, { editorHeader })}
+  {@html themeStylesheet(page)}
   {@html stylesheetMarkup(styling.css)}
   <div
-    class="gallery ip-gallery"
+    class={`gallery ip-gallery ${page.pageTheme ? `pager-theme family-${page.pageTheme.definition.layout}` : ''}`}
     bind:this={galleryRoot}
     class:header-editor={editorHeader}
     data-pager-gallery={page.id}
@@ -393,6 +406,20 @@
             </div>
           </div>
         </header>
+        {#if page.pageTheme && page.pageTheme.definition.layout !== 'classic' && navigationBlocks.length > 0}
+          <nav
+            class="theme-section-nav ip-navigation"
+            aria-label="Page sections"
+          >
+            {#each navigationBlocks as block, i}
+              {#if block.heading || block.type !== 'text'}<a
+                  href={`#block-${block.id}`}
+                  >{block.heading ||
+                    `${block.type === 'albums' ? 'Albums' : block.type === 'photos' ? 'Photos' : 'Text'} ${i + 1}`}</a
+                >{/if}
+            {/each}
+          </nav>
+        {/if}
       </div>{/if}
     {#if !editorHeader}
       <PageBlocks

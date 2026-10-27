@@ -155,7 +155,9 @@ it('migrates v2 content while retaining published capabilities and sessions', as
       slug: 'native-slug',
     });
     const session = store.createSession(page, { a: 'cookie' });
-    store.db.exec('DROP TABLE photo_shares; PRAGMA user_version=2');
+    store.db.exec(
+      'DROP TABLE themes; DROP TABLE photo_shares; PRAGMA user_version=2',
+    );
     store.close();
     store = new Store(path);
     expect(store.publicPage('legacy')?.blocks?.[0]).toMatchObject({
@@ -170,7 +172,7 @@ it('migrates v2 content while retaining published capabilities and sessions', as
     );
     expect(store.editor(page.id, 'alice').hasUnpublishedChanges).toBe(false);
     expect(store.db.prepare('PRAGMA user_version').get()).toEqual({
-      user_version: 3,
+      user_version: 4,
     });
   } finally {
     store.close();

@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { blocksSchema, normalizeContent } from './blocks';
 import { DEFAULT_PAGE_ACCENT } from './gallery';
-import { FONT_FAMILY_IDS } from './font-catalog';
 
 export const reservedSlugs = new Set([
   'manage',
@@ -18,30 +17,17 @@ const color = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, 'Use a six-digit hex color');
 
-const fontFamily = z.enum(FONT_FAMILY_IDS);
-
-export const galleryStyleSchema = z.object({
-  fontFamily: fontFamily.default('google-sans'),
-  titleFontWeight: z.number().int().min(400).max(800).default(650),
-  bodyFontSize: z.number().min(0.75).max(1.5).default(1),
-  bodyFontWeight: z.number().int().min(300).max(700).default(400),
-  cardTitleSize: z.number().min(0.75).max(2).default(1.125),
-  cardTitleWeight: z.number().int().min(400).max(800).default(600),
-  contentWidth: z.number().int().min(640).max(1920).default(1600),
-  pagePadding: z.number().int().min(0).max(80).default(40),
-  gridMinWidth: z.number().int().min(160).max(360).default(224),
-  gridRowGap: z.number().int().min(0).max(80).default(16),
-  gridColumnGap: z.number().int().min(0).max(80).default(0),
-  coverAspectRatio: z.number().min(0.5).max(2).default(1),
-  cardRadius: z.number().int().min(0).max(40).default(16),
-  logoShape: z.enum(['square', 'rounded', 'circle']).default('rounded'),
-  logoPosition: z.enum(['above', 'left']).default('above'),
-  hoverTreatment: z
-    .enum(['surface', 'underline', 'lift', 'none'])
-    .default('surface'),
-});
-export type GalleryStyle = z.infer<typeof galleryStyleSchema>;
-export const DEFAULT_GALLERY_STYLE = galleryStyleSchema.parse({});
+export {
+  galleryStyleSchema,
+  DEFAULT_GALLERY_STYLE,
+  type GalleryStyle,
+} from './gallery-style-schema';
+import {
+  galleryStyleSchema,
+  DEFAULT_GALLERY_STYLE,
+  type GalleryStyle,
+} from './gallery-style-schema';
+import { pageThemeSchema } from './theme-schema';
 
 const clientUiShape = {
   showBanner: z.boolean().default(true),
@@ -104,6 +90,7 @@ const pageFieldsSchema = z.object({
     .refine((s) => !reservedSlugs.has(s), 'This URL is reserved'),
   description: z.string().max(2000).default(''),
   theme: z.enum(['dark', 'light', 'system']).default('dark'),
+  pageTheme: pageThemeSchema.nullable().optional(),
   background: color.nullable().default(null),
   foreground: color.nullable().default(null),
   accent: color.default(DEFAULT_PAGE_ACCENT),
@@ -196,6 +183,7 @@ export type GalleryPage = Pick<
   | 'title'
   | 'description'
   | 'theme'
+  | 'pageTheme'
   | 'background'
   | 'foreground'
   | 'accent'

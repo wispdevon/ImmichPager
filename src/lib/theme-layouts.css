@@ -1,0 +1,373 @@
+/* First-party layout families. Imported CSS never enters this stylesheet. */
+.pager-theme {
+  overflow-wrap: anywhere;
+}
+.pager-theme .ip-title {
+  letter-spacing: -0.045em;
+  font-family: var(--pager-heading-font, inherit);
+}
+.pager-theme .theme-section-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  padding: 20px var(--pager-page-padding);
+  border-block: 1px solid var(--pager-border);
+  font-size: 0.8rem;
+}
+.pager-theme .theme-section-nav a {
+  color: inherit;
+  text-decoration: none;
+  padding: 8px 0;
+}
+.pager-theme .theme-section-nav a:hover {
+  color: var(--pager-accent);
+}
+.pager-theme :where(a, button, input, select):focus-visible {
+  outline: 2px solid var(--pager-focus);
+  outline-offset: 4px;
+}
+.pager-theme .ip-block {
+  scroll-margin-block-start: 32px;
+}
+.pager-theme .ip-year-group {
+  border-color: var(--pager-border);
+}
+.pager-theme .ip-album {
+  border-radius: var(--pager-card-radius);
+}
+.pager-theme .ip-description {
+  color: var(--pager-muted);
+}
+.pager-theme .theme-section-nav {
+  position: relative;
+  z-index: 2;
+}
+.gallery.pager-theme.family-studio .hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: 'copy image' 'nav image';
+  min-height: 0;
+  gap: 0;
+  max-width: var(--pager-content-width);
+  margin-inline: auto;
+  padding: var(--pager-page-padding);
+}
+.gallery.pager-theme.family-studio .hero .banner {
+  grid-area: image;
+  position: relative;
+  inset: auto;
+  min-height: 0;
+  height: var(--pager-banner-height);
+  border-radius: 2px;
+}
+.gallery.pager-theme.family-studio .hero .ip-header {
+  grid-area: copy;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: var(--pager-header-spacing) 64px var(--pager-header-spacing) 0;
+  margin: 0;
+}
+.gallery.pager-theme.family-studio .hero .theme-section-nav {
+  grid-area: nav;
+  padding: 24px 32px 0 0;
+  border: 0;
+  align-self: end;
+}
+.gallery.pager-theme.family-studio .hero .header-content {
+  align-items: flex-start;
+}
+.gallery.pager-theme.family-studio .ip-title {
+  max-width: 12ch;
+  line-height: 1.05;
+}
+.gallery.pager-theme.family-studio .page-blocks {
+  padding-block-start: 32px;
+}
+.gallery.pager-theme.family-cinematic .hero {
+  min-height: var(--pager-overlay-height, min(85dvh, 800px));
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: end;
+  background: var(--pager-surface);
+}
+.gallery.pager-theme.family-cinematic .hero .ip-header {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  width: 100%;
+  padding: clamp(32px, 6vw, 96px);
+}
+.gallery.pager-theme.family-cinematic .hero .banner {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+}
+.gallery.pager-theme.family-cinematic .hero:has(.banner) .ip-header {
+  color: #fff;
+  --pager-muted: #ffffffcc;
+}
+.gallery.pager-theme.family-cinematic .hero .theme-section-nav {
+  align-self: end;
+  background: var(--pager-background);
+}
+.gallery.pager-theme.family-cinematic .ip-title {
+  max-width: 15ch;
+  font-size: clamp(
+    2.5rem,
+    calc(2rem + 4vw),
+    calc(var(--pager-title-size) * 1.5)
+  );
+  line-height: 1;
+}
+.gallery.pager-theme.family-cinematic .page-block {
+  padding-block: 56px;
+}
+.gallery.pager-theme.family-editorial .hero {
+  display: flex;
+  flex-direction: column;
+  max-width: var(--pager-content-width);
+  margin-inline: auto;
+  padding: 24px var(--pager-page-padding) 0;
+}
+.gallery.pager-theme.family-editorial .hero .ip-header {
+  order: -2;
+  padding: var(--pager-header-spacing) 0
+    calc(var(--pager-header-spacing) * 0.75);
+  width: 100%;
+  text-align: center;
+}
+.gallery.pager-theme.family-editorial .hero .theme-section-nav {
+  order: -1;
+  justify-content: center;
+  margin-block-end: 32px;
+  padding-inline: 0;
+}
+.gallery.pager-theme.family-editorial .hero .banner {
+  height: var(--pager-banner-height);
+}
+.gallery.pager-theme.family-editorial .ip-title {
+  font-weight: var(--pager-title-font-weight);
+  font-size: clamp(
+    2rem,
+    calc(1.5rem + 3vw),
+    calc(var(--pager-title-size) * 1.25)
+  );
+}
+.gallery.pager-theme.family-editorial .ip-description {
+  max-width: 42em;
+  margin-inline: auto;
+}
+.gallery.pager-theme.family-editorial .page-block {
+  border-block-end: 1px solid var(--pager-border);
+  padding-block: 48px;
+}
+.gallery.pager-theme.family-editorial .page-blocks {
+  counter-reset: section;
+}
+.gallery.pager-theme.family-editorial .page-block:before {
+  counter-increment: section;
+  content: counter(section, decimal-leading-zero);
+  display: block;
+  color: var(--pager-muted);
+  font:
+    12px 'JetBrains Mono',
+    monospace;
+  margin-block-end: 20px;
+}
+.gallery.pager-theme.family-contact-sheet .hero {
+  max-width: var(--pager-content-width);
+  margin: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  padding: var(--pager-page-padding);
+  gap: 24px;
+}
+.gallery.pager-theme.family-contact-sheet .hero .ip-header {
+  grid-column: 1;
+  grid-row: 1;
+  padding: calc(var(--pager-header-spacing) * 0.5) 0;
+  width: 100%;
+  margin: 0;
+}
+.gallery.pager-theme.family-contact-sheet .hero .banner {
+  grid-column: 2;
+  grid-row: 1;
+  height: var(--pager-banner-height);
+}
+.gallery.pager-theme.family-contact-sheet .hero .theme-section-nav {
+  grid-column: 1/-1;
+  padding: calc(var(--pager-header-spacing) * 0.5) 0;
+}
+.gallery.pager-theme.family-contact-sheet .photo-grid {
+  counter-reset: photo;
+}
+.gallery.pager-theme.family-contact-sheet .photo-tile {
+  position: relative;
+}
+.gallery.pager-theme.family-contact-sheet .photo-tile:after {
+  counter-increment: photo;
+  content: counter(photo, decimal-leading-zero);
+  position: absolute;
+  inset: auto 8px 8px auto;
+  background: var(--pager-background);
+  color: var(--pager-foreground);
+  padding: 3px 6px;
+  font:
+    11px 'JetBrains Mono',
+    monospace;
+}
+.gallery.pager-theme.family-contact-sheet .ip-description {
+  max-width: 42em;
+}
+.gallery.pager-theme.family-archive {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  align-items: start;
+  gap: 32px;
+  padding: var(--pager-page-padding);
+}
+.gallery.pager-theme.family-archive .hero {
+  position: sticky;
+  top: 24px;
+  min-width: 0;
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
+}
+.gallery.pager-theme.family-archive .hero .ip-header {
+  padding: var(--pager-header-spacing) 0;
+  margin: 0;
+  width: 100%;
+}
+.gallery.pager-theme.family-archive .hero .banner {
+  height: var(--pager-banner-height);
+}
+.gallery.pager-theme.family-archive .hero .theme-section-nav {
+  flex-direction: column;
+  padding: 20px 0;
+  gap: 4px;
+}
+.gallery.pager-theme.family-archive .page-blocks {
+  min-width: 0;
+  grid-column: 2;
+  grid-row: 1;
+}
+.gallery.pager-theme.family-archive .page-block {
+  padding-inline: 0;
+}
+.gallery.pager-theme.family-archive .ip-footer {
+  grid-column: 2;
+}
+.gallery.pager-theme.family-archive .ip-title {
+  letter-spacing: -0.04em;
+  font-size: clamp(1.5rem, calc(1rem + 1vw), var(--pager-title-size));
+}
+@media (max-width: 760px) {
+  .gallery.pager-theme.family-studio .hero {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'copy' 'image' 'nav';
+    padding: var(--pager-mobile-page-padding);
+    min-height: 0;
+  }
+  .gallery.pager-theme.family-studio .hero .ip-header {
+    padding: 24px 0 32px;
+  }
+  .gallery.pager-theme.family-studio .hero .banner {
+    min-height: 280px;
+    max-height: 420px;
+  }
+  .gallery.pager-theme.family-studio .hero .theme-section-nav {
+    padding-block-start: 24px;
+  }
+  .gallery.pager-theme.family-cinematic .hero {
+    min-height: 70dvh;
+  }
+  .gallery.pager-theme.family-cinematic .hero .ip-header {
+    padding: 32px 24px;
+  }
+  .gallery.pager-theme.family-cinematic .ip-title {
+    font-size: clamp(2rem, calc(1rem + 8vw), var(--pager-title-size));
+  }
+  .gallery.pager-theme.family-editorial .hero {
+    padding-inline: var(--pager-mobile-page-padding);
+  }
+  .gallery.pager-theme.family-editorial .hero .ip-header {
+    padding-block: 32px;
+  }
+  .gallery.pager-theme.family-contact-sheet .hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--pager-mobile-page-padding);
+  }
+  .gallery.pager-theme.family-contact-sheet .hero .banner {
+    grid-column: 1;
+    grid-row: 2;
+    height: 160px;
+  }
+  .gallery.pager-theme.family-contact-sheet .hero .theme-section-nav {
+    grid-row: 3;
+  }
+  .gallery.pager-theme.family-archive {
+    display: block;
+    padding: var(--pager-mobile-page-padding);
+  }
+  .gallery.pager-theme.family-archive .hero {
+    position: relative;
+    top: auto;
+    max-height: none;
+  }
+  .gallery.pager-theme.family-archive .hero .theme-section-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+  }
+  .gallery.pager-theme.family-archive .hero .banner {
+    height: 200px;
+  }
+  .pager-theme .theme-section-nav {
+    font-size: 0.75rem;
+  }
+}
+
+.gallery.pager-theme.family-studio .hero:not(:has(.banner)) {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'copy' 'nav';
+}
+.gallery.pager-theme.family-contact-sheet .hero:not(:has(.banner)) .ip-header {
+  grid-column: 1 / -1;
+}
+.pager-theme .ip-description {
+  opacity: 1;
+}
+.pager-theme .ip-block {
+  color: var(--pager-foreground);
+}
+.pager-theme .ip-navigation a {
+  border-radius: 2px;
+}
+
+.gallery.pager-theme.family-archive:not(:has(.hero)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.gallery.pager-theme.family-archive:not(:has(.hero)) .page-blocks,
+.gallery.pager-theme.family-archive:not(:has(.hero)) .ip-footer {
+  grid-column: 1;
+}
+
+/* Semantic palettes also style the client-side browsing and download controls. */
+.pager-theme .ip-browse-controls input,
+.pager-theme .ip-browse-controls select {
+  background: var(--pager-surface);
+  color: var(--pager-surface-foreground);
+  border-color: var(--pager-border);
+}
+.pager-theme .source-tools button {
+  background: var(--pager-accent);
+  color: var(--pager-primary-foreground);
+  border-color: transparent;
+}
+.pager-theme .source-tools button:hover,
+.pager-theme .ip-navigation a:hover {
+  background: var(--pager-hover);
+  color: var(--pager-hover-foreground);
+}

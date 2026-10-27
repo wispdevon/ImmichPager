@@ -96,7 +96,11 @@ export function summarizePublicationChanges(
     if (draft.description !== published.description)
       appearanceChanges.push('description');
     if (draft.slug !== published.slug) appearanceChanges.push('url');
-    if (draft.theme !== published.theme) appearanceChanges.push('theme');
+    if (
+      draft.theme !== published.theme ||
+      JSON.stringify(draft.pageTheme) !== JSON.stringify(published.pageTheme)
+    )
+      appearanceChanges.push('theme');
     if (
       draft.background !== published.background ||
       draft.foreground !== published.foreground ||

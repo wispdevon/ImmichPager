@@ -44,3 +44,21 @@ outside drop cancels. Year grouping keeps dates intact; No grouping allows free
 ordering across years. Keep the arrow-key and move-button alternatives.
 
 Album styles use illustrated radio cards. Album-order rows show an 80px album-cover drag handle, with a fallback for missing covers, readable names, and a single actions menu; selection mode exposes checkboxes for group moves. Changed presentation settings have adjacent reset controls with stable reserved space. Reset all customization restores design, visibility, CSS, and row presentation defaults while retaining authored content, selected media, branding images, and access settings. Resets autosave privately and never publish.
+
+## Complete client designs
+
+Immich Classic remains the compatibility baseline described above. Five opt-in
+client designs provide structural composition: Studio splits introduction and image;
+Cinematic uses an immersive cover; Editorial uses a serif masthead and ruled
+sections; Contact Sheet provides a compact numbered index; Archive keeps a sticky
+information rail on desktop and moves it above content on phones. Each has paired
+light/dark variants, bundled typography, and responsive row defaults. Management
+controls retain Immich styling.
+
+Theme cards audition on the existing canvas without saving; Apply adopts row
+presentation and saves privately. Cancel restores the working canvas; Undo changes
+design only. Content order, media, visibility, and access survive theme application.
+Manual row changes override theme defaults. Preserve authored CSS as the final
+layer unless explicitly cleared. Personal library definitions are copied into page
+snapshots; importing external CSS extracts supported tokens into a Pager design.
+See [themes](docs/themes.md) for behavior and portable formats.

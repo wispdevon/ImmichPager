@@ -1,14 +1,16 @@
 import { z } from 'zod';
+import { pageThemeSchema } from './theme-schema';
 import {
   clientUiSchema,
   DEFAULT_CLIENT_UI,
   DEFAULT_GALLERY_STYLE,
   galleryStyleSchema,
+  type PageInput,
 } from './contracts';
 import { compileCustomCss } from './custom-css';
 
 export const APPEARANCE_FILE_FORMAT = 'immichpager-appearance';
-export const APPEARANCE_FILE_VERSION = 3;
+export const APPEARANCE_FILE_VERSION = 4;
 export const APPEARANCE_FILE_MAX_BYTES = 96 * 1024;
 
 const color = z.string().regex(/^#[0-9a-fA-F]{6}$/);
@@ -49,6 +51,7 @@ export const appearanceSettingsSchema = z
     descriptionSize: z.number().min(0.875).max(1.5),
     headerSpacing: z.number().min(1.5).max(5),
     customCss: z.string().max(20_000),
+    pageTheme: pageThemeSchema.nullable().optional(),
     clientUi: appearanceClientUiSchema,
     galleryStyle: appearanceGalleryStyleSchema,
   })
@@ -66,18 +69,28 @@ const appearanceFileV2Schema = z
   .object({
     format: z.literal(APPEARANCE_FILE_FORMAT),
     version: z.literal(2),
-    appearance: appearanceSettingsSchema.omit({ bannerHeight: true }),
+    appearance: appearanceSettingsSchema.omit({
+      bannerHeight: true,
+      pageTheme: true,
+    }),
   })
   .strict();
 
 export const appearanceFileSchema = z.discriminatedUnion('version', [
+  z
+    .object({
+      format: z.literal(APPEARANCE_FILE_FORMAT),
+      version: z.literal(4),
+      appearance: appearanceSettingsSchema,
+    })
+    .strict(),
   appearanceFileV1Schema,
   appearanceFileV2Schema,
   z
     .object({
       format: z.literal(APPEARANCE_FILE_FORMAT),
       version: z.literal(3),
-      appearance: appearanceSettingsSchema,
+      appearance: appearanceSettingsSchema.omit({ pageTheme: true }),
     })
     .strict(),
 ]);
@@ -127,14 +140,20 @@ export function parseAppearanceFile(
   const result = appearanceFileSchema.safeParse(input);
   if (!result.success)
     throw new Error(
-      'This is not a supported ImmichPager appearance file (version 1, 2 or 3).',
+      'This is not a supported ImmichPager appearance file (version 1, 2, 3 or 4).',
     );
 
   assertSafeCss(result.data.appearance.customCss);
-  if (result.data.version === 3) return result.data.appearance;
+  if (result.data.version === 4) return result.data.appearance;
+  if (result.data.version === 3)
+    return {
+      ...result.data.appearance,
+      ...(current?.pageTheme ? { pageTheme: null } : {}),
+    };
   if (result.data.version === 2)
     return {
       ...result.data.appearance,
+      ...(current?.pageTheme ? { pageTheme: null } : {}),
       ...(current?.bannerHeight !== undefined
         ? { bannerHeight: current.bannerHeight }
         : {}),
@@ -149,5 +168,20 @@ export function parseAppearanceFile(
     },
     ...current,
     ...result.data.appearance,
+    ...(current?.pageTheme ? { pageTheme: null } : {}),
   });
+}
+
+/** A complete appearance import adopts its theme's row defaults, without copying content. */
+export function applyAppearanceSettings(
+  page: PageInput,
+  settings: AppearanceSettings,
+): PageInput {
+  return {
+    ...page,
+    ...settings,
+    blocks: settings.pageTheme
+      ? page.blocks?.map((block) => ({ ...block, presentationSource: 'theme' }))
+      : page.blocks,
+  };
 }

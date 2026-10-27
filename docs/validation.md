@@ -222,3 +222,28 @@ requires prerendering with an untrusted cache-control value; Pager does not
 prerender and sets a fixed private/no-store policy. Source inspection found no
 matching affected paths. The dependency remains flagged; the upstream fix
 requires a separately reviewed SvelteKit 3 migration.
+
+## Complete client themes (development branch, 2026-10-27)
+
+Local Node 22 validation passes 239 unit/domain tests, all 95 browser scenarios,
+`pnpm check` (zero errors/warnings), `pnpm lint`, `pnpm format:check`, and the
+production build. No hosted CI minutes were used.
+
+Theme coverage includes preview/cancel/apply, undo across Content/Design, delayed
+autosave acknowledgments, row overrides/reset behavior, System mode without
+autosaving, CSS precedence with gallery/editor-control isolation, portable-file
+compatibility, bounded variable expansion, owner isolation and stale revisions,
+library search/pagination, and snapshot survival after library deletion. Schema-3
+migration retains published, draft, branding, share, and session rows byte for byte.
+Theme-only publication does not mutate native shares.
+
+All five families render in light/dark at 1440, 768, and 390 pixels, retain the
+shared photo viewer, and omit empty rows from public section navigation. Visual
+review includes twenty desktop/phone public captures and native light/dark editor
+screens, using NASA fixtures; visible images load, no horizontal overflow occurs,
+and no browser exceptions are recorded. The in-app browser had no available
+targets, so verification used the repository's headless Chromium without Xvfb.
+
+This is a feature-branch implementation with schema 4. The release version stays
+0.4.0; deploying the feature requires the complete stopped-volume/configuration
+backup and rollback procedure documented in the deployment guide.

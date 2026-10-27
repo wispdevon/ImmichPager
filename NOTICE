@@ -44,3 +44,7 @@ and viewer are implemented within ImmichPager's existing authorization model.
 The rich-text editor uses Tiptap and ProseMirror packages distributed under their
 MIT licenses. See the installed packages for their copyright and license notices:
 https://github.com/ueberdosis/tiptap and https://github.com/ProseMirror.
+
+Theme color conversion uses Culori, copyright (c) 2018 Dan Burzo, under the
+MIT license. Its full license is retained in the installed culori package.
+The five bundled page compositions are original ImmichPager designs.

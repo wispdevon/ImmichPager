@@ -1,5 +1,6 @@
 import { blockSchema, blocksSchema } from './blocks';
 import { z } from 'zod';
+import { pageThemeSchema } from './theme-schema';
 import {
   clientUiSchema,
   galleryStyleSchema,
@@ -69,6 +70,7 @@ const inlineGalleryPageSchema = z
     title: titleSchema,
     description: descriptionSchema,
     theme: z.enum(['dark', 'light', 'system']),
+    pageTheme: pageThemeSchema.nullable().optional(),
     background: colorSchema.nullable(),
     foreground: colorSchema.nullable(),
     accent: colorSchema,

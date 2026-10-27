@@ -124,6 +124,7 @@ export const blockSchema = z.discriminatedUnion('type', [
       id,
       type: z.literal('albums'),
       heading,
+      presentationSource: z.enum(['theme', 'custom']).optional(),
       albumIds: z
         .array(id)
         .max(500)
@@ -139,6 +140,7 @@ export const blockSchema = z.discriminatedUnion('type', [
       id,
       type: z.literal('photos'),
       heading,
+      presentationSource: z.enum(['theme', 'custom']).optional(),
       photos: z
         .array(
           z
@@ -168,6 +170,7 @@ export const blockSchema = z.discriminatedUnion('type', [
       id,
       type: z.literal('text'),
       heading,
+      presentationSource: z.enum(['theme', 'custom']).optional(),
       content: richTextSchema.default(emptyText),
       alignment: z.enum(['left', 'center', 'right']).default('left'),
     })

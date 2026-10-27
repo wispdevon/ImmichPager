@@ -24,7 +24,11 @@ const pseudoElements = new Set([
 const decoded = (name: string) => css.ident.decode(name).toLowerCase();
 
 /** One compiler for private previews and publication. No HTML or resource loading. */
-export function compileCustomCss(source: string, pageId: string): CssResult {
+export function compileCustomCss(
+  source: string,
+  pageId: string,
+  options: { precedence?: 'theme' | 'page' } = {},
+): CssResult {
   if (!source.trim()) return { css: '', error: null };
   if (source.length > CUSTOM_CSS_LIMIT)
     return {
@@ -32,6 +36,16 @@ export function compileCustomCss(source: string, pageId: string): CssResult {
       error: `Custom CSS must be ${CUSTOM_CSS_LIMIT.toLocaleString('en')} characters or fewer.`,
     };
   const root = `[data-pager-gallery="${css.string.encode(pageId).slice(1, -1)}"]`;
+  // The always-matching universal branch adds a deliberate specificity tier.
+  // Keep the independent boundary guard below: these IDs are specificity anchors,
+  // never DOM nodes or authorization. This lets page CSS override a full family
+  // without changing Classic's historical cascade or adding !important to values.
+  const precedence =
+    options.precedence === 'page'
+      ? ':is(*, #pager-authored-css#pager-authored-css)'
+      : options.precedence === 'theme'
+        ? ':is(*, #pager-theme-css)'
+        : '';
   function fail(message: string, node: css.CssNode): never {
     const at = node.loc?.start;
     throw new Error(
@@ -120,18 +134,20 @@ export function compileCustomCss(source: string, pageId: string): CssResult {
           if (selector.type !== 'Selector') return;
           const guard = (
             css.parse(
-              `:where(${root}:not([data-pager-editor-ui], [data-pager-editor-ui] *), ${root} *:not([data-pager-editor-ui], [data-pager-editor-ui] *))`,
+              `${precedence}:where(${root}:not([data-pager-editor-ui], [data-pager-editor-ui] *), ${root} *:not([data-pager-editor-ui], [data-pager-editor-ui] *))`,
               {
                 context: 'selector',
               },
             ) as css.Selector
-          ).children.first!;
+          ).children;
           let before: css.ListItem<css.CssNode> | undefined;
           selector.children.forEach((n, item) => {
             if (!before && n.type === 'PseudoElementSelector') before = item;
           });
-          if (before) selector.children.insertData(guard, before);
-          else selector.children.appendData(guard);
+          guard.forEach((part) => {
+            if (before) selector.children.insertData(part, before);
+            else selector.children.appendData(part);
+          });
         });
       },
     });

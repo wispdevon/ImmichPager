@@ -58,12 +58,12 @@ function version1File(legacy = version1Appearance()) {
   });
 }
 
-it('round-trips complete version 3 design settings', () => {
+it('round-trips complete version 4 design settings', () => {
   const exported = serializeAppearanceFile(appearance);
 
   expect(JSON.parse(exported)).toEqual({
     format: 'immichpager-appearance',
-    version: 3,
+    version: 4,
     appearance,
   });
   expect(parseAppearanceFile(exported)).toEqual(appearance);
@@ -259,4 +259,67 @@ it('transfers numeric banner height while old files preserve newer settings', ()
       current,
     ).bannerHeight,
   ).toBe(620);
+});
+
+it('round-trips a frozen theme in v4 and returns older appearance files to Classic', async () => {
+  const { builtInThemes } = await import('../src/lib/themes');
+  const current = {
+    ...appearance,
+    pageTheme: {
+      definition: structuredClone(builtInThemes[0]),
+      overrides: { primary: '#123456' },
+    },
+  };
+  expect(parseAppearanceFile(serializeAppearanceFile(current))).toEqual(
+    current,
+  );
+  const older = JSON.stringify({
+    format: 'immichpager-appearance',
+    version: 3,
+    appearance,
+  });
+  expect(parseAppearanceFile(older, current).pageTheme).toBeNull();
+});
+
+it('adopts complete imported row defaults without copying source content or ordering', async () => {
+  const { applyAppearanceSettings } = await import(
+    '../src/lib/appearance-file'
+  );
+  const { builtInThemes, resolveBlockTheme } = await import(
+    '../src/lib/themes'
+  );
+  const { pageInputSchema } = await import('../src/lib/contracts');
+  const target = pageInputSchema.parse({
+    title: 'Target words',
+    slug: 'target',
+    blocks: [
+      {
+        id: 'target-row',
+        type: 'albums',
+        albumIds: ['target-album'],
+        order: 'manual',
+        grouping: 'none',
+        layout: 'cards',
+      },
+    ],
+  });
+  const settings = {
+    ...appearance,
+    pageTheme: { definition: builtInThemes[0], overrides: {} },
+  };
+  const applied = applyAppearanceSettings(
+    target,
+    parseAppearanceFile(serializeAppearanceFile(settings)),
+  );
+  expect(applied.title).toBe('Target words');
+  expect(applied.slug).toBe('target');
+  expect(
+    resolveBlockTheme(applied.blocks![0], applied.pageTheme!.definition),
+  ).toMatchObject({
+    id: 'target-row',
+    albumIds: ['target-album'],
+    order: 'manual',
+    grouping: 'none',
+    layout: 'tiles',
+  });
 });

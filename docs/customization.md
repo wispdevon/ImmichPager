@@ -30,19 +30,19 @@ is opt-in. Originals and ZIP downloads are available when Page settings allows d
 
 ## Colors and accent
 
-Choose Dark, Light, or System under **Design → Design**. Use the color controls to override background, text, and accent colors. The default accent is Immich blue (`#accbfa`). Currently, accent changes **album-title text on hover**; it does not recolor the page title, banner, management buttons, or native Immich album viewer. CSS can use the same accent for other gallery elements.
+Choose Dark, Light, or System under **Design → Design**. Use the color controls to override background, text, and accent colors. The default accent is Immich blue (`#accbfa`). In Immich Classic, accent changes **album-title text on hover**; it does not recolor the page title, banner, management buttons, or native Immich album viewer. CSS can use the same accent for other gallery elements.
 
 ## Move a design between pages
 
-In **Design → Themes**, export the current design as
+In **Design → Themes → Advanced appearance and token files**, export the current design as
 `immichpager-appearance.json` or choose a file to import. New exports use
-appearance-file version 3. They include the theme, custom colors, header
+appearance-file version 4. They include the complete theme snapshot, custom colors, header
 settings including banner height, custom CSS, every visibility switch, and all gallery-style settings.
 They do not contain the page title or description, URL, album names or
 identifiers, album order, passwords, share links, or logo and banner images.
 Choose content and branding separately on each page.
 
-Version 1 and 2 files are still supported; settings they cannot express are preserved. Importing one updates the appearance
+Version 1–3 files are still supported through Immich Classic; settings they cannot express are preserved. Importing one updates the appearance
 fields it can express and preserves the current visibility and gallery-style
 settings. If there are no current settings, compatibility defaults keep the
 existing gallery appearance. Older version 1 files that omit the five size
@@ -52,7 +52,7 @@ settings import with these defaults: Standard, 80 px, 3 rem, 1.125 rem, and
 Import applies only the visual settings to the current page's private draft.
 The page's content, URL, albums, password, and branding images remain unchanged,
 and clients see the design only after you publish. Files are limited to 96 KiB
-and must use the supported version 1, 2, or 3 format. Unknown fields and
+and must use the supported version 1, 2, 3, or 4 format. Unknown fields and
 invalid settings are rejected. Custom CSS goes through the same gallery
 compiler used by preview and publication, so imports cannot add external
 resources or styles outside the gallery.
@@ -406,3 +406,11 @@ font requests. The gallery uses Google Sans by default; see the
 The shared compiler uses CSS Tree to parse, validate supported constructs, and add a page-specific guard to each selector's target, including selectors with pseudo-elements. `:scope` maps to the gallery root. A separate, untargetable layout/paint containment wrapper isolates positioned descendants. The renderer only serializes compiled CSS and escapes `<` as a CSS escape before placing it in a style element; raw author text is never inserted as HTML. Existing CSP directives remain unchanged. Browser tests cover style-closing strings, selector escape attempts, containment, private drafts, publication and resetting.
 
 When adding hooks or new CSS syntax support, extend the validation and browser scenarios first. Avoid making generated Svelte classes part of the public interface. See [API contracts](api.md) and [architecture](architecture.md).
+
+## Complete client themes
+
+For structural layouts, the personal theme library, native theme JSON, and
+shadcn/Tweakcn or daisyUI CSS imports, see [the theme guide](themes.md). Theme
+application follows the private-draft/publication boundary. Its semantic palette
+also styles client navigation, browsing controls, and photo-download buttons.
+Management controls retain native Immich styling.

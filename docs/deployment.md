@@ -104,6 +104,13 @@ Version 0.4.0 uses Pager schema version 3. Stop Pager and back up the complete d
 
 A schema-2 image refuses a version 3 database. To roll back, stop Pager, restore the complete pre-upgrade volume, restore the previous Compose image/configuration, and start it again. Never restore a SQLite backup over a running process. Keep backup archives private because they contain share capabilities and client-session authorization. Changes made after the backup are not included in a restore. Immich's database and original media are not modified by this migration.
 
+The complete-themes development branch advances Pager to **schema 4**, adding an
+owner-scoped saved-theme table without rewriting schema-3 page, draft, branding,
+share, or session rows. This is separate from the published 0.4.0 release. Before
+deploying that branch, follow the same stopped-volume/configuration backup process.
+A schema-3 image refuses a schema-4 database; rollback requires the complete
+pre-upgrade volume and previous image/configuration.
+
 ### Update awareness
 
 From v0.3.3, Immich's About dialog includes the installed ImmichPager version and
