@@ -119,7 +119,7 @@ Authenticated endpoints are owner scoped:
 Another owner's IDs return 404. Stale updates/deletes return 409. Public rendering
 receives the design snapshot with private library name/description removed.
 Presentation-only publication rechecks ownership without changing native shares.
-See [schema upgrades](deployment.md#schema-upgrades) before deploying this branch.
+See [schema upgrades](deployment.md#schema-upgrades) before upgrading to v0.5.0.
 
 ## Photography collections
 

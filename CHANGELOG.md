@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.5.0] - 2026-10-27
+
+### Added
+
+- Five complete page designs and 12 licensed photography themes for weddings, portraiture, wildlife, and general portfolios, with preview/apply/cancel and undo on the live canvas.
+- An owner-scoped personal theme library with search, rename, duplication, export, and portable Pager theme import. Ready-made shadcn/Tweakcn and daisyUI palettes can be reviewed and adapted without executing external CSS.
+- Theme-aware Albums and Photos layouts, individual overrides and resets, and version 4 appearance files retaining the applied theme snapshot. Versions 1–3 still import.
+- Twelve inspectable CSS recipes that append to existing styles, preserve private drafts, and cover palettes, typography, layouts, images, motion, and phone spacing.
+
+### Improved
+
+- Design and Elements controls use focused disclosure groups, concise summaries, matching Material icons, and accessible reset controls. Content rows group presentation settings and illustrated layouts.
+- Album moves start from the displayed order, support group dragging, preserve stable lists during a drag, and cancel stale or out-of-bounds drops.
+- Wedding compositions, row margins, photo actions, touch targets, keyboard focus, and compact theme cards are refined.
+- The full footer defaults off. Source and required theme credits remain available from Page info, or directly in an enabled footer.
+
+### Upgrade notes
+
+- Pager migrates schema 3 to 4 by adding saved-theme storage; existing pages, drafts, branding, native shares, passwords, and sessions are retained. Applied themes are copied snapshots, so changing a library item cannot alter client pages.
+- Before upgrading, stop Pager and back up its complete volume, including SQLite WAL/SHM files, configuration, and previous image. Rollback to a schema-3 image requires restoring that backup first.
+- New and existing pages retain Immich Classic until a theme is applied. Design edits and resets stay private until explicit publication. Immich itself is not upgraded.
+
 ## [0.4.0] - 2026-10-24
 
 ### Added

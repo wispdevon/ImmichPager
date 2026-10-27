@@ -2,14 +2,14 @@
 
 ## Install beside Immich
 
-The GitLab registry provides `registry.gitlab.com/wispd/immichpager:0.4.0` for Linux amd64 and arm64. Pin an exact version in production. Registry publishing requires a protected release ref, all required checks, and a maintainer starting the manual job. See the [GitLab distribution guide](gitlab-distribution.md) for the release workflow.
+The GitLab registry provides `registry.gitlab.com/wispd/immichpager:0.5.0` for Linux amd64 and arm64. Pin an exact version in production. The normal CI publisher requires a protected release ref, all required checks, and a maintainer starting the manual job. Version 0.5.0 uses local verification and operator publication while hosted minutes are exhausted. See the [GitLab distribution guide](gitlab-distribution.md) for both workflows.
 
 ```sh
-git clone --branch v0.4.0 --depth 1 https://gitlab.com/wispd/ImmichPager.git
+git clone --branch v0.5.0 --depth 1 https://gitlab.com/wispd/ImmichPager.git
 cd ImmichPager
 cp .env.example .env
 # Edit IMMICH_URL and ORIGIN, plus IMMICH_NETWORK if necessary.
-# Set PAGER_TAG=0.4.0 in .env.
+# Set PAGER_TAG=0.5.0 in .env.
 docker compose pull immichpager
 docker compose up -d --no-build
 ```
@@ -66,7 +66,18 @@ pnpm bundle:runtime
 
 Transfer `.deploy/runtime/` to the host and run `docker build -t immichpager:local .` inside that transferred directory. The generated context includes `Dockerfile.runtime` as its Dockerfile, compiled assets, and dependency manifests. Production dependencies, including native Sharp binaries, are installed for the host architecture during the container build. No workstation `node_modules`, credentials, or demo data are included. Set the Compose image to that local tag and use `docker compose up -d --no-build`.
 
-The [v0.4.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.4.0)'s `immichpager-v0.4.0-runtime.tar.gz` contains this compiled build context, so you can extract it and run the target-host Docker build without installing frontend tooling. It supports Linux amd64 and arm64 through the target Docker platform. The source archive remains available for inspection and rebuilding.
+The runtime Dockerfile installs target-architecture production dependencies with
+native build-platform tooling (`BUILDPLATFORM` and `TARGETARCH`). This avoids
+running Node under emulation during installation. Sharp's prebuilt Linux glibc
+package is selected explicitly for amd64 or arm64; workstation modules are never
+copied. Lifecycle scripts are disabled for these prebuilt runtime dependencies so
+they cannot replace target binaries with build-host ones. Target smoke checks
+exercise native Sharp and esbuild as well as application startup. Reassess this
+choice when adding a dependency that requires installation scripts. See
+[Docker's multi-platform build model](https://docs.docker.com/build/building/multi-platform/)
+and [pnpm's target architecture options](https://pnpm.io/cli/install#--cpuname).
+
+The [v0.5.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.5.0)'s `immichpager-v0.5.0-runtime.tar.gz` contains this compiled build context, so you can extract it and run the target-host Docker build without installing frontend tooling. It supports Linux amd64 and arm64 through the target Docker platform. The source archive remains available for inspection and rebuilding.
 
 ## Environment variables
 
@@ -100,16 +111,25 @@ For rollback, point the HTTPS proxy back at its previous upstream. Immich itself
 
 ## Schema upgrades
 
-Version 0.4.0 uses Pager schema version 3. Stop Pager and back up the complete data volume, including the main SQLite database and its WAL/SHM files, plus configuration and the previous image before first startup. The migration preserves existing pages, working copies, branding, native album shares, passwords, and sessions while adding block composition and photo-share recovery state.
+Version 0.5.0 uses Pager **schema version 4**. Upgrading from 0.4.0 adds an
+owner-scoped saved-theme table without rewriting existing schema-3 page, draft,
+branding, share, or session rows. Existing pages remain Immich Classic until their
+owner applies and publishes a theme.
 
-A schema-2 image refuses a version 3 database. To roll back, stop Pager, restore the complete pre-upgrade volume, restore the previous Compose image/configuration, and start it again. Never restore a SQLite backup over a running process. Keep backup archives private because they contain share capabilities and client-session authorization. Changes made after the backup are not included in a restore. Immich's database and original media are not modified by this migration.
+Before first startup, stop Pager and back up the complete data volume, including
+the main SQLite database and its WAL/SHM files, configuration, and previous image.
+Keep backup archives private because they contain share capabilities and session
+authorization.
 
-The complete-themes development branch advances Pager to **schema 4**, adding an
-owner-scoped saved-theme table without rewriting schema-3 page, draft, branding,
-share, or session rows. This is separate from the published 0.4.0 release. Before
-deploying that branch, follow the same stopped-volume/configuration backup process.
-A schema-3 image refuses a schema-4 database; rollback requires the complete
-pre-upgrade volume and previous image/configuration.
+A schema-3 image refuses a schema-4 database. To roll back, stop Pager, restore the
+complete pre-upgrade volume, restore the previous Compose image/configuration,
+and start it again. Never restore a backup over a running process. Changes made
+after the backup are not included in a restore. Immich's database and original
+media are not modified.
+
+Upgrading from 0.3.x or earlier also performs the schema-3 block-composition and
+photo-share recovery migration introduced in 0.4.0. The same complete backup and
+restore requirements apply.
 
 ### Update awareness
 

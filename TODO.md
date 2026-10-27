@@ -2,7 +2,7 @@
 
 This roadmap focuses on helping photographers make polished client pages, then making monthly updates easier and improving distribution. Every appearance setting stays with its page; the roadmap does not introduce photographer-wide defaults. There are no delivery-date promises.
 
-Use the IDs below when discussing work or opening a merge request against `dev`. The original roadmap and live composer are released in v0.4.0. Promote reviewed stable changes from `dev` to `main`; deployment remains a separate operator action.
+Use the IDs below when discussing work or opening a merge request against `dev`. The original roadmap and live composer are released in v0.4.0; complete themes, editor refinements, and CSS recipes ship in v0.5.0. Promote reviewed stable changes from `dev` to `main`; deployment remains a separate operator action.
 
 ## Status and priority
 

@@ -52,6 +52,38 @@ Screenshots use attributed [NASA Apollo photographs](fixtures/photos/README.md) 
 
 </details>
 
+## New in 0.5
+
+Choose a complete client-page theme, then refine it on the live canvas. The
+release includes five original designs plus 12 licensed photography adaptations:
+three each for weddings, portraiture, wildlife, and general portfolios.
+
+- Try a theme before applying it; the centered prompt lets you apply, cancel, or
+  undo while keeping your content and access settings.
+- Save your own designs in **My themes**, export them, or review imported Pager,
+  shadcn/Tweakcn, and daisyUI themes before use.
+- Use the grouped Design and Elements controls, illustrated row layouts, matching
+  Material icons, and individual or full resets. Albums and Photos can follow a
+  theme or retain their own presentation.
+- Add one of [12 CSS recipes](docs/css-examples.md) without replacing existing CSS.
+  Draft changes remain private until you publish.
+- Keep the full footer hidden by default; source and licensed theme credits stay
+  available through **Page info**. Enable the footer under **Design → Elements**.
+
+See the [theme guide](docs/themes.md), [photography collection](docs/photography-themes.md),
+and [0.5.0 release notes](https://gitlab.com/wispd/ImmichPager/-/releases/v0.5.0).
+
+<details>
+<summary>See themes and the streamlined editor</summary>
+
+![Try a complete Studio design on the live canvas before applying or canceling](docs/screenshots/themes-preview-desktop.webp)
+
+![Grouped Elements controls with Material icons and the footer hidden](docs/screenshots/elements-controls-desktop.webp)
+
+These captures use the attributed NASA contributor fixtures.
+
+</details>
+
 ## Features
 
 - **Persistent client links:** one `/page/custom-slug` URL across months of work.
@@ -104,12 +136,12 @@ All edits autosave privately until you choose **Publish page** or **Update live 
 Requires Docker Compose v2, an existing Immich installation, and control of its HTTPS reverse proxy.
 
 ```sh
-git clone --branch v0.4.0 --depth 1 https://gitlab.com/wispd/ImmichPager.git
+git clone --branch v0.5.0 --depth 1 https://gitlab.com/wispd/ImmichPager.git
 cd ImmichPager
 cp .env.example .env
 ```
 
-Set `IMMICH_URL` to the **internal** Immich root, such as `http://immich-server:2283`, and `ORIGIN` to its public HTTPS origin. Set `IMMICH_NETWORK` if your existing Docker network has another name, and pin `PAGER_TAG=0.4.0` in `.env`.
+Set `IMMICH_URL` to the **internal** Immich root, such as `http://immich-server:2283`, and `ORIGIN` to its public HTTPS origin. Set `IMMICH_NETWORK` if your existing Docker network has another name, and pin `PAGER_TAG=0.5.0` in `.env`.
 
 ```sh
 docker compose pull immichpager
@@ -122,17 +154,17 @@ Point the existing HTTPS proxy at Pager's default `127.0.0.1:3102` listener. Sig
 
 All Pager routes and assets use `/page/`; native Immich `/api/`, `/s/`, and `/share/` routes continue to the upstream. You can chain Pager in front of Immichinko or keep an Immicull custom server. See [deployment and configuration](docs/deployment.md) for exact setup, image tags, proxy trust, backups, and rollback.
 
-The [v0.4.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.4.0) includes tagged source and a compiled runtime build context with SHA-256 checksums. Historical v0.1.0 ARM64 packages remain available through the [deployment guide](docs/deployment.md#prebuilt-arm64-package).
+The [v0.5.0 release](https://gitlab.com/wispd/ImmichPager/-/releases/v0.5.0) includes tagged source and a compiled runtime build context with SHA-256 checksums. Historical v0.1.0 ARM64 packages remain available through the [deployment guide](docs/deployment.md#prebuilt-arm64-package).
 
 ## Compatibility and current status
 
 Initial source review targets **Immich v3.3.1**, with an ARM64 runtime deployment and public HTTP smoke checks verified on **v3.3.3** alongside Immichinko and a RAW/JPEG companion. Authenticated editing and publishing tests use an isolated fixture; the signed-in live workflow remains to be checked. This is an early implementation, not a claim of compatibility with every Immich release.
 
-The v0.4.0 feature set passed 219 unit tests, 83 Chromium scenarios, type checking, lint, formatting, audit, production build, and hosted Docker smoke checks. Published amd64/arm64 image digests and release labels were verified, and the downloaded ARM64 image passed native health/readiness checks. Source, releases, and reviews live on [GitLab](https://gitlab.com/wispd/ImmichPager); see the [migration record](docs/gitlab-migration.md). Historical v0.1.0 downloads remain on GitHub.
+The v0.5.0 release is verified locally with 252 domain/integration tests, all 120 Chromium browser scenarios, type checking, lint, formatting, dependency audit, production build, and container health/readiness checks. See the [validation record](docs/validation.md#v050-release-preparation) for exact results; local verification conserves hosted runner minutes. Source, releases, and reviews live on [GitLab](https://gitlab.com/wispd/ImmichPager); see the [migration record](docs/gitlab-migration.md). Historical v0.1.0 downloads remain on GitHub.
 
 The sidebar bridge is a maintained DOM integration rather than an official Immich plugin API. Use one Pager container per database. When upstream revocation fails, the overview is hidden; existing native links remain subject to Immich until the owner finishes synchronization. See [validation notes](docs/validation.md).
 
-**Upgrading an existing installation:** the current development branch migrates Pager to schema version 4 (the published 0.4.0 release uses schema 3). Back up the complete stopped Pager volume first. Rolling back to an older image requires restoring that backup too. See [upgrade and rollback](docs/deployment.md#schema-upgrades).
+**Upgrading an existing installation:** v0.5.0 migrates Pager from schema 3 to schema 4, adding saved themes while retaining existing page, draft, branding, share, and session data. Back up the complete stopped Pager volume first. Rolling back to an older image requires restoring that backup too. See [upgrade and rollback](docs/deployment.md#schema-upgrades).
 
 ## Development
 

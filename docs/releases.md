@@ -1,5 +1,26 @@
 # Releases
 
+## v0.5.0
+
+Complete themes, a personal theme library, photography collections, grouped editor
+controls, and 12 CSS recipes build on the live composer. Themes can be previewed,
+applied, canceled, or undone while preserving content and access settings. See
+[the changelog](../CHANGELOG.md), [theme guide](themes.md), and
+[photography designs](photography-themes.md).
+
+Release from the locally verified commit, integrate it into `dev`, and promote the
+same commit to `main` with a fast-forward. The immutable `v0.5.0` tag identifies
+source, compiled runtime archives, and versioned container images. Verify attached
+SHA-256 checksums before use. Local quality, browser, audit, and container checks
+replace hosted execution for this release while runner minutes are exhausted;
+this does not claim a hosted CI pass or change future pipeline requirements.
+
+Storage advances from schema 3 to 4, adding owner-scoped saved themes without
+rewriting existing page, draft, branding, share, or session rows. Stop Pager and
+retain the complete volume (including SQLite WAL/SHM), configuration, and previous
+image before upgrading. Rollback requires restoring that backup before starting
+the schema-3 image. Immich is not upgraded. See [deployment and recovery](deployment.md#schema-upgrades).
+
 ## v0.4.0
 
 The live composer replaces separate preview/customization modes with one persistent canvas. Add and arrange Albums, Photos, and Text rows, choose illustrated layouts, reset presentation defaults, and browse photos directly on the page. Album rows include prominent cover previews and group ordering. Draft edits remain private until explicit publication. See [the changelog](../CHANGELOG.md).

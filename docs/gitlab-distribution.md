@@ -64,6 +64,23 @@ elapsed time; parallel setup may increase total runner usage.
 
 ## Releases
 
+### Locally verified 0.5.0 release
+
+When hosted minutes are exhausted, the maintainer can run all application quality,
+browser, audit, build, and runtime container checks locally. For 0.5.0, production
+assets are compiled on the workstation and target-architecture dependencies are
+installed from the runtime bundle on the build host. Both container architectures
+must pass smoke checks before publishing the version, minor, and latest tags.
+
+Release archives and image labels identify the reviewed release commit. Push
+with CI skipping only after verification; this does not represent a hosted CI pass
+or weaken the normal pipeline prerequisites. Publish the immutable release tag,
+verify downloaded assets and registry digests, and retain a complete stopped
+volume/configuration/image backup before deployment. Promote the same commit from
+`dev` to `main` with a fast-forward. Keep the existing pipeline for future runs.
+
+### Normal hosted publisher
+
 The manual `publish_image` job normally runs on protected `vMAJOR.MINOR.PATCH`
 tags. It waits for quality, build, both browser shards and Docker smoke. It uses
 GitLab job credentials and Buildx to publish amd64/arm64 images with exact-version,

@@ -1,5 +1,33 @@
 # Validation record
 
+## v0.5.0 release preparation
+
+Version 0.5.0 passes all 252 domain/integration tests and all 120 Chromium browser
+scenarios, type checks with zero application errors/warnings, lint, formatting,
+the production build, and dependency audit at the moderate threshold. The audit
+retains the two previously documented low SvelteKit findings; no moderate, high,
+or critical findings are reported. Required checks run locally to conserve hosted
+runner minutes; this is not a hosted pipeline pass.
+
+The runtime bundle installs explicitly selected Linux glibc dependencies using
+native build-platform tooling. Target lifecycle scripts are disabled so installers
+cannot substitute host-CPU binaries. Native Sharp resize/encode and esbuild API/CLI
+checks verify the selected dependencies. ARM64 startup is checked in a restricted
+Docker container. The amd64 image filesystem is exported and checked natively on
+the workstation in an unprivileged user/mount/PID namespace, including the image's
+Node binary, startup, health, and upstream readiness. This avoids the ARM host's
+QEMU executable-memory limitation without changing the shipped Node runtime.
+
+A private SQLite snapshot verifies schema 3 → 4: every existing table's complete
+row fingerprints remain identical, the empty themes table is added, and integrity
+and foreign-key checks pass. Live deployment additionally requires a complete
+stopped-volume/configuration/image backup and post-upgrade fingerprint checks.
+The release keeps immutable source/runtime checksums and image revision labels;
+`dev` and `main` are promoted to the same reviewed commit.
+
+The README includes current theme-preview and Elements screenshots using the
+attributed NASA fixtures. No client photos or credentials are added to the repo.
+
 ## CSS example recipes (2026-10-27)
 
 The CSS tab provides 12 inspectable recipes across palettes, typography, album

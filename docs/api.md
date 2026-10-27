@@ -122,5 +122,5 @@ continue to exclude block documents, asset identifiers, passwords and capabiliti
 
 The owner-scoped `/page/api/themes` endpoints, immutable applied snapshots,
 revision checks, native portable format, and import adapters are documented in
-[the theme API contract](themes.md#storage-and-api). This development feature
-requires schema 4; the published 0.4.0 release uses schema 3.
+[the theme API contract](themes.md#storage-and-api). This feature is available in v0.5.0
+and requires schema 4; v0.4.0 uses schema 3.
