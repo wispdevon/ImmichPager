@@ -29,6 +29,7 @@
         checked={value === option.value}
         onchange={() => onchange(option.value)}
         aria-label={option.label}
+        aria-describedby={`${id}-${option.value}-description`}
       />
       <span class="thumbnail {option.value}" aria-hidden="true"
         >{#each [1, 2, 3, 4, 5, 6] as item}<span class="tile tile-{item}"
@@ -39,7 +40,9 @@
             ><Icon icon={mdiCheck} size="14px" aria-hidden /></span
           >{/if}</span
       >
-      <span class="visually-hidden">{option.description}</span>
+      <span class="visually-hidden" id={`${id}-${option.value}-description`}
+        >{option.description}</span
+      >
     </label>
   {/each}
 </div>
@@ -144,7 +147,19 @@
     transform: translateY(5px);
   }
   .justified {
-    grid-template-columns: 1.5fr 1fr 1.2fr;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .justified .tile-1,
+  .justified .tile-5 {
+    grid-column: span 3;
+  }
+  .justified .tile-3,
+  .justified .tile-6 {
+    grid-column: span 2;
+  }
+  .justified .tile-2,
+  .justified .tile-4 {
+    grid-column: span 1;
   }
   .large {
     grid-template-columns: 1fr;

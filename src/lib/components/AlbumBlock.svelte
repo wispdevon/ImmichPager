@@ -4,6 +4,7 @@
   import { onMount, tick } from 'svelte';
   import type { GalleryPage, GalleryAlbum } from '$lib/contracts';
   import type { AlbumsBlock } from '$lib/blocks';
+  import { effectiveAlbumOrder } from '$lib/album-order';
   import {
     albumGroups,
     dateRange,
@@ -44,11 +45,12 @@
       ? [
           [
             'Albums',
-            block.order === 'newest'
-              ? [...page.albums].sort((a, b) =>
-                  (b.endDate ?? '').localeCompare(a.endDate ?? ''),
-                )
-              : page.albums,
+            effectiveAlbumOrder(
+              block.albumIds,
+              page.albums,
+              block.order,
+              'none',
+            ).flatMap((id) => page.albums.filter((album) => album.id === id)),
           ] as [string, typeof page.albums],
         ]
       : albumGroups(page),

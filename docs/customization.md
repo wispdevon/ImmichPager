@@ -204,21 +204,39 @@ cover aspect ratio, corner radius, and hover treatment. The initial layout
 keeps Immich's 1600 px content width, 224 px minimum album track, square covers,
 16 px card corners, and subtle hover surface.
 
+Gallery layout sliders have matching Material Design icons beside their text
+labels. Icons supplement the labels; controls keep their keyboard behavior and
+adjacent individual resets.
+
 The settings are page-specific and stay private until publication. Existing
 header presets continue to update header composition and sizing while keeping
 these gallery settings unchanged.
 
 ## Restore defaults
 
-**Reset all customization** at the top of Design restores the new-page design,
+**Reset all** at the top of Design restores the new-page design,
 visibility, CSS, and row layout defaults. It keeps your title, description, text,
 row headings, selected photos and albums, branding images, page URL, password,
 and download permissions. The restore icon beside a changed setting resets
 that value. These changes autosave privately; publish to apply them to the live page.
 
 Choose album and photo styles from illustrated cards in Content. Each album row shows its existing Immich cover as the drag handle. Missing covers
-use a placeholder. Album rows have an actions menu for moving or removing an album. Choose **Select albums** to show
+use a placeholder. Album rows have an actions menu for moving or removing an album. Choose **Select to reorder** to show
 checkboxes, then drag a grip to move the selected albums together within their group.
+
+The inspector and canvas show the same album order. Choosing **Manual** keeps the
+currently displayed sequence. The first drag, arrow-key move, or menu move from
+**Newest first** also starts from that sequence and switches to Manual. Cancelled
+drags, drops outside the list, and moves that leave the order unchanged do not
+save a change. Grouping by year restricts moves to the same year; choose **No
+grouping** to arrange freely across years.
+
+Albums and Photos rows can **Use theme layout**. Editing a layout setting
+customizes the row; checking the box again restores the theme's layout defaults.
+Text rows expose their alignment directly. Each photo has an actions menu for
+moving or removing it; expand its chevron to edit its caption and alternative
+text. These actions remain available while metadata is collapsed. Touch input
+uses larger reset and row-action targets.
 
 ## Apply a header preset
 

@@ -1,14 +1,16 @@
 <script lang="ts">
   import { tick } from 'svelte';
-  import { Button, Icon } from '@immich/ui';
+  import { Button, Icon, ContextMenuButton } from '@immich/ui';
   import {
     mdiPlus,
     mdiDrag,
     mdiArrowUp,
     mdiArrowDown,
-    mdiClose,
+    mdiChevronDown,
+    mdiTrashCanOutline,
   } from '@mdi/js';
   import type { Album, PageInput } from '$lib/contracts';
+  import { effectiveAlbumOrder } from '$lib/album-order';
   import { resolveBlockTheme } from '$lib/themes';
   import { blockSchema, type PageBlock } from '$lib/blocks';
   import LayoutPicker from './LayoutPicker.svelte';
@@ -27,6 +29,8 @@
     selectedId?: string;
     disabled?: boolean;
   } = $props();
+  let inspectorRoot: HTMLElement;
+  const themeHelpId = $props.id();
   let albumPicker = $state(false),
     photoPicker = $state(false),
     pickIds = $state<string[]>([]),
@@ -110,23 +114,48 @@
       update({ ...block, photos });
     }
   }
+  async function removePhoto(
+    block: Extract<PageBlock, { type: 'photos' }>,
+    id: string,
+  ) {
+    const index = block.photos.findIndex((photo) => photo.id === id);
+    const photos = block.photos.filter((photo) => photo.id !== id);
+    update({ ...block, photos });
+    await tick();
+    const neighbor = photos[Math.min(index, photos.length - 1)];
+    const target = neighbor
+      ? inspectorRoot.querySelector<HTMLElement>(
+          `[data-photo-id="${CSS.escape(neighbor.id)}"] summary`,
+        )
+      : inspectorRoot.querySelector<HTMLElement>('.active .block-picker');
+    target?.focus({ preventScroll: true });
+  }
 </script>
 
 {#snippet themeLayout(block: PageBlock)}
-  {#if fields.pageTheme}<label class="theme-layout-toggle"
+  {#if fields.pageTheme && block.type !== 'text'}<label
+      class="theme-layout-toggle"
       ><input
         type="checkbox"
         checked={block.presentationSource === 'theme'}
+        aria-describedby={themeHelpId}
         onchange={(e) =>
           update({
             ...block,
             presentationSource: e.currentTarget.checked ? 'theme' : 'custom',
           })}
       />Use theme layout</label
-    >{/if}
+    >
+    <p class="hint" id={themeHelpId}>
+      Changing layout settings customizes this row.
+    </p>{/if}
 {/snippet}
 
-<section class="block-inspector" aria-label="Page content">
+<section
+  class="block-inspector"
+  aria-label="Page content"
+  bind:this={inspectorRoot}
+>
   <div class="add-buttons">
     {#each ['photos', 'albums', 'text'] as type}<Button
         data-add-row
@@ -281,6 +310,15 @@
                       onchange={(e) =>
                         update({
                           ...block,
+                          albumIds:
+                            e.currentTarget.value === 'manual'
+                              ? effectiveAlbumOrder(
+                                  block.albumIds,
+                                  albums,
+                                  block.order,
+                                  block.grouping,
+                                )
+                              : block.albumIds,
                           order: e.currentTarget.value as typeof block.order,
                         })}
                       ><option value="newest">Newest first</option><option
@@ -342,16 +380,33 @@
                       label="Photo layout"
                       value={block.layout}
                       options={[
-                        'justified',
-                        'masonry',
-                        'square',
-                        'large',
-                        'carousel',
-                      ].map((value) => ({
-                        value,
-                        label: value[0].toUpperCase() + value.slice(1),
-                        description: `${value} photo layout`,
-                      }))}
+                        {
+                          value: 'justified',
+                          label: 'Justified',
+                          description: 'Even rows preserving photo proportions',
+                        },
+                        {
+                          value: 'masonry',
+                          label: 'Masonry',
+                          description:
+                            'Vertical columns preserving photo proportions',
+                        },
+                        {
+                          value: 'square',
+                          label: 'Square',
+                          description: 'Uniform square thumbnails',
+                        },
+                        {
+                          value: 'large',
+                          label: 'Large',
+                          description: 'One large photograph per row',
+                        },
+                        {
+                          value: 'carousel',
+                          label: 'Carousel',
+                          description: 'A horizontal strip of photographs',
+                        },
+                      ]}
                       onchange={(value) =>
                         update({
                           ...block,
@@ -434,98 +489,105 @@
                   ></ResetField
                 >
               </fieldset>
-              {#each block.photos as photo, i (photo.id)}<details
-                  class="photo-settings"
+              {#each block.photos as photo, i (photo.id)}<div
+                  class="photo-item"
+                  data-photo-id={photo.id}
                 >
-                  <summary
-                    ><img
-                      src={`/page/api/photos/${photo.id}/thumbnail`}
-                      alt=""
-                      width="44"
-                      height="44"
-                    /><span>{photo.caption || `Photo ${i + 1}`}</span></summary
-                  ><label
-                    >Caption <input
-                      maxlength="1000"
-                      value={photo.caption}
-                      oninput={(e) =>
-                        update({
-                          ...block,
-                          photos: block.photos.map((p) =>
-                            p.id === photo.id
-                              ? { ...p, caption: e.currentTarget.value }
-                              : p,
-                          ),
-                        })}
-                    /></label
-                  ><label
-                    >Alternative text <input
-                      maxlength="1000"
-                      value={photo.alt}
-                      oninput={(e) =>
-                        update({
-                          ...block,
-                          photos: block.photos.map((p) =>
-                            p.id === photo.id
-                              ? { ...p, alt: e.currentTarget.value }
-                              : p,
-                          ),
-                        })}
-                    /></label
-                  >
-                  <div class="item-actions">
-                    <button
-                      aria-label={`Move photo ${i + 1} up`}
-                      disabled={i === 0}
-                      onclick={() => reorderItems(block, i, -1)}
-                      ><Icon icon={mdiArrowUp} size="16px" aria-hidden />Move up</button
-                    ><button
-                      aria-label={`Move photo ${i + 1} down`}
-                      disabled={i === block.photos.length - 1}
-                      onclick={() => reorderItems(block, i, 1)}
-                      ><Icon icon={mdiArrowDown} size="16px" aria-hidden />Move
-                      down</button
-                    ><button
-                      onclick={() =>
-                        update({
-                          ...block,
-                          photos: block.photos.filter((p) => p.id !== photo.id),
-                        })}
-                      ><Icon
-                        icon={mdiClose}
-                        size="16px"
-                        aria-hidden
-                      />Remove</button
+                  <details class="photo-settings">
+                    <summary
+                      ><img
+                        src={`/page/api/photos/${photo.id}/thumbnail`}
+                        alt=""
+                        width="44"
+                        height="44"
+                      /><span class="photo-name"
+                        >{photo.caption || `Photo ${i + 1}`}</span
+                      ><span class="photo-chevron"
+                        ><Icon
+                          icon={mdiChevronDown}
+                          size="18px"
+                          aria-hidden
+                        /></span
+                      ></summary
+                    ><label
+                      >Caption <input
+                        maxlength="1000"
+                        value={photo.caption}
+                        oninput={(e) =>
+                          update({
+                            ...block,
+                            photos: block.photos.map((p) =>
+                              p.id === photo.id
+                                ? { ...p, caption: e.currentTarget.value }
+                                : p,
+                            ),
+                          })}
+                      /></label
+                    ><label
+                      >Alternative text <input
+                        maxlength="1000"
+                        value={photo.alt}
+                        oninput={(e) =>
+                          update({
+                            ...block,
+                            photos: block.photos.map((p) =>
+                              p.id === photo.id
+                                ? { ...p, alt: e.currentTarget.value }
+                                : p,
+                            ),
+                          })}
+                      /></label
                     >
+                  </details>
+                  <div class="photo-actions">
+                    <ContextMenuButton
+                      aria-label={`Actions for photo ${i + 1}`}
+                      size="small"
+                      items={[
+                        {
+                          title: 'Move up',
+                          icon: mdiArrowUp,
+                          $if: () => i > 0,
+                          onAction: () => reorderItems(block, i, -1),
+                        },
+                        {
+                          title: 'Move down',
+                          icon: mdiArrowDown,
+                          $if: () => i < block.photos.length - 1,
+                          onAction: () => reorderItems(block, i, 1),
+                        },
+                        {
+                          title: 'Remove photo',
+                          icon: mdiTrashCanOutline,
+                          onAction: () => removePhoto(block, photo.id),
+                        },
+                      ]}
+                    />
                   </div>
-                </details>{/each}
-            {:else}<fieldset class="row-presentation">
-                <legend>Presentation</legend>
-                {@render themeLayout(block)}
-                <p class="hint">
-                  Click the text on the canvas to write and format it.
-                </p>
-                <ResetField
-                  value={block.alignment}
-                  defaultValue={'left'}
-                  label="Alignment"
-                  onreset={() => update({ ...block, alignment: 'left' })}
-                  ><label
-                    >Alignment <select
-                      value={block.alignment}
-                      onchange={(e) =>
-                        update({
-                          ...block,
-                          alignment: e.currentTarget
-                            .value as typeof block.alignment,
-                        })}
-                      ><option value="left">Left</option><option value="center"
-                        >Center</option
-                      ><option value="right">Right</option></select
-                    ></label
-                  ></ResetField
-                >
-              </fieldset>{/if}
+                </div>{/each}
+            {:else}<p class="hint">
+                Click the text on the canvas to write and format it.
+              </p>
+              <ResetField
+                value={block.alignment}
+                defaultValue={'left'}
+                label="Alignment"
+                onreset={() => update({ ...block, alignment: 'left' })}
+                ><label
+                  >Alignment <select
+                    value={block.alignment}
+                    onchange={(e) =>
+                      update({
+                        ...block,
+                        alignment: e.currentTarget
+                          .value as typeof block.alignment,
+                      })}
+                    ><option value="left">Left</option><option value="center"
+                      >Center</option
+                    ><option value="right">Right</option></select
+                  ></label
+                ></ResetField
+              >{/if}
             <div class="block-actions">
               <Button
                 variant="ghost"
@@ -748,8 +810,7 @@
     font-size: 12px;
     opacity: 0.6;
   }
-  .block-actions,
-  .item-actions {
+  .block-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
@@ -757,6 +818,54 @@
   .block-actions {
     border-top: 1px solid var(--pager-management-border, #ffffff26);
     padding-top: 12px;
+  }
+  .photo-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 40px;
+    align-items: start;
+    gap: 8px;
+  }
+  .photo-settings {
+    min-width: 0;
+  }
+  .photo-settings summary {
+    min-height: 44px;
+    list-style: none;
+  }
+  .photo-settings summary::-webkit-details-marker {
+    display: none;
+  }
+  .photo-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .photo-chevron {
+    display: flex;
+  }
+  .photo-settings[open] .photo-chevron {
+    rotate: 180deg;
+  }
+  .photo-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 44px;
+  }
+  @media (pointer: coarse) {
+    .block-bar button {
+      min-inline-size: 44px;
+      min-block-size: 44px;
+    }
+    .photo-item {
+      grid-template-columns: minmax(0, 1fr) 44px;
+    }
+    .photo-actions :global(button) {
+      min-inline-size: 44px;
+      min-block-size: 44px;
+    }
   }
   .photo-settings summary {
     display: flex;

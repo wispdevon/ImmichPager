@@ -6,7 +6,11 @@ import {
   type Locator,
   type Page,
 } from '@playwright/test';
-import { closeCustomize, openCustomize } from './customize-helper';
+import {
+  closeCustomize,
+  openCustomize,
+  openDesignGroup,
+} from './customize-helper';
 
 const origin = 'http://127.0.0.1:3200';
 
@@ -32,6 +36,7 @@ async function setPageTheme(
   theme: 'light' | 'dark' | 'system',
 ) {
   await openCustomize(management, 'Design');
+  await openDesignGroup(management, 'colors');
   await management
     .getByRole('button', { name: 'Appearance', exact: true })
     .click();

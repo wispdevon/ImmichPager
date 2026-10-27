@@ -126,7 +126,7 @@ test('album reorder rows show prominent matching covers on desktop and phone wit
     const originalWidth = (await first.locator(':scope > span').boundingBox())!
       .width;
     await page
-      .getByRole('button', { name: 'Select albums', exact: true })
+      .getByRole('button', { name: 'Select to reorder', exact: true })
       .click();
     await first.getByRole('checkbox').check();
     await expect(first.locator('img')).toBeVisible();
@@ -448,7 +448,7 @@ test('manual album drag moves a checked selection together while preserving sele
     (await firstRow.locator(':scope > span').boundingBox())!.width,
   ).toBeGreaterThanOrEqual(150);
   await page
-    .getByRole('button', { name: 'Select albums', exact: true })
+    .getByRole('button', { name: 'Select to reorder', exact: true })
     .click();
   for (const name of selectedNames) {
     const checkbox = page.getByRole('checkbox', {

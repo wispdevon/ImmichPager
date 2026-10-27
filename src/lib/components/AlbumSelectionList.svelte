@@ -12,6 +12,7 @@
   import type { AlbumsBlock } from '$lib/blocks';
   import {
     albumOrderGroups,
+    effectiveAlbumOrder,
     moveAlbumBy,
     moveAlbumsRelative,
   } from '$lib/album-order';
@@ -26,10 +27,8 @@
   } = $props();
   const albumById = $derived(new Map(albums.map((album) => [album.id, album])));
   let failedCovers = $state<Record<string, string>>({});
-  const groups = $derived(
-    block.grouping === 'year'
-      ? albumOrderGroups(block.albumIds, albums)
-      : [['Albums', block.albumIds] as [string, string[]]],
+  const displayedIds = $derived(
+    effectiveAlbumOrder(block.albumIds, albums, block.order, block.grouping),
   );
   let selecting = $state(false);
   let selected = $state<string[]>([]);
@@ -39,6 +38,11 @@
   let root: HTMLDivElement;
   let drag = $state<{
     pointer: number;
+    baseline: string[];
+    sourceIds: string[];
+    order: AlbumsBlock['order'];
+    grouping: AlbumsBlock['grouping'];
+    groups: [string, string[]][];
     ids: string[];
     scope: string[];
     x: number;
@@ -49,6 +53,12 @@
     target: string;
     position: 'before' | 'after';
   } | null>(null);
+  const groups = $derived(
+    drag?.groups ??
+      (block.grouping === 'year'
+        ? albumOrderGroups(displayedIds, albums)
+        : [['Albums', displayedIds] as [string, string[]]]),
+  );
   let frame = 0;
   let announcement = $state('');
   const name = (id: string) =>
@@ -64,8 +74,19 @@
       },
     };
   }
-  function apply(ids: string[], description: string) {
-    if (ids.every((value, index) => block.albumIds[index] === value)) return;
+  const sameOrder = (a: readonly string[], b: readonly string[]) =>
+    a.length === b.length && a.every((id, index) => id === b[index]);
+  function actionBaseline() {
+    // Preserve existing manual year slots; sorted rows adopt their visible order.
+    return block.order === 'newest' ? displayedIds : block.albumIds;
+  }
+  function apply(
+    ids: string[],
+    description: string,
+    baseline: readonly string[],
+  ) {
+    // A genuine move can equal the old stored IDs while changing the visible order.
+    if (sameOrder(ids, baseline)) return;
     onchange({ ...block, albumIds: ids, order: 'manual' });
     announcement = `Moved ${description}`;
   }
@@ -73,16 +94,18 @@
     const scope = groups.find(([, ids]) => ids.includes(id))?.[1] ?? [];
     const target = scope[scope.indexOf(id) + by];
     if (!target) return;
+    const baseline = actionBaseline();
     apply(
       block.grouping === 'year'
-        ? moveAlbumBy(block.albumIds, albums, id, by)
+        ? moveAlbumBy(baseline, albums, id, by)
         : moveAlbumsRelative(
-            block.albumIds,
+            baseline,
             [id],
             target,
             by < 0 ? 'before' : 'after',
           ),
       name(id),
+      baseline,
     );
   }
   function cancel() {
@@ -90,6 +113,15 @@
     frame = 0;
     drag = null;
   }
+  $effect(() => {
+    if (
+      drag &&
+      (!sameOrder(drag.sourceIds, block.albumIds) ||
+        drag.order !== block.order ||
+        drag.grouping !== block.grouping)
+    )
+      cancel();
+  });
   onDestroy(cancel);
   function locate() {
     if (!drag?.active) return;
@@ -146,7 +178,7 @@
     frame = requestAnimationFrame(scroll);
   }
   function start(event: PointerEvent, id: string, scope: string[]) {
-    if (event.button !== 0 || !event.isPrimary) return;
+    if (drag || event.button !== 0 || !event.isPrimary) return;
     event.preventDefault();
     const handle = event.currentTarget as HTMLButtonElement;
     handle.focus({ preventScroll: true });
@@ -157,8 +189,13 @@
     if (selecting && !selection.includes(id)) selected = [id];
     drag = {
       pointer: event.pointerId,
-      ids: moving,
-      scope,
+      baseline: [...actionBaseline()],
+      sourceIds: [...block.albumIds],
+      order: block.order,
+      grouping: block.grouping,
+      groups: groups.map(([year, ids]) => [year, [...ids]]),
+      ids: [...moving],
+      scope: [...scope],
       x: event.clientX,
       y: event.clientY,
       startX: event.clientX,
@@ -182,10 +219,27 @@
     update(event);
     const completed = drag;
     cancel();
-    if (completed.active && completed.target)
+    const bounds = root.getBoundingClientRect();
+    const inspector = root
+      .closest('.inspector-content')
+      ?.getBoundingClientRect();
+    const inside =
+      event.clientX >= bounds.left &&
+      event.clientX <= bounds.right &&
+      event.clientY >= Math.max(bounds.top, inspector?.top ?? 0, 0) &&
+      event.clientY <=
+        Math.min(bounds.bottom, inspector?.bottom ?? innerHeight, innerHeight);
+    if (
+      completed.active &&
+      completed.target &&
+      inside &&
+      sameOrder(completed.sourceIds, block.albumIds) &&
+      completed.order === block.order &&
+      completed.grouping === block.grouping
+    )
       apply(
         moveAlbumsRelative(
-          block.albumIds,
+          completed.baseline,
           completed.ids,
           completed.target,
           completed.position,
@@ -194,6 +248,7 @@
         completed.ids.length === 1
           ? name(completed.ids[0])
           : `${completed.ids.length} albums together`,
+        completed.baseline,
       );
   }
 </script>
@@ -206,7 +261,7 @@
         onclick={() => {
           selecting = !selecting;
           selected = [];
-        }}>{selecting ? 'Done selecting' : 'Select albums'}</button
+        }}>{selecting ? 'Done selecting' : 'Select to reorder'}</button
       >
       {#if selecting}<button
           type="button"
@@ -316,6 +371,7 @@
             </div>
             <span title={name(id)}>{name(id)}</span>
             <ContextMenuButton
+              class="album-actions"
               aria-label={`Actions for ${name(id)}`}
               size="small"
               items={[
@@ -565,5 +621,14 @@
     background: var(--pager-management-surface-raised, #212121);
     box-shadow: 0 4px 16px #0004;
     font-size: 13px;
+  }
+  @media (pointer: coarse) {
+    .album-selection :global(.album-actions) {
+      min-inline-size: 44px;
+      min-block-size: 44px;
+    }
+    .selection-tools button {
+      min-block-size: 44px;
+    }
   }
 </style>

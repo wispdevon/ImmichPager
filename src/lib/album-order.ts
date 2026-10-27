@@ -36,7 +36,42 @@ export function moveAlbumsRelative(
 }
 
 export function albumYear(endDate?: string) {
-  return endDate ? new Date(endDate).getUTCFullYear().toString() : 'Undated';
+  const timestamp = endDate ? Date.parse(endDate) : NaN;
+  return Number.isFinite(timestamp)
+    ? new Date(timestamp).getUTCFullYear().toString()
+    : 'Undated';
+}
+
+/** Project the visible order without modifying the saved selection. */
+export function effectiveAlbumOrder(
+  albumIds: readonly string[],
+  albums: readonly AlbumDate[],
+  order: 'manual' | 'newest',
+  grouping: 'year' | 'none',
+) {
+  const dates = new Map(
+    albums.map(({ id, endDate }) => {
+      const timestamp = endDate ? Date.parse(endDate) : NaN;
+      return [id, Number.isFinite(timestamp) ? timestamp : -Infinity];
+    }),
+  );
+  const ids = [...albumIds];
+  if (order === 'newest')
+    ids.sort((a, b) => {
+      const left = dates.get(a) ?? -Infinity;
+      const right = dates.get(b) ?? -Infinity;
+      return left === right ? 0 : left > right ? -1 : 1;
+    });
+  if (grouping === 'none') return ids;
+  const years = new Map(
+    [...dates].map(([id, timestamp]) => [
+      id,
+      Number.isFinite(timestamp)
+        ? new Date(timestamp).getUTCFullYear().toString()
+        : 'Undated',
+    ]),
+  );
+  return orderGroups(ids, years).flatMap(([, group]) => group);
 }
 
 function albumYears(albums: readonly AlbumDate[]) {

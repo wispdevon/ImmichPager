@@ -87,4 +87,16 @@
     opacity: 0.4;
     cursor: default;
   }
+  @media (pointer: coarse) {
+    .reset-field {
+      grid-template-columns: minmax(0, 1fr) 44px;
+    }
+    .reset-slot,
+    button {
+      width: 44px;
+    }
+    button {
+      height: 44px;
+    }
+  }
 </style>

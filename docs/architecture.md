@@ -69,6 +69,17 @@ it is excluded from page data and autosave. Hidden header copy opens Typography
 initially. Existing bindings, control limits, palette behavior, and reset defaults
 remain in CustomizePanel.
 
+`effectiveAlbumOrder` in `album-order.ts` is the shared display-order projection
+for the inspector, grouped galleries, and ungrouped album blocks. It compares
+timestamps, preserves equal-date input order, and places missing/invalid dates
+in Undated with UTC year boundaries. Projection never mutates the stored IDs.
+Switching to Manual materializes the visible order; reordering from Newest first
+uses that order as the action baseline. Existing manual move primitives retain
+their within-year slot semantics. Pointer drags snapshot IDs, groups, selection,
+and mode, keep DOM order stable, and cancel if membership/mode/grouping changes.
+No-op comparison uses the action baseline, so a genuine move back to the old raw
+IDs still commits Manual. Drops outside the visible list do not commit.
+
 ## Per-page controls and portable themes
 
 `clientUi` and `galleryStyle` are validated additive JSON settings in drafts, published records, and gallery DTOs. Reading legacy JSON fills compatibility defaults; creating a page disables browsing controls by default. Duplication copies these settings, and publication review identifies visibility and style changes before they reach clients. No SQLite schema migration is needed.

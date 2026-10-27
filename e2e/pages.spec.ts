@@ -2,7 +2,11 @@ import { openHeader } from './composer-helper';
 import { test, expect } from '@playwright/test';
 import { setHeaderText } from './header-editor';
 import { confirmPublication } from './publication-helper';
-import { closeCustomize, openCustomize } from './customize-helper';
+import {
+  closeCustomize,
+  openCustomize,
+  openDesignGroup,
+} from './customize-helper';
 
 test('client album grid, year collapse, on-page viewer and mobile layout', async ({
   page,
@@ -561,6 +565,7 @@ test('dropped branding creates an untitled draft, Customize works on mobile, and
   await expect(page.getByTestId('save-state')).toHaveText('All changes saved');
   await page.setViewportSize({ width: 390, height: 844 });
   await openCustomize(page);
+  await openDesignGroup(page, 'colors');
   await page.getByRole('button', { name: 'Appearance', exact: true }).click();
   await page.getByRole('option', { name: 'Light', exact: true }).click();
   expect(

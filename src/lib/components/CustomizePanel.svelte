@@ -14,10 +14,24 @@
     mdiFormatText,
     mdiPaletteOutline,
     mdiViewGridOutline,
+    mdiArrowExpandHorizontal,
+    mdiBorderInside,
+    mdiTableRowHeight,
+    mdiTableColumnWidth,
+    mdiAspectRatio,
+    mdiRoundedCorner,
   } from '@mdi/js';
   import DesignGroup from './DesignGroup.svelte';
   import { tick, onMount } from 'svelte';
-  import { Button, Field, Select, Switch, Input, Textarea } from '@immich/ui';
+  import {
+    Button,
+    Field,
+    Select,
+    Switch,
+    Input,
+    Textarea,
+    Icon,
+  } from '@immich/ui';
   import {
     APPEARANCE_FILE_MAX_BYTES,
     applyAppearanceSettings,
@@ -383,8 +397,8 @@
       disabled={busy}
       aria-label="Reset all customization"
       title="Reset all customization"
-      onclick={onResetAll}
-    />
+      onclick={onResetAll}>Reset all</Button
+    >
   </div>
 
   <div class="tab-list" role="tablist" aria-label="Page customization">
@@ -1075,7 +1089,13 @@
               defaults.galleryStyle.contentWidth)}
         >
           <label class="range-setting">
-            Content width
+            <span class="setting-label"
+              ><Icon
+                icon={mdiArrowExpandHorizontal}
+                size="18px"
+                aria-hidden
+              /><span>Content width</span></span
+            >
             <div class="range-control">
               <input
                 type="range"
@@ -1104,7 +1124,11 @@
               defaults.galleryStyle.pagePadding)}
         >
           <label class="range-setting">
-            Page padding
+            <span class="setting-label"
+              ><Icon icon={mdiBorderInside} size="18px" aria-hidden /><span
+                >Page padding</span
+              ></span
+            >
             <div class="range-control">
               <input
                 type="range"
@@ -1133,7 +1157,11 @@
               defaults.galleryStyle.gridMinWidth)}
         >
           <label class="range-setting">
-            Grid density
+            <span class="setting-label"
+              ><Icon icon={mdiViewGridOutline} size="18px" aria-hidden /><span
+                >Grid density</span
+              ></span
+            >
             <div class="range-control">
               <input
                 type="range"
@@ -1161,7 +1189,11 @@
             (fields.galleryStyle.gridRowGap = defaults.galleryStyle.gridRowGap)}
         >
           <label class="range-setting">
-            Row spacing
+            <span class="setting-label"
+              ><Icon icon={mdiTableRowHeight} size="18px" aria-hidden /><span
+                >Row spacing</span
+              ></span
+            >
             <div class="range-control">
               <input
                 type="range"
@@ -1190,7 +1222,11 @@
               defaults.galleryStyle.gridColumnGap)}
         >
           <label class="range-setting">
-            Column spacing
+            <span class="setting-label"
+              ><Icon icon={mdiTableColumnWidth} size="18px" aria-hidden /><span
+                >Column spacing</span
+              ></span
+            >
             <div class="range-control">
               <input
                 type="range"
@@ -1219,7 +1255,11 @@
               defaults.galleryStyle.coverAspectRatio)}
         >
           <label class="range-setting">
-            Cover aspect ratio
+            <span class="setting-label"
+              ><Icon icon={mdiAspectRatio} size="18px" aria-hidden /><span
+                >Cover aspect ratio</span
+              ></span
+            >
             <div class="range-control">
               <input
                 type="range"
@@ -1247,7 +1287,11 @@
             (fields.galleryStyle.cardRadius = defaults.galleryStyle.cardRadius)}
         >
           <label class="range-setting">
-            Corner radius
+            <span class="setting-label"
+              ><Icon icon={mdiRoundedCorner} size="18px" aria-hidden /><span
+                >Corner radius</span
+              ></span
+            >
             <div class="range-control">
               <input
                 type="range"
@@ -2095,6 +2139,11 @@
     font-size: 13px;
   }
 
+  .setting-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
   .range-control {
     display: grid;
     grid-template-columns: minmax(0, 1fr) max-content;

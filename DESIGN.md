@@ -89,3 +89,12 @@ Content rows use the same compact label spacing. Keep heading/media selection
 before a Presentation group containing theme layout, style, and arrangement;
 place photo presentation before the potentially long photo list. Separate row
 duplication/deletion from the settings without adding nested disclosure steps.
+
+Album selection order must agree with the canvas. Entering Manual or making the
+first move starts from the visible sequence; viewing, cancellation, and visual
+no-ops never save an ordering change. Use theme layout applies only to Albums and
+Photos, with a concise explanation of custom row overrides. Photo metadata has
+a visible chevron and separate actions menu. Layout choices expose descriptions
+to assistive technology and visually distinguish justified and square grids.
+Keep visible Reset all text, larger touch reset/row-action targets, and bundled
+Material icons beside gallery layout labels without replacing the labels.

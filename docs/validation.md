@@ -313,3 +313,33 @@ cover all three row types in native light/dark modes, with no inspector overflow
 or browser exceptions. Visible style choices support keyboard selection and reset.
 Review uses NASA fixtures and the established headless Chromium fallback. No
 hosted CI minutes were used.
+
+## Ordering consistency, media actions, and layout icons (2026-10-27)
+
+Implemented the Astra UI review findings: inspector/gallery ordering shares a
+timestamp-based projection, Manual materializes the visible sequence, and first
+moves use that sequence without saving visual no-ops. Pointer snapshots freeze
+rendered groups and selection, reject stale membership/mode changes, and cancel
+outside visible list bounds. Missing/invalid dates are Undated; equal instants
+retain input order. Text no longer has an ineffective theme-layout toggle.
+
+Albums/Photos expose inheritance guidance. Selection says Select to reorder;
+photo action menus work with metadata collapsed, and deletion restores focus to a
+neighbor or the add control. Reset all has a visible label, touch resets and row
+actions have larger targets, Justified thumbnails differ from Square, radio
+descriptions are associated with their inputs, and seven Gallery layout labels use
+the existing Material SVG icon set with decorative semantics.
+
+Local validation passes 248 unit tests, type checks with zero errors/warnings,
+lint, formatting, and the production build. The full browser run passed 113 of
+115 cases; two existing navigation helpers still expected Appearance outside the
+new Colors disclosure. Those helpers were updated while retaining their existing
+assertions. The final 19-case run passes both affected suites and all six new
+ordering/media/touch scenarios, completing verification of all 115 unique cases.
+The final targeted run also checks the improved photo-layout descriptions.
+
+An additional read-only Astra review found no concrete implementation regressions.
+Eighteen rendered captures cover desktop, 390px phone, and 320px touch contexts in
+light/dark mode, with seven icons present, 44×44 touch resets, preserved reset
+focus, and no panel overflow or browser exceptions. Review uses NASA fixtures and
+the established headless Chromium fallback. No hosted CI minutes were used.

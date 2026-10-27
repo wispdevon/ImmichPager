@@ -1,22 +1,25 @@
 import type { GalleryAlbum, GalleryPage } from './contracts';
-import { albumYear } from './album-order';
+import { albumYear, effectiveAlbumOrder } from './album-order';
 
 export const DEFAULT_PAGE_ACCENT = '#accbfa';
 
 export function albumGroups(page: GalleryPage) {
   const groups = new Map<string, GalleryAlbum[]>();
-  const albums = [...page.albums];
-  if (page.order === 'newest')
-    albums.sort((a, b) => (b.endDate || '').localeCompare(a.endDate || ''));
-  for (const album of albums) {
+  const byId = new Map(page.albums.map((album) => [album.id, album]));
+  const ids = effectiveAlbumOrder(
+    page.albums.map((album) => album.id),
+    page.albums,
+    page.order,
+    'year',
+  );
+  for (const id of ids) {
+    const album = byId.get(id)!;
     const year = albumYear(album.endDate);
     const list = groups.get(year) ?? [];
     list.push(album);
     groups.set(year, list);
   }
-  return [...groups.entries()].sort(([a], [b]) =>
-    a === 'Undated' ? 1 : b === 'Undated' ? -1 : Number(b) - Number(a),
-  );
+  return [...groups.entries()];
 }
 
 function parsedDate(value?: string) {

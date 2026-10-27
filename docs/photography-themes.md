@@ -70,8 +70,8 @@ The manifest records the downloaded archive and main CSS hashes for each source.
 
 ## Editor feedback
 
-The Customize header is one compact row, with an accessible **Reset all
-customization** icon beside it. Its tabs remain directly below. Theme confirmation
+The Customize header is one compact row, with a labeled **Reset all** action
+beside it. Its tabs remain directly below. Theme confirmation
 uses a nonmodal canvas dialog, so another design can still be tried from the
 inspector. Escape/cancel restores focus; publication waits until an audition is
 applied or cancelled.

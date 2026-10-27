@@ -21,11 +21,13 @@ All five bundled designs include light and dark variants. **System** follows the
 viewer's device when both variants are available. A single-variant imported theme
 uses its declared mode. Built-in families adapt to desktop, tablet, and phone sizes.
 
-Applying a theme changes presentation and marks rows **Use theme layout**. It
+Applying a theme changes presentation; Albums and Photos rows **Use theme layout**. It
 preserves words, media, row order, album order/grouping, branding selections,
 visibility, URL, passwords, and downloads. Changing an individual row's layout or
 spacing makes it a manual override; enable **Use theme layout** to follow again.
-Individual reset buttons use the active theme's defaults. **Reset all customization**
+Text rows keep their own alignment and inherit the page typography without a
+separate theme-layout toggle. Individual reset buttons use the active theme's
+defaults. **Reset all**
 returns to Classic and the existing presentation/visibility defaults, retaining
 content, branding images, and access settings.
 
